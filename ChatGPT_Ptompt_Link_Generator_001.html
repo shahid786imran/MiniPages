@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChatGPT Prompt Link Generator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',sans-serif;background:linear-gradient(160deg,#1e1b4b,#312e81 45%,#4c1d95);min-height:100vh;padding:20px 14px 60px;color:#fff;overflow-x:hidden}
+body::before,body::after{content:'';position:fixed;border-radius:50%;filter:blur(90px);opacity:.35;z-index:0;pointer-events:none}
+body::before{width:260px;height:260px;background:#7c3aed;top:-90px;left:-90px}
+body::after{width:300px;height:300px;background:#db2777;bottom:-110px;right:-110px}
+.wrap{position:relative;z-index:1;max-width:620px;margin:0 auto}
+header{text-align:center;margin-bottom:22px;padding:20px 16px;border-radius:22px;background:rgba(255,255,255,.07);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.15);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+h1{font-size:1.5rem;font-weight:800;background:linear-gradient(90deg,#a78bfa,#f472b6,#60a5fa);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+header p{margin-top:6px;font-size:.82rem;color:rgba(255,255,255,.7)}
+.card{border-radius:20px;padding:18px 16px;background:rgba(255,255,255,.06);backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.13);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+label{display:block;font-size:.85rem;font-weight:700;color:#c4b5fd;margin-bottom:8px}
+textarea,input{width:100%;padding:14px;border-radius:14px;border:1.5px solid rgba(255,255,255,.15);background:rgba(0,0,0,.25);color:#fff;font-size:.95rem;font-family:inherit;outline:none;transition:.2s}
+textarea{min-height:110px;resize:vertical}
+::placeholder{color:rgba(255,255,255,.4)}
+textarea:focus,input:focus{border-color:#a78bfa;box-shadow:0 0 0 3px rgba(167,139,250,.25)}
+.field{margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+button{flex:1;min-width:130px;padding:14px;border-radius:14px;border:none;font-size:.92rem;font-weight:700;font-family:inherit;cursor:pointer;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.3);transition:transform .15s}
+button:active{transform:scale(.96)}
+.b1{background:linear-gradient(135deg,#7c3aed,#db2777)}
+.b2{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18)}
+.res{display:none;margin-top:16px;padding:16px;border-radius:16px;background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(219,39,119,.2));border:1px solid rgba(167,139,250,.4)}
+.res.show{display:block;animation:f .4s}
+@keyframes f{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.rt{font-size:.78rem;font-weight:700;color:#c4b5fd;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.ru{background:rgba(0,0,0,.35);padding:12px;border-radius:10px;font-size:.78rem;color:#a5f3fc;word-break:break-all;font-family:monospace;line-height:1.5;margin-bottom:12px;max-height:120px;overflow-y:auto}
+.ob{display:block;text-align:center;text-decoration:none;padding:14px;border-radius:14px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;font-weight:700;box-shadow:0 6px 18px rgba(16,185,129,.35)}
+.ob:active{transform:scale(.97)}
+.tt{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(30,27,75,.95);color:#fff;padding:12px 22px;border-radius:30px;font-size:.85rem;font-weight:600;border:1px solid rgba(167,139,250,.5);opacity:0;transition:.35s;z-index:99;pointer-events:none}
+.tt.show{transform:translateX(-50%) translateY(0);opacity:1}
+footer{text-align:center;margin-top:24px;font-size:.75rem;color:rgba(255,255,255,.5)}
+@media(max-width:360px){h1{font-size:1.25rem}button{font-size:.85rem;padding:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>✨ ChatGPT Prompt Link Generator</h1>
+<p>Apna prompt likhein — link turant ban jayega</p>
+</header>
+<div class="card">
+<div class="field">
+<label for="p">📝 Your Prompt</label>
+<textarea id="p" placeholder="Yahan apna prompt likhein..."></textarea>
+</div>
+<div class="field">
+<label for="t">🏷️ Link Title (optional)</label>
+<input id="t" placeholder="Example: AI Blog Post">
+</div>
+<div class="row">
+<button class="b1" onclick="gen()">🔗 Generate</button>
+<button class="b2" onclick="clr()">🗑️ Clear</button>
+</div>
+<div class="res" id="r">
+<div class="rt">✅ Your ChatGPT Link</div>
+<div class="ru" id="u"></div>
+<div class="row" style="margin-bottom:10px">
+<button class="b2" onclick="cp()">📋 Copy</button>
+<button class="b2" onclick="cph()">💻 HTML</button>
+</div>
+<a class="ob" id="o" href="#" target="_blank" rel="noopener">🚀 Open in ChatGPT</a>
+</div>
+</div>
+<footer>Made with 💜</footer>
+</div>
+<div class="tt" id="tt"></div>
+<script>
+const $=id=>document.getElementById(id);
+let url='',ttl='';
+const toast=m=>{const t=$('tt');t.textContent=m;t.classList.add('show');clearTimeout(t._x);t._x=setTimeout(()=>t.classList.remove('show'),2200)};
+
+function gen(){
+  const p=$('p').value.trim();
+  if(!p){toast('⚠️ Pehle prompt likhein');$('p').focus();return}
+  url='https://chatgpt.com/?q='+encodeURIComponent(p);
+  ttl=$('t').value.trim()||p.slice(0,40);
+  $('u').textContent=url;
+  $('o').href=url;
+  $('r').classList.add('show');
+  $('r').scrollIntoView({behavior:'smooth',block:'nearest'});
+  toast('✅ Link ban gaya!');
+}
+function cp(){url&&navigator.clipboard.writeText(url).then(()=>toast('📋 Link copy')).catch(()=>toast('❌ Fail'))}
+function cph(){
+  if(!url)return;
+  const s=ttl.replace(/[<>&"]/g,'');
+  navigator.clipboard.writeText(`<a class="link-item" href="${url}" target="_blank" rel="noopener"><span class="inner"><span class="ico">💬</span><span class="txt">${s}</span><span class="arrow">➜</span></span></a>`)
+  .then(()=>toast('💻 HTML copy')).catch(()=>toast('❌ Fail'));
+}
+function clr(){$('p').value='';$('t').value='';$('r').classList.remove('show');url='';ttl='';toast('🗑️ Cleared')}
+$('p').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();gen()}});
+</script>
+</body>
+</html>
