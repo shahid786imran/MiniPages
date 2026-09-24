@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Google Drive Test 8 - Open With</title>
+<title>Google Drive Test 9 - App Created File</title>
 
 <style>
     body {
@@ -17,7 +17,7 @@
     .container {
         max-width: 900px;
         margin: auto;
-        background: white;
+        background: #fff;
         padding: 20px;
         border-radius: 12px;
         box-shadow: 0 2px 12px rgba(0,0,0,.08);
@@ -68,9 +68,9 @@
         font-weight: bold;
     }
 
-    .error {
-        color: #c5221f;
-        font-weight: bold;
+    input[type="file"] {
+        margin: 10px 0;
+        width: 100%;
     }
 
     #log {
@@ -78,21 +78,12 @@
         color: #eee;
         padding: 15px;
         border-radius: 8px;
-        min-height: 180px;
+        min-height: 220px;
         white-space: pre-wrap;
         word-break: break-word;
         font-family: Consolas, monospace;
         font-size: 13px;
         overflow-x: auto;
-    }
-
-    .state-box {
-        background: #fff8e1;
-        border: 1px solid #f0c36d;
-        padding: 12px;
-        border-radius: 8px;
-        word-break: break-word;
-        white-space: pre-wrap;
     }
 </style>
 </head>
@@ -101,7 +92,7 @@
 
 <div class="container">
 
-    <h1>Google Drive Test 8</h1>
+    <h1>Google Drive Test 9</h1>
 
     <div class="info">
         <strong>Google Account:</strong>
@@ -115,69 +106,119 @@
         1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT
     </div>
 
-    <h2>Drive Open With</h2>
-
-    <p>
-        پہلے Google Drive میں کوئی file select کریں،
-        پھر <strong>Open with → MyWebApps Drive</strong> کریں۔
-    </p>
+    <h2>1. Google Authorization</h2>
 
     <button id="authorizeBtn" onclick="authorizeDrive()">
         Authorize Google Drive
-    </button>
-
-    <button id="checkBtn" onclick="checkSelectedFile()" disabled>
-        Check Authorization
-    </button>
-
-    <button id="renameBtn" onclick="renameSelectedFile()" disabled>
-        Rename File
-    </button>
-
-    <button id="trashBtn" onclick="trashSelectedFile()" disabled>
-        Move to Trash
     </button>
 
     <button onclick="signOut()">
         Sign Out
     </button>
 
-    <h2>Open With State</h2>
+    <h2>2. Upload New File</h2>
 
-    <div id="stateBox" class="state-box">
-        Checking URL state...
-    </div>
+    <p>
+        صرف اسی test page سے upload کی گئی file پر operations کیے جائیں گے۔
+    </p>
 
-    <h2>Selected File</h2>
+    <input
+        type="file"
+        id="fileInput"
+    >
+
+    <br>
+
+    <button
+        id="uploadBtn"
+        onclick="uploadFile()"
+        disabled
+    >
+        Upload File
+    </button>
+
+
+    <h2>3. App-Created File</h2>
 
     <div class="info">
+
         <strong>Name:</strong>
         <span id="fileName">None</span>
+
         <br><br>
 
         <strong>ID:</strong>
         <span id="fileId">None</span>
+
         <br><br>
 
         <strong>MIME:</strong>
         <span id="fileMime">None</span>
+
         <br><br>
 
-        <strong>Resource Key:</strong>
-        <span id="resourceKey">None</span>
-        <br><br>
+        <strong>Created by this app:</strong>
+        <span id="createdByApp">No</span>
 
-        <strong>App Authorized:</strong>
-        <span id="appAuthorized">Unknown</span>
-        <br><br>
-
-        <strong>Can Edit:</strong>
-        <span id="canEdit">Unknown</span>
         <br><br>
 
         <strong>URL:</strong>
         <span id="fileUrl">None</span>
+
     </div>
+
+
+    <h2>4. File Operations</h2>
+
+    <button
+        id="openBtn"
+        onclick="openFile()"
+        disabled
+    >
+        Open File
+    </button>
+
+    <button
+        id="checkBtn"
+        onclick="checkFile()"
+        disabled
+    >
+        Check File
+    </button>
+
+    <button
+        id="renameBtn"
+        onclick="renameFile()"
+        disabled
+    >
+        Rename File
+    </button>
+
+    <button
+        id="updateBtn"
+        onclick="updateFileDescription()"
+        disabled
+    >
+        Update Metadata
+    </button>
+
+    <button
+        id="trashBtn"
+        class="danger"
+        onclick="moveToTrash()"
+        disabled
+    >
+        Move to Trash
+    </button>
+
+    <button
+        id="restoreBtn"
+        onclick="restoreFile()"
+        disabled
+    >
+        Restore File
+    </button>
+
 
     <h2>Status / Test Log</h2>
 
@@ -188,17 +229,20 @@
 
 <script src="https://accounts.google.com/gsi/client"></script>
 
-<script src="https://apis.google.com/js/api.js"></script>
-
 
 <script>
+
+/* =========================================================
+   CONFIGURATION
+   ========================================================= */
 
 const CLIENT_ID =
 "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com";
 
 
-// IMPORTANT:
-// یہاں اپنی Google Cloud والی EXACT API Key paste کریں۔
+/*
+ * اپنی Google Cloud والی EXACT API Key یہاں paste کریں۔
+ */
 const API_KEY =
 "AIzaSyBSf3HKUR652Kja3l65D91FvCkQSoxgZDY";
 
@@ -215,27 +259,28 @@ const DRIVE_SCOPE =
 "https://www.googleapis.com/auth/drive.file";
 
 
+/* =========================================================
+   VARIABLES
+   ========================================================= */
+
 let tokenClient = null;
+
 let accessToken = null;
 
-let selectedFile = null;
-let resourceKeys = {};
-
-let openWithState = null;
-
-let googleApiReady = false;
-let pickerReady = false;
+let appCreatedFile = null;
 
 
-/* --------------------------------------------------
+/* =========================================================
    LOG
--------------------------------------------------- */
+   ========================================================= */
 
 function log(message) {
 
-    const box = document.getElementById("log");
+    const box =
+        document.getElementById("log");
 
-    const now = new Date();
+    const now =
+        new Date();
 
     const time =
         now.toLocaleTimeString();
@@ -243,274 +288,107 @@ function log(message) {
     box.textContent +=
         time + "  " + message + "\n";
 
-    box.scrollTop = box.scrollHeight;
+    box.scrollTop =
+        box.scrollHeight;
 }
 
 
-/* --------------------------------------------------
-   SHOW STATE
--------------------------------------------------- */
+/* =========================================================
+   INITIALIZE
+   ========================================================= */
 
-function showState(obj) {
+window.addEventListener(
+    "load",
+    function() {
 
-    const box =
-        document.getElementById("stateBox");
+        log(
+            "Google Drive Test 9 loaded."
+        );
 
-    if (!obj) {
+        initializeGoogleAuth();
 
-        box.textContent =
-            "No Google Drive Open With state detected.";
+    }
+);
+
+
+/* =========================================================
+   GOOGLE AUTH
+   ========================================================= */
+
+function initializeGoogleAuth() {
+
+    if (
+        !window.google ||
+        !google.accounts ||
+        !google.accounts.oauth2
+    ) {
+
+        log(
+            "Google Identity Services failed to load."
+        );
 
         return;
     }
 
-    box.textContent =
-        JSON.stringify(obj, null, 2);
-}
-
-
-/* --------------------------------------------------
-   PARSE DRIVE OPEN WITH STATE
--------------------------------------------------- */
-
-function parseOpenWithState() {
-
-    const params =
-        new URLSearchParams(window.location.search);
-
-    const stateParam =
-        params.get("state");
-
-    if (!stateParam) {
-
-        log("No Google Drive Open With state detected.");
-
-        showState(null);
-
-        return;
-    }
-
-    try {
-
-        let decoded =
-            decodeURIComponent(stateParam);
-
-        openWithState =
-            JSON.parse(decoded);
-
-        showState(openWithState);
-
-        log("Google Drive Open With state detected.");
-
-        log(
-            "Action: " +
-            (openWithState.action || "Unknown")
-        );
-
-        if (openWithState.userId) {
-
-            log(
-                "Drive User ID: " +
-                openWithState.userId
-            );
-        }
-
-        if (openWithState.ids) {
-
-            log(
-                "File IDs received: " +
-                JSON.stringify(openWithState.ids)
-            );
-        }
-
-        if (openWithState.exportIds) {
-
-            log(
-                "Export IDs received: " +
-                JSON.stringify(openWithState.exportIds)
-            );
-        }
-
-        if (openWithState.resourceKeys) {
-
-            resourceKeys =
-                openWithState.resourceKeys;
-
-            log(
-                "Resource keys received."
-            );
-        }
-
-        /*
-         * Normal Drive files:
-         * state.ids
-         *
-         * Google Workspace files:
-         * state.exportIds
-         */
-
-        let ids = [];
-
-        if (Array.isArray(openWithState.ids)) {
-
-            ids =
-                openWithState.ids;
-
-        } else if (Array.isArray(openWithState.exportIds)) {
-
-            ids =
-                openWithState.exportIds;
-        }
-
-        if (ids.length > 0) {
-
-            selectedFile = {
-                id: ids[0]
-            };
-
-            displayBasicFileId(ids[0]);
-
-            log(
-                "File received from Google Drive Open With."
-            );
-        }
-
-    } catch (error) {
-
-        log(
-            "ERROR parsing state: " +
-            error.message
-        );
-
-        showState(
-            "Could not parse state parameter:\n\n" +
-            error.message
-        );
-    }
-}
-
-
-/* --------------------------------------------------
-   DISPLAY FILE ID
--------------------------------------------------- */
-
-function displayBasicFileId(id) {
-
-    document.getElementById("fileId").textContent =
-        id || "None";
-
-    document.getElementById("checkBtn").disabled =
-        !id;
-}
-
-
-/* --------------------------------------------------
-   GOOGLE LIBRARIES
--------------------------------------------------- */
-
-function loadGoogleLibraries() {
-
-    log("Loading Google libraries...");
-
-    gapi.load(
-        "client:picker",
-        async function() {
-
-            log("Google Picker library loaded.");
-
-            try {
-
-                await gapi.client.load(
-                    "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
-                );
-
-                googleApiReady = true;
-
-                log("Google Drive API loaded.");
-
-                initializeTokenClient();
-
-                pickerReady = true;
-
-                log("Google libraries initialized.");
-
-                /*
-                 * If Open With supplied a file,
-                 * automatically authorize/check it.
-                 */
-
-                if (
-                    selectedFile &&
-                    selectedFile.id
-                ) {
-
-                    log(
-                        "Open With file is ready for authorization."
-                    );
-
-                    document.getElementById(
-                        "checkBtn"
-                    ).disabled = false;
-                }
-
-            } catch (error) {
-
-                log(
-                    "Google API initialization failed: " +
-                    error.message
-                );
-            }
-        }
-    );
-}
-
-
-/* --------------------------------------------------
-   TOKEN CLIENT
--------------------------------------------------- */
-
-function initializeTokenClient() {
 
     tokenClient =
         google.accounts.oauth2.initTokenClient({
 
-            client_id: CLIENT_ID,
+            client_id:
+                CLIENT_ID,
 
-            scope: DRIVE_SCOPE,
+            scope:
+                DRIVE_SCOPE,
 
-            callback: function(response) {
+            callback:
+                function(response) {
 
-                if (response.error) {
+                    if (
+                        response.error
+                    ) {
+
+                        log(
+                            "Authorization ERROR:"
+                        );
+
+                        log(
+                            JSON.stringify(
+                                response,
+                                null,
+                                2
+                            )
+                        );
+
+                        return;
+                    }
+
+
+                    accessToken =
+                        response.access_token;
+
 
                     log(
-                        "Authorization error: " +
-                        JSON.stringify(response)
+                        "Google Drive authorization successful."
                     );
 
-                    return;
+
+                    document.getElementById(
+                        "uploadBtn"
+                    ).disabled = false;
+
+
+                    if (
+                        appCreatedFile
+                    ) {
+
+                        enableFileButtons();
+
+                    }
+
                 }
 
-                accessToken =
-                    response.access_token;
-
-                log(
-                    "Google Drive authorization successful."
-                );
-
-                /*
-                 * If Open With file already exists,
-                 * immediately test it.
-                 */
-
-                if (
-                    selectedFile &&
-                    selectedFile.id
-                ) {
-
-                    checkSelectedFile();
-                }
-            }
         });
+
 
     log(
         "Google authorization client initialized."
@@ -518,9 +396,9 @@ function initializeTokenClient() {
 }
 
 
-/* --------------------------------------------------
-   AUTHORIZE DRIVE
--------------------------------------------------- */
+/* =========================================================
+   AUTHORIZE
+   ========================================================= */
 
 function authorizeDrive() {
 
@@ -533,103 +411,433 @@ function authorizeDrive() {
         return;
     }
 
+
     log(
         "Requesting Google Drive authorization..."
     );
 
+
     tokenClient.requestAccessToken({
 
-        prompt: "consent",
+        prompt:
+            "consent",
 
-        login_hint: GOOGLE_ACCOUNT
+        login_hint:
+            GOOGLE_ACCOUNT
 
     });
+
 }
 
 
-/* --------------------------------------------------
-   RESOURCE KEY HEADER
--------------------------------------------------- */
+/* =========================================================
+   GET HEADERS
+   ========================================================= */
 
-function getResourceKeyForFile(fileId) {
+function authHeaders() {
+
+    return {
+
+        "Authorization":
+            "Bearer " + accessToken
+
+    };
+
+}
+
+
+/* =========================================================
+   UPLOAD FILE
+   ========================================================= */
+
+async function uploadFile() {
+
+    const input =
+        document.getElementById(
+            "fileInput"
+        );
+
 
     if (
-        !resourceKeys ||
-        !fileId
+        !input.files ||
+        input.files.length === 0
     ) {
 
-        return null;
+        alert(
+            "Please select a file first."
+        );
+
+        return;
     }
 
-    return resourceKeys[fileId] || null;
-}
-
-
-/* --------------------------------------------------
-   DRIVE FILE GET
--------------------------------------------------- */
-
-async function getDriveFile(fileId) {
 
     if (!accessToken) {
 
-        throw new Error(
-            "Google Drive access token is missing."
+        log(
+            "Google authorization required."
         );
+
+        authorizeDrive();
+
+        return;
     }
 
-    if (!fileId) {
 
-        throw new Error(
-            "File ID is missing."
+    const file =
+        input.files[0];
+
+
+    log(
+        "Preparing upload..."
+    );
+
+
+    log(
+        "File name: " +
+        file.name
+    );
+
+
+    log(
+        "File size: " +
+        file.size +
+        " bytes"
+    );
+
+
+    log(
+        "File type: " +
+        (file.type || "application/octet-stream")
+    );
+
+
+    /*
+     * Multipart upload.
+     *
+     * The file is explicitly created
+     * inside MyWebApps Attachments.
+     */
+
+    const metadata = {
+
+        name:
+            file.name,
+
+        parents:
+            [FOLDER_ID]
+
+    };
+
+
+    const boundary =
+        "----MyWebAppsBoundary" +
+        Date.now();
+
+
+    const delimiter =
+        "\r\n--" +
+        boundary +
+        "\r\n";
+
+
+    const closeDelimiter =
+        "\r\n--" +
+        boundary +
+        "--";
+
+
+    const mimeType =
+        file.type ||
+        "application/octet-stream";
+
+
+    const body =
+        new Blob([
+
+            "--" +
+            boundary +
+            "\r\n",
+
+            "Content-Type: application/json; charset=UTF-8\r\n\r\n",
+
+            JSON.stringify(metadata),
+
+            delimiter,
+
+            "Content-Type: " +
+            mimeType +
+            "\r\n\r\n",
+
+            file,
+
+            closeDelimiter
+
+        ]);
+
+
+    const url =
+        "https://www.googleapis.com/upload/drive/v3/files" +
+        "?uploadType=multipart" +
+        "&fields=id,name,mimeType,webViewLink,parents,createdTime,modifiedTime,trashed";
+
+
+    try {
+
+        const response =
+            await fetch(
+                url,
+                {
+
+                    method:
+                        "POST",
+
+                    headers:
+                        {
+
+                            "Authorization":
+                                "Bearer " +
+                                accessToken,
+
+                            "Content-Type":
+                                "multipart/related; boundary=" +
+                                boundary
+
+                        },
+
+                    body:
+                        body
+
+                }
+            );
+
+
+        const text =
+            await response.text();
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(text);
+
+        } catch {
+
+            data =
+                {
+                    raw:
+                        text
+                };
+
+        }
+
+
+        if (!response.ok) {
+
+            throw data;
+
+        }
+
+
+        appCreatedFile =
+            data;
+
+
+        log(
+            "UPLOAD SUCCESS."
         );
+
+
+        log(
+            "Created File ID: " +
+            data.id
+        );
+
+
+        log(
+            "Created File Name: " +
+            data.name
+        );
+
+
+        log(
+            "Parent Folder: " +
+            JSON.stringify(
+                data.parents
+            )
+        );
+
+
+        log(
+            "Created by this app: YES"
+        );
+
+
+        displayFile(
+            data
+        );
+
+
+        enableFileButtons();
+
+
+    } catch (error) {
+
+        log(
+            "UPLOAD FAILED:"
+        );
+
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
     }
 
-    const params = new URLSearchParams({
+}
 
-        fields:
-            "id,name,mimeType,webViewLink,webContentLink,parents,trashed,resourceKey,isAppAuthorized,capabilities(canEdit,canRename,canTrash,canDownload)"
 
-    });
+/* =========================================================
+   DISPLAY FILE
+   ========================================================= */
+
+function displayFile(file) {
+
+    document.getElementById(
+        "fileName"
+    ).textContent =
+        file.name || "None";
+
+
+    document.getElementById(
+        "fileId"
+    ).textContent =
+        file.id || "None";
+
+
+    document.getElementById(
+        "fileMime"
+    ).textContent =
+        file.mimeType || "None";
+
+
+    document.getElementById(
+        "createdByApp"
+    ).textContent =
+        "YES";
+
+
+    document.getElementById(
+        "fileUrl"
+    ).textContent =
+        file.webViewLink || "None";
+
+}
+
+
+/* =========================================================
+   ENABLE FILE BUTTONS
+   ========================================================= */
+
+function enableFileButtons() {
+
+    if (!appCreatedFile) {
+
+        return;
+    }
+
+
+    document.getElementById(
+        "openBtn"
+    ).disabled = false;
+
+
+    document.getElementById(
+        "checkBtn"
+    ).disabled = false;
+
+
+    document.getElementById(
+        "renameBtn"
+    ).disabled = false;
+
+
+    document.getElementById(
+        "updateBtn"
+    ).disabled = false;
+
+
+    document.getElementById(
+        "trashBtn"
+    ).disabled = false;
+
+
+    document.getElementById(
+        "restoreBtn"
+    ).disabled = false;
+
+}
+
+
+/* =========================================================
+   GET FILE
+   ========================================================= */
+
+async function getFile() {
+
+    if (!appCreatedFile) {
+
+        throw new Error(
+            "No app-created file exists."
+        );
+
+    }
+
+
+    const fileId =
+        appCreatedFile.id;
+
+
+    const fields =
+        [
+            "id",
+            "name",
+            "mimeType",
+            "webViewLink",
+            "webContentLink",
+            "parents",
+            "createdTime",
+            "modifiedTime",
+            "trashed",
+            "ownedByMe",
+            "capabilities"
+        ].join(",");
 
 
     const url =
         "https://www.googleapis.com/drive/v3/files/" +
         encodeURIComponent(fileId) +
-        "?" +
-        params.toString();
-
-
-    const headers = {
-
-        "Authorization":
-            "Bearer " + accessToken
-    };
-
-
-    const key =
-        getResourceKeyForFile(fileId);
-
-
-    if (key) {
-
-        headers[
-            "X-Goog-Drive-Resource-Keys"
-        ] =
-            fileId + "/" + key;
-
-        log(
-            "Using resource key for files.get."
-        );
-    }
+        "?fields=" +
+        encodeURIComponent(fields);
 
 
     const response =
         await fetch(
             url,
             {
-                method: "GET",
-                headers: headers
+
+                method:
+                    "GET",
+
+                headers:
+                    authHeaders()
+
             }
         );
 
@@ -640,6 +848,7 @@ async function getDriveFile(fileId) {
 
     let data;
 
+
     try {
 
         data =
@@ -647,61 +856,34 @@ async function getDriveFile(fileId) {
 
     } catch {
 
-        data = {
-            raw: text
-        };
+        data =
+            {
+                raw:
+                    text
+            };
+
     }
 
 
     if (!response.ok) {
 
-        const error =
-            new Error(
-                "HTTP " +
-                response.status +
-                ": " +
-                (data.error?.message ||
-                 text)
-            );
+        throw data;
 
-        error.status =
-            response.status;
-
-        error.data =
-            data;
-
-        throw error;
     }
 
 
     return data;
+
 }
 
 
-/* --------------------------------------------------
-   CHECK SELECTED FILE
--------------------------------------------------- */
+/* =========================================================
+   CHECK FILE
+   ========================================================= */
 
-async function checkSelectedFile() {
-
-    if (
-        !selectedFile ||
-        !selectedFile.id
-    ) {
-
-        log(
-            "No file received from Google Drive."
-        );
-
-        return;
-    }
-
+async function checkFile() {
 
     if (!accessToken) {
-
-        log(
-            "No access token. Requesting authorization..."
-        );
 
         authorizeDrive();
 
@@ -709,184 +891,139 @@ async function checkSelectedFile() {
     }
 
 
-    const fileId =
-        selectedFile.id;
+    if (!appCreatedFile) {
+
+        log(
+            "No app-created file to check."
+        );
+
+        return;
+    }
 
 
     log(
-        "Checking Drive API authorization..."
-    );
-
-    log(
-        "Calling Drive files.get..."
+        "Checking app-created file..."
     );
 
 
     try {
 
         const file =
-            await getDriveFile(fileId);
+            await getFile();
 
 
-        selectedFile =
+        appCreatedFile =
             file;
 
 
-        document.getElementById(
-            "fileName"
-        ).textContent =
-            file.name || "None";
-
-
-        document.getElementById(
-            "fileId"
-        ).textContent =
-            file.id || "None";
-
-
-        document.getElementById(
-            "fileMime"
-        ).textContent =
-            file.mimeType || "None";
-
-
-        document.getElementById(
-            "resourceKey"
-        ).textContent =
-            file.resourceKey || "None";
-
-
-        document.getElementById(
-            "appAuthorized"
-        ).textContent =
-            String(
-                file.isAppAuthorized
-            );
-
-
-        document.getElementById(
-            "canEdit"
-        ).textContent =
-            String(
-                file.capabilities?.canEdit
-            );
-
-
-        document.getElementById(
-            "fileUrl"
-        ).textContent =
-            file.webViewLink || "None";
-
-
-        log(
-            "Drive files.get SUCCESS."
+        displayFile(
+            file
         );
 
 
         log(
-            "File name: " +
-            file.name
+            "files.get SUCCESS."
         );
 
 
         log(
-            "MIME type: " +
-            file.mimeType
+            "File exists in Google Drive."
         );
 
 
         log(
-            "isAppAuthorized: " +
-            file.isAppAuthorized
+            "Owned by me: " +
+            file.ownedByMe
         );
 
 
         log(
-            "canEdit: " +
+            "Trashed: " +
+            file.trashed
+        );
+
+
+        log(
+            "Can edit: " +
             file.capabilities?.canEdit
         );
 
 
         log(
-            "canRename: " +
+            "Can rename: " +
             file.capabilities?.canRename
         );
 
 
         log(
-            "canTrash: " +
+            "Can trash: " +
             file.capabilities?.canTrash
         );
-
-
-        log(
-            "canDownload: " +
-            file.capabilities?.canDownload
-        );
-
-
-        document.getElementById(
-            "renameBtn"
-        ).disabled =
-            !file.capabilities?.canRename;
-
-
-        document.getElementById(
-            "trashBtn"
-        ).disabled =
-            !file.capabilities?.canTrash;
 
 
     } catch (error) {
 
         log(
-            "Drive files.get FAILED:"
+            "CHECK FAILED:"
         );
+
 
         log(
             JSON.stringify(
-                error.data ||
-                error.message,
+                error,
                 null,
                 2
             )
         );
 
-
-        if (error.status === 404) {
-
-            log(
-                "HTTP 404: File was not accessible using the current token/resource key."
-            );
-
-            log(
-                "This means the Open With authorization did not yet provide Drive API access to this file."
-            );
-        }
-
-
-        if (error.status === 403) {
-
-            log(
-                "HTTP 403: The app may not be authorized to modify this file."
-            );
-        }
     }
+
 }
 
 
-/* --------------------------------------------------
-   RENAME FILE
--------------------------------------------------- */
+/* =========================================================
+   OPEN FILE
+   ========================================================= */
 
-async function renameSelectedFile() {
+function openFile() {
 
     if (
-        !selectedFile ||
-        !selectedFile.id
+        !appCreatedFile ||
+        !appCreatedFile.webViewLink
     ) {
 
-        log("No selected file.");
+        log(
+            "File URL is not available."
+        );
+
+        return;
+    }
+
+
+    window.open(
+        appCreatedFile.webViewLink,
+        "_blank"
+    );
+
+
+    log(
+        "Opened app-created file in Google Drive."
+    );
+
+}
+
+
+/* =========================================================
+   RENAME FILE
+   ========================================================= */
+
+async function renameFile() {
+
+    if (!appCreatedFile) {
+
+        log(
+            "No app-created file."
+        );
 
         return;
     }
@@ -895,7 +1032,7 @@ async function renameSelectedFile() {
     const newName =
         prompt(
             "Enter new file name:",
-            selectedFile.name || ""
+            appCreatedFile.name
         );
 
 
@@ -905,100 +1042,48 @@ async function renameSelectedFile() {
     }
 
 
-    const fileId =
-        selectedFile.id;
-
-
-    const url =
-        "https://www.googleapis.com/drive/v3/files/" +
-        encodeURIComponent(fileId);
-
-
-    const headers = {
-
-        "Authorization":
-            "Bearer " + accessToken,
-
-        "Content-Type":
-            "application/json"
-    };
-
-
-    const key =
-        getResourceKeyForFile(fileId);
-
-
-    if (key) {
-
-        headers[
-            "X-Goog-Drive-Resource-Keys"
-        ] =
-            fileId + "/" + key;
-    }
+    log(
+        "Renaming app-created file..."
+    );
 
 
     try {
 
-        const response =
-            await fetch(
-                url,
+        const file =
+            await patchFile(
                 {
-                    method: "PATCH",
-
-                    headers: headers,
-
-                    body: JSON.stringify({
-                        name: newName
-                    })
+                    name:
+                        newName
                 }
             );
 
 
-        const text =
-            await response.text();
+        appCreatedFile =
+            file;
 
 
-        let data;
-
-        try {
-
-            data =
-                JSON.parse(text);
-
-        } catch {
-
-            data = {
-                raw: text
-            };
-        }
-
-
-        if (!response.ok) {
-
-            throw data;
-        }
-
-
-        log(
-            "File renamed successfully."
+        displayFile(
+            file
         );
 
 
-        document.getElementById(
-            "fileName"
-        ).textContent =
-            data.name;
+        log(
+            "RENAME SUCCESS."
+        );
 
 
-        selectedFile =
-            data;
+        log(
+            "New name: " +
+            file.name
+        );
 
 
     } catch (error) {
 
         log(
-            "Rename FAILED:"
+            "RENAME FAILED:"
         );
+
 
         log(
             JSON.stringify(
@@ -1007,22 +1092,192 @@ async function renameSelectedFile() {
                 2
             )
         );
+
     }
+
 }
 
 
-/* --------------------------------------------------
-   MOVE TO TRASH
--------------------------------------------------- */
+/* =========================================================
+   UPDATE METADATA
+   ========================================================= */
 
-async function trashSelectedFile() {
+async function updateFileDescription() {
+
+    if (!appCreatedFile) {
+
+        log(
+            "No app-created file."
+        );
+
+        return;
+    }
+
+
+    const description =
+        prompt(
+            "Enter a description for this file:",
+            "Uploaded by MyWebApps"
+        );
+
 
     if (
-        !selectedFile ||
-        !selectedFile.id
+        description === null
     ) {
 
-        log("No selected file.");
+        return;
+    }
+
+
+    log(
+        "Updating file metadata..."
+    );
+
+
+    try {
+
+        const file =
+            await patchFile(
+                {
+                    description:
+                        description
+                }
+            );
+
+
+        appCreatedFile =
+            file;
+
+
+        displayFile(
+            file
+        );
+
+
+        log(
+            "UPDATE METADATA SUCCESS."
+        );
+
+
+        log(
+            "Description updated."
+        );
+
+
+    } catch (error) {
+
+        log(
+            "UPDATE FAILED:"
+        );
+
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   PATCH FILE
+   ========================================================= */
+
+async function patchFile(properties) {
+
+    const fileId =
+        appCreatedFile.id;
+
+
+    const url =
+        "https://www.googleapis.com/drive/v3/files/" +
+        encodeURIComponent(fileId) +
+        "?fields=" +
+        encodeURIComponent(
+            "id,name,mimeType,webViewLink,parents,createdTime,modifiedTime,trashed,description,ownedByMe,capabilities"
+        );
+
+
+    const response =
+        await fetch(
+            url,
+            {
+
+                method:
+                    "PATCH",
+
+                headers:
+                    {
+
+                        "Authorization":
+                            "Bearer " +
+                            accessToken,
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                body:
+                    JSON.stringify(
+                        properties
+                    )
+
+            }
+        );
+
+
+    const text =
+        await response.text();
+
+
+    let data;
+
+
+    try {
+
+        data =
+            JSON.parse(text);
+
+    } catch {
+
+        data =
+            {
+                raw:
+                    text
+            };
+
+    }
+
+
+    if (!response.ok) {
+
+        throw data;
+
+    }
+
+
+    return data;
+
+}
+
+
+/* =========================================================
+   MOVE TO TRASH
+   ========================================================= */
+
+async function moveToTrash() {
+
+    if (!appCreatedFile) {
+
+        log(
+            "No app-created file."
+        );
 
         return;
     }
@@ -1030,7 +1285,7 @@ async function trashSelectedFile() {
 
     if (
         !confirm(
-            "Move this file to Google Drive Trash?"
+            "Move this app-created file to Google Drive Trash?"
         )
     ) {
 
@@ -1038,90 +1293,48 @@ async function trashSelectedFile() {
     }
 
 
-    const fileId =
-        selectedFile.id;
-
-
-    const url =
-        "https://www.googleapis.com/drive/v3/files/" +
-        encodeURIComponent(fileId);
-
-
-    const headers = {
-
-        "Authorization":
-            "Bearer " + accessToken,
-
-        "Content-Type":
-            "application/json"
-    };
-
-
-    const key =
-        getResourceKeyForFile(fileId);
-
-
-    if (key) {
-
-        headers[
-            "X-Goog-Drive-Resource-Keys"
-        ] =
-            fileId + "/" + key;
-    }
+    log(
+        "Moving app-created file to Trash..."
+    );
 
 
     try {
 
-        const response =
-            await fetch(
-                url,
+        const file =
+            await patchFile(
                 {
-                    method: "PATCH",
-
-                    headers: headers,
-
-                    body: JSON.stringify({
-                        trashed: true
-                    })
+                    trashed:
+                        true
                 }
             );
 
 
-        const text =
-            await response.text();
+        appCreatedFile =
+            file;
 
 
-        let data;
-
-        try {
-
-            data =
-                JSON.parse(text);
-
-        } catch {
-
-            data = {
-                raw: text
-            };
-        }
-
-
-        if (!response.ok) {
-
-            throw data;
-        }
+        displayFile(
+            file
+        );
 
 
         log(
-            "File moved to Google Drive Trash successfully."
+            "MOVE TO TRASH SUCCESS."
+        );
+
+
+        log(
+            "Trashed: " +
+            file.trashed
         );
 
 
     } catch (error) {
 
         log(
-            "Move to Trash FAILED:"
+            "MOVE TO TRASH FAILED:"
         );
+
 
         log(
             JSON.stringify(
@@ -1130,13 +1343,87 @@ async function trashSelectedFile() {
                 2
             )
         );
+
     }
+
 }
 
 
-/* --------------------------------------------------
+/* =========================================================
+   RESTORE FILE
+   ========================================================= */
+
+async function restoreFile() {
+
+    if (!appCreatedFile) {
+
+        log(
+            "No app-created file."
+        );
+
+        return;
+    }
+
+
+    log(
+        "Restoring app-created file..."
+    );
+
+
+    try {
+
+        const file =
+            await patchFile(
+                {
+                    trashed:
+                        false
+                }
+            );
+
+
+        appCreatedFile =
+            file;
+
+
+        displayFile(
+            file
+        );
+
+
+        log(
+            "RESTORE SUCCESS."
+        );
+
+
+        log(
+            "Trashed: " +
+            file.trashed
+        );
+
+
+    } catch (error) {
+
+        log(
+            "RESTORE FAILED:"
+        );
+
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
    SIGN OUT
--------------------------------------------------- */
+   ========================================================= */
 
 function signOut() {
 
@@ -1157,39 +1444,20 @@ function signOut() {
             accessToken =
                 null;
 
+
             log(
                 "Google Drive authorization revoked for this session."
             );
 
-            document.getElementById(
-                "renameBtn"
-            ).disabled = true;
 
             document.getElementById(
-                "trashBtn"
+                "uploadBtn"
             ).disabled = true;
+
         }
     );
+
 }
-
-
-/* --------------------------------------------------
-   START
--------------------------------------------------- */
-
-window.addEventListener(
-    "load",
-    function() {
-
-        log(
-            "Loading Google Drive Test 8..."
-        );
-
-        parseOpenWithState();
-
-        loadGoogleLibraries();
-    }
-);
 
 </script>
 
