@@ -3,83 +3,157 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Google Drive Test 9 - Account Selection</title>
+
+<title>Firebase + Google Drive Complete Test</title>
 
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f5f7fa;
-        margin: 0;
-        padding: 20px;
-        color: #222;
-    }
 
-    .container {
-        max-width: 900px;
-        margin: auto;
-        background: #fff;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0,0,0,.08);
-    }
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 20px;
+    color: #222;
+}
 
-    h1 {
-        margin-top: 0;
-        font-size: 24px;
-    }
+.container {
+    max-width: 1100px;
+    margin: auto;
+    background: white;
+    padding: 20px;
+    border-radius: 14px;
+    box-shadow: 0 2px 14px rgba(0,0,0,.08);
+}
 
-    h2 {
-        font-size: 18px;
-        margin-top: 25px;
-        border-bottom: 1px solid #ddd;
-        padding-bottom: 8px;
-    }
+h1 {
+    margin-top: 0;
+}
 
-    .info {
-        background: #f1f5f9;
-        padding: 12px;
-        border-radius: 8px;
-        margin: 10px 0;
-        word-break: break-word;
-    }
+h2 {
+    margin-top: 30px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
+}
 
-    button {
-        padding: 10px 15px;
-        margin: 5px 5px 5px 0;
-        border: 0;
-        border-radius: 7px;
-        cursor: pointer;
-        background: #1a73e8;
-        color: white;
-        font-size: 14px;
-    }
+h3 {
+    margin-top: 20px;
+}
 
-    button:disabled {
-        background: #aaa;
-        cursor: not-allowed;
-    }
+.info {
+    background: #f1f5f9;
+    padding: 12px;
+    border-radius: 8px;
+    margin: 10px 0;
+    word-break: break-word;
+}
 
-    .danger {
-        background: #d93025;
-    }
+.status {
+    padding: 12px;
+    border-radius: 8px;
+    background: #eef2ff;
+    margin: 10px 0;
+}
 
-    input[type="file"] {
-        margin: 10px 0;
-        width: 100%;
-    }
+.success {
+    color: #137333;
+    font-weight: bold;
+}
 
-    #log {
-        background: #111;
-        color: #eee;
-        padding: 15px;
-        border-radius: 8px;
-        min-height: 220px;
-        white-space: pre-wrap;
-        word-break: break-word;
-        font-family: Consolas, monospace;
-        font-size: 13px;
-        overflow-x: auto;
-    }
+.error {
+    color: #b3261e;
+    font-weight: bold;
+}
+
+button {
+    padding: 10px 15px;
+    margin: 5px 5px 5px 0;
+    border: 0;
+    border-radius: 7px;
+    cursor: pointer;
+    background: #1a73e8;
+    color: white;
+    font-size: 14px;
+}
+
+button:hover {
+    opacity: .9;
+}
+
+button:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+}
+
+.danger {
+    background: #d93025;
+}
+
+.warning {
+    background: #f9ab00;
+    color: #111;
+}
+
+input[type="file"] {
+    width: 100%;
+    margin: 10px 0;
+}
+
+input[type="text"] {
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    margin: 5px 0 10px;
+}
+
+pre {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+#log {
+    background: #111;
+    color: #eee;
+    padding: 15px;
+    border-radius: 8px;
+    min-height: 300px;
+    max-height: 600px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+}
+
+.test-box {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+.file-list {
+    margin-top: 10px;
+}
+
+.file-item {
+    background: #f8fafc;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 8px;
+    margin: 8px 0;
+}
+
+.small {
+    font-size: 12px;
+    color: #555;
+}
+
 </style>
 </head>
 
@@ -87,154 +161,511 @@
 
 <div class="container">
 
-    <h1>Google Drive Test 9 - Account Selection</h1>
+<h1>Firebase + Google Drive Complete Test</h1>
+
+<div class="info">
+    <strong>Firebase Project:</strong>
+    MyWebApps
+    <br>
+    <strong>Firestore Collection:</strong>
+    DriveFirebaseTest
+</div>
+
+<div class="info">
+    <strong>Google Drive Folder:</strong>
+    MyWebApps Attachments
+    <br>
+    <strong>Folder ID:</strong>
+    1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT
+</div>
+
+
+<!-- ======================================================
+     FIREBASE
+====================================================== -->
+
+<h2>1. Firebase Authentication</h2>
+
+<div class="test-box">
+
+    <button onclick="initializeFirebaseTest()">
+        Initialize Firebase
+    </button>
+
+    <button onclick="testFirebaseAuth()">
+        Test Anonymous Auth
+    </button>
 
     <div class="info">
-        <strong>Google Account:</strong>
-        Account will be selected from Google
+
+        <strong>Firebase Status:</strong>
+        <span id="firebaseStatus">
+            Not initialized
+        </span>
+
+        <br><br>
+
+        <strong>Firebase UID:</strong>
+        <span id="firebaseUid">
+            None
+        </span>
+
     </div>
+
+</div>
+
+
+<!-- ======================================================
+     FIRESTORE CRUD
+====================================================== -->
+
+<h2>2. Firestore CRUD Test</h2>
+
+<div class="test-box">
+
+    <input
+        type="text"
+        id="firestoreTestText"
+        value="Firebase + Google Drive Test"
+        placeholder="Test text"
+    >
+
+    <button onclick="firestoreCreate()">
+        Create Firestore Record
+    </button>
+
+    <button onclick="firestoreRead()">
+        Read Record
+    </button>
+
+    <button onclick="firestoreUpdate()">
+        Update Record
+    </button>
+
+    <button onclick="firestoreDelete()"
+            class="danger">
+        Delete Record
+    </button>
 
     <div class="info">
-        <strong>Target Folder:</strong>
-        MyWebApps Attachments<br>
-        <strong>Folder ID:</strong>
-        1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT
+
+        <strong>Firestore Test Document ID:</strong>
+        <span id="firestoreDocId">
+            None
+        </span>
+
     </div>
 
-    <h2>1. Google Authorization</h2>
+    <pre id="firestoreData">No data yet.</pre>
 
-    <button id="authorizeBtn" onclick="authorizeDrive()">
+</div>
+
+
+<!-- ======================================================
+     GOOGLE DRIVE AUTH
+====================================================== -->
+
+<h2>3. Google Drive Authorization</h2>
+
+<div class="test-box">
+
+    <button
+        id="authorizeBtn"
+        onclick="authorizeDrive()">
+
         Select Google Account
+
     </button>
 
-    <button onclick="signOut()">
+    <button onclick="signOutDrive()">
+
         Sign Out
+
     </button>
 
-    <h2>2. Upload New File</h2>
+    <div class="info">
 
-    <p>
-        صرف اسی test page سے upload کی گئی file پر operations کیے جائیں گے۔
-    </p>
+        <strong>Drive Authorization:</strong>
+        <span id="driveAuthStatus">
+            Not authorized
+        </span>
+
+        <br><br>
+
+        <strong>Selected Google Account:</strong>
+        <span id="driveAccount">
+            Select account during authorization
+        </span>
+
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     DRIVE UPLOAD
+====================================================== -->
+
+<h2>4. Google Drive File Upload</h2>
+
+<div class="test-box">
 
     <input
         type="file"
-        id="fileInput"
-    >
-
-    <br>
+        id="driveFileInput">
 
     <button
         id="uploadBtn"
-        onclick="uploadFile()"
-        disabled
-    >
-        Upload File
-    </button>
+        onclick="uploadDriveFile()"
+        disabled>
 
-    <h2>3. App-Created File</h2>
+        Upload File
+
+    </button>
 
     <div class="info">
 
+        <strong>Current Drive File:</strong>
+        <br><br>
+
         <strong>Name:</strong>
-        <span id="fileName">None</span>
+        <span id="driveFileName">
+            None
+        </span>
 
         <br><br>
 
         <strong>ID:</strong>
-        <span id="fileId">None</span>
+        <span id="driveFileId">
+            None
+        </span>
 
         <br><br>
 
         <strong>MIME:</strong>
-        <span id="fileMime">None</span>
+        <span id="driveFileMime">
+            None
+        </span>
 
         <br><br>
 
-        <strong>Created by this app:</strong>
-        <span id="createdByApp">No</span>
+        <strong>Size:</strong>
+        <span id="driveFileSize">
+            None
+        </span>
 
         <br><br>
 
         <strong>URL:</strong>
-        <span id="fileUrl">None</span>
+        <span id="driveFileUrl">
+            None
+        </span>
 
     </div>
 
-    <h2>4. File Operations</h2>
+</div>
+
+
+<!-- ======================================================
+     DRIVE OPERATIONS
+====================================================== -->
+
+<h2>5. Google Drive File Operations</h2>
+
+<div class="test-box">
 
     <button
-        id="openBtn"
-        onclick="openFile()"
-        disabled
-    >
-        Open File
-    </button>
+        id="checkDriveBtn"
+        onclick="checkDriveFile()"
+        disabled>
 
-    <button
-        id="checkBtn"
-        onclick="checkFile()"
-        disabled
-    >
         Check File
+
     </button>
 
     <button
-        id="renameBtn"
-        onclick="renameFile()"
-        disabled
-    >
-        Rename File
+        id="openDriveBtn"
+        onclick="openDriveFile()"
+        disabled>
+
+        Open File
+
     </button>
 
     <button
-        id="updateBtn"
-        onclick="updateFileDescription()"
-        disabled
-    >
+        id="renameDriveBtn"
+        onclick="renameDriveFile()"
+        disabled>
+
+        Rename
+
+    </button>
+
+    <button
+        id="metadataBtn"
+        onclick="updateDriveMetadata()"
+        disabled>
+
         Update Metadata
+
     </button>
+
+    <br>
 
     <button
         id="trashBtn"
+        onclick="trashDriveFile()"
         class="danger"
-        onclick="moveToTrash()"
-        disabled
-    >
+        disabled>
+
         Move to Trash
+
     </button>
 
     <button
         id="restoreBtn"
-        onclick="restoreFile()"
-        disabled
-    >
-        Restore File
+        onclick="restoreDriveFile()"
+        disabled>
+
+        Restore
+
     </button>
 
-    <h2>Status / Test Log</h2>
+    <button
+        id="deleteBtn"
+        onclick="permanentlyDeleteDriveFile()"
+        class="danger"
+        disabled>
 
-    <div id="log"></div>
+        Permanent Delete
+
+    </button>
 
 </div>
 
+
+<!-- ======================================================
+     CONTENT UPDATE
+====================================================== -->
+
+<h2>6. Google Drive File Content Update</h2>
+
+<div class="test-box">
+
+    <p>
+        نئی local file منتخب کریں۔ اس سے موجودہ app-created
+        Drive file کا content replace کرنے کی کوشش کی جائے گی۔
+    </p>
+
+    <input
+        type="file"
+        id="replacementFileInput">
+
+    <button
+        id="contentUpdateBtn"
+        onclick="updateDriveFileContent()"
+        disabled>
+
+        Replace File Content
+
+    </button>
+
+</div>
+
+
+<!-- ======================================================
+     FIREBASE + DRIVE
+====================================================== -->
+
+<h2>7. Save Drive File Information to Firestore</h2>
+
+<div class="test-box">
+
+    <button
+        id="saveDriveToFirestoreBtn"
+        onclick="saveDriveFileToFirestore()"
+        disabled>
+
+        Save Drive File to Firestore
+
+    </button>
+
+    <button
+        onclick="readDriveRecordFromFirestore()">
+
+        Read Drive Record
+
+    </button>
+
+    <div class="info">
+
+        <strong>Drive Firestore Document ID:</strong>
+        <span id="driveFirestoreDocId">
+            None
+        </span>
+
+    </div>
+
+    <pre id="driveFirestoreData">
+No Drive Firestore data yet.
+    </pre>
+
+</div>
+
+
+<!-- ======================================================
+     MULTIPLE ATTACHMENTS
+====================================================== -->
+
+<h2>8. Multiple Attachments Test</h2>
+
+<div class="test-box">
+
+    <p>
+        ایک سے زیادہ files select کریں۔
+    </p>
+
+    <input
+        type="file"
+        id="multipleFilesInput"
+        multiple>
+
+    <button
+        id="multipleUploadBtn"
+        onclick="uploadMultipleFiles()"
+        disabled>
+
+        Upload Multiple Files
+
+    </button>
+
+    <button
+        onclick="saveMultipleAttachmentsToFirestore()">
+
+        Save Multiple Attachments to Firestore
+
+    </button>
+
+    <div
+        id="multipleFilesList"
+        class="file-list">
+
+        No files uploaded.
+
+    </div>
+
+</div>
+
+
+<!-- ======================================================
+     RELOAD TEST
+====================================================== -->
+
+<h2>9. Reload / Persistence Test</h2>
+
+<div class="test-box">
+
+    <p>
+        Page refresh کرنے کے بعد یہ button دوبارہ دبائیں۔
+        Firestore میں محفوظ record سے Drive file information
+        حاصل کی جائے گی۔
+    </p>
+
+    <button onclick="reloadPersistenceTest()">
+
+        Test After Reload
+
+    </button>
+
+    <pre id="reloadResult">
+Not tested.
+    </pre>
+
+</div>
+
+
+<!-- ======================================================
+     LOG
+====================================================== -->
+
+<h2>10. Complete Test Log</h2>
+
+<div id="log"></div>
+
+</div>
+
+
+<!-- ======================================================
+     FIREBASE SDK
+====================================================== -->
+
+<script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-app-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-auth-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore-compat.js"></script>
+
+
+<!-- ======================================================
+     GOOGLE IDENTITY SERVICES
+====================================================== -->
+
 <script src="https://accounts.google.com/gsi/client"></script>
+
 
 <script>
 
 /* =========================================================
-   CONFIGURATION
-   ========================================================= */
+   FIREBASE CONFIGURATION
+========================================================= */
+
+const firebaseConfig = {
+
+    apiKey:
+        "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+
+    authDomain:
+        "mywebapps-e3b63.firebaseapp.com",
+
+    projectId:
+        "mywebapps-e3b63",
+
+    storageBucket:
+        "mywebapps-e3b63.firebasestorage.app",
+
+    messagingSenderId:
+        "46681415809",
+
+    appId:
+        "1:46681415809:web:c4528b9da97abc310a2d80",
+
+    measurementId:
+        "G-72NM0QDE46"
+
+};
+
+
+/* =========================================================
+   FIREBASE COLLECTION
+========================================================= */
+
+const FIRESTORE_COLLECTION =
+    "DriveFirebaseTest";
+
+
+/* =========================================================
+   GOOGLE DRIVE CONFIGURATION
+========================================================= */
 
 const CLIENT_ID =
 "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com";
 
 
-const API_KEY =
+const GOOGLE_DRIVE_API_KEY =
 "AIzaSyBSf3HKUR652Kja3l65D91FvCkQSoxgZDY";
 
 
-const FOLDER_ID =
+const DRIVE_FOLDER_ID =
 "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT";
 
 
@@ -244,18 +675,30 @@ const DRIVE_SCOPE =
 
 /* =========================================================
    VARIABLES
-   ========================================================= */
+========================================================= */
+
+let firebaseReady = false;
+
+let firestore = null;
+
+let firebaseUser = null;
+
+let firestoreDocId = null;
+
+let driveFirestoreDocId = null;
 
 let tokenClient = null;
 
-let accessToken = null;
+let driveAccessToken = null;
 
-let appCreatedFile = null;
+let currentDriveFile = null;
+
+let multipleUploadedFiles = [];
 
 
 /* =========================================================
    LOG
-   ========================================================= */
+========================================================= */
 
 function log(message) {
 
@@ -277,16 +720,18 @@ function log(message) {
 
 
 /* =========================================================
-   INITIALIZE
-   ========================================================= */
+   INITIAL PAGE LOAD
+========================================================= */
 
 window.addEventListener(
     "load",
     function() {
 
         log(
-            "Google Drive Test 9 loaded."
+            "Complete Firebase + Google Drive test loaded."
         );
+
+        initializeFirebaseTest();
 
         initializeGoogleAuth();
 
@@ -295,8 +740,513 @@ window.addEventListener(
 
 
 /* =========================================================
-   GOOGLE AUTH
-   ========================================================= */
+   FIREBASE INITIALIZATION
+========================================================= */
+
+function initializeFirebaseTest() {
+
+    try {
+
+        if (!firebase.apps.length) {
+
+            firebase.initializeApp(
+                firebaseConfig
+            );
+
+            log(
+                "Firebase initialized."
+            );
+
+        } else {
+
+            log(
+                "Firebase was already initialized."
+            );
+
+        }
+
+
+        firestore =
+            firebase.firestore();
+
+
+        firebaseReady = true;
+
+
+        document.getElementById(
+            "firebaseStatus"
+        ).textContent =
+            "Initialized";
+
+
+    } catch (error) {
+
+        log(
+            "Firebase initialization FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   FIREBASE ANONYMOUS AUTH
+========================================================= */
+
+async function testFirebaseAuth() {
+
+    if (!firebaseReady) {
+
+        initializeFirebaseTest();
+
+    }
+
+
+    try {
+
+        if (
+            firebase.auth().currentUser
+        ) {
+
+            firebaseUser =
+                firebase.auth().currentUser;
+
+        } else {
+
+            const result =
+                await firebase
+                    .auth()
+                    .signInAnonymously();
+
+
+            firebaseUser =
+                result.user;
+
+        }
+
+
+        document.getElementById(
+            "firebaseUid"
+        ).textContent =
+            firebaseUser.uid;
+
+
+        document.getElementById(
+            "firebaseStatus"
+        ).textContent =
+            "Anonymous authentication successful";
+
+
+        log(
+            "Firebase Anonymous Authentication SUCCESS."
+        );
+
+
+        log(
+            "Firebase UID: " +
+            firebaseUser.uid
+        );
+
+
+    } catch (error) {
+
+        log(
+            "Firebase Anonymous Authentication FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   ENSURE FIREBASE AUTH
+========================================================= */
+
+async function ensureFirebaseAuth() {
+
+    if (!firebaseReady) {
+
+        initializeFirebaseTest();
+
+    }
+
+
+    if (
+        firebase.auth().currentUser
+    ) {
+
+        firebaseUser =
+            firebase.auth().currentUser;
+
+        return firebaseUser;
+
+    }
+
+
+    const result =
+        await firebase
+            .auth()
+            .signInAnonymously();
+
+
+    firebaseUser =
+        result.user;
+
+
+    document.getElementById(
+        "firebaseUid"
+    ).textContent =
+        firebaseUser.uid;
+
+
+    return firebaseUser;
+
+}
+
+
+/* =========================================================
+   FIRESTORE CREATE
+========================================================= */
+
+async function firestoreCreate() {
+
+    try {
+
+        await ensureFirebaseAuth();
+
+
+        const text =
+            document.getElementById(
+                "firestoreTestText"
+            ).value;
+
+
+        const data = {
+
+            test:
+                true,
+
+            text:
+                text,
+
+            firebaseUid:
+                firebaseUser.uid,
+
+            createdAt:
+                firebase.firestore.FieldValue.serverTimestamp(),
+
+            updatedAt:
+                firebase.firestore.FieldValue.serverTimestamp()
+
+        };
+
+
+        const ref =
+            await firestore
+                .collection(
+                    FIRESTORE_COLLECTION
+                )
+                .add(data);
+
+
+        firestoreDocId =
+            ref.id;
+
+
+        document.getElementById(
+            "firestoreDocId"
+        ).textContent =
+            firestoreDocId;
+
+
+        log(
+            "Firestore CREATE SUCCESS."
+        );
+
+
+        log(
+            "Document ID: " +
+            firestoreDocId
+        );
+
+
+        await firestoreRead();
+
+    } catch (error) {
+
+        log(
+            "Firestore CREATE FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   FIRESTORE READ
+========================================================= */
+
+async function firestoreRead() {
+
+    try {
+
+        await ensureFirebaseAuth();
+
+
+        if (!firestoreDocId) {
+
+            log(
+                "No Firestore document ID available."
+            );
+
+            return;
+
+        }
+
+
+        const snapshot =
+            await firestore
+                .collection(
+                    FIRESTORE_COLLECTION
+                )
+                .doc(
+                    firestoreDocId
+                )
+                .get();
+
+
+        if (!snapshot.exists) {
+
+            log(
+                "Firestore document does not exist."
+            );
+
+            return;
+
+        }
+
+
+        const data =
+            snapshot.data();
+
+
+        document.getElementById(
+            "firestoreData"
+        ).textContent =
+            JSON.stringify(
+                data,
+                null,
+                2
+            );
+
+
+        log(
+            "Firestore READ SUCCESS."
+        );
+
+    } catch (error) {
+
+        log(
+            "Firestore READ FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   FIRESTORE UPDATE
+========================================================= */
+
+async function firestoreUpdate() {
+
+    try {
+
+        await ensureFirebaseAuth();
+
+
+        if (!firestoreDocId) {
+
+            log(
+                "No Firestore document ID."
+            );
+
+            return;
+
+        }
+
+
+        const text =
+            document.getElementById(
+                "firestoreTestText"
+            ).value;
+
+
+        await firestore
+            .collection(
+                FIRESTORE_COLLECTION
+            )
+            .doc(
+                firestoreDocId
+            )
+            .update({
+
+                text:
+                    text,
+
+                updatedAt:
+                    firebase.firestore.FieldValue.serverTimestamp()
+
+            });
+
+
+        log(
+            "Firestore UPDATE SUCCESS."
+        );
+
+
+        await firestoreRead();
+
+    } catch (error) {
+
+        log(
+            "Firestore UPDATE FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   FIRESTORE DELETE
+========================================================= */
+
+async function firestoreDelete() {
+
+    try {
+
+        await ensureFirebaseAuth();
+
+
+        if (!firestoreDocId) {
+
+            log(
+                "No Firestore document ID."
+            );
+
+            return;
+
+        }
+
+
+        if (
+            !confirm(
+                "Delete Firestore test document?"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        await firestore
+            .collection(
+                FIRESTORE_COLLECTION
+            )
+            .doc(
+                firestoreDocId
+            )
+            .delete();
+
+
+        log(
+            "Firestore DELETE SUCCESS."
+        );
+
+
+        firestoreDocId =
+            null;
+
+
+        document.getElementById(
+            "firestoreDocId"
+        ).textContent =
+            "None";
+
+
+        document.getElementById(
+            "firestoreData"
+        ).textContent =
+            "Deleted.";
+
+    } catch (error) {
+
+        log(
+            "Firestore DELETE FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   GOOGLE AUTH INITIALIZATION
+========================================================= */
 
 function initializeGoogleAuth() {
 
@@ -311,6 +1261,7 @@ function initializeGoogleAuth() {
         );
 
         return;
+
     }
 
 
@@ -331,7 +1282,7 @@ function initializeGoogleAuth() {
                     ) {
 
                         log(
-                            "Authorization ERROR:"
+                            "Google authorization ERROR:"
                         );
 
                         log(
@@ -343,30 +1294,40 @@ function initializeGoogleAuth() {
                         );
 
                         return;
+
                     }
 
 
-                    accessToken =
+                    driveAccessToken =
                         response.access_token;
 
 
-                    log(
-                        "Google Drive authorization successful."
-                    );
+                    document.getElementById(
+                        "driveAuthStatus"
+                    ).textContent =
+                        "Authorized";
 
 
                     document.getElementById(
                         "uploadBtn"
-                    ).disabled = false;
+                    ).disabled =
+                        false;
 
 
-                    if (
-                        appCreatedFile
-                    ) {
+                    document.getElementById(
+                        "contentUpdateBtn"
+                    ).disabled =
+                        currentDriveFile === null;
 
-                        enableFileButtons();
 
-                    }
+                    log(
+                        "Google Drive authorization SUCCESS."
+                    );
+
+
+                    log(
+                        "Google account authorization completed."
+                    );
 
                 }
 
@@ -376,22 +1337,31 @@ function initializeGoogleAuth() {
     log(
         "Google authorization client initialized."
     );
+
 }
 
 
 /* =========================================================
-   AUTHORIZE
-   ========================================================= */
+   GOOGLE ACCOUNT SELECTION
+========================================================= */
 
 function authorizeDrive() {
 
     if (!tokenClient) {
 
+        initializeGoogleAuth();
+
+    }
+
+
+    if (!tokenClient) {
+
         log(
-            "Authorization client is not ready."
+            "Google authorization client is not ready."
         );
 
         return;
+
     }
 
 
@@ -411,15 +1381,16 @@ function authorizeDrive() {
 
 
 /* =========================================================
-   GET HEADERS
-   ========================================================= */
+   DRIVE AUTH HEADERS
+========================================================= */
 
-function authHeaders() {
+function driveHeaders() {
 
     return {
 
         "Authorization":
-            "Bearer " + accessToken
+            "Bearer " +
+            driveAccessToken
 
     };
 
@@ -427,14 +1398,44 @@ function authHeaders() {
 
 
 /* =========================================================
-   UPLOAD FILE
-   ========================================================= */
+   ENSURE DRIVE AUTH
+========================================================= */
 
-async function uploadFile() {
+function ensureDriveAuth() {
+
+    if (!driveAccessToken) {
+
+        log(
+            "Google Drive authorization required."
+        );
+
+        authorizeDrive();
+
+        return false;
+
+    }
+
+    return true;
+
+}
+
+
+/* =========================================================
+   UPLOAD DRIVE FILE
+========================================================= */
+
+async function uploadDriveFile() {
+
+    if (!ensureDriveAuth()) {
+
+        return;
+
+    }
+
 
     const input =
         document.getElementById(
-            "fileInput"
+            "driveFileInput"
         );
 
 
@@ -444,22 +1445,11 @@ async function uploadFile() {
     ) {
 
         alert(
-            "Please select a file first."
+            "Please select a file."
         );
 
         return;
-    }
 
-
-    if (!accessToken) {
-
-        log(
-            "Google authorization required."
-        );
-
-        authorizeDrive();
-
-        return;
     }
 
 
@@ -468,26 +1458,20 @@ async function uploadFile() {
 
 
     log(
-        "Preparing upload..."
+        "Preparing Drive upload..."
     );
 
 
     log(
-        "File name: " +
+        "File: " +
         file.name
     );
 
 
     log(
-        "File size: " +
+        "Size: " +
         file.size +
         " bytes"
-    );
-
-
-    log(
-        "File type: " +
-        (file.type || "application/octet-stream")
     );
 
 
@@ -497,7 +1481,9 @@ async function uploadFile() {
             file.name,
 
         parents:
-            [FOLDER_ID]
+            [
+                DRIVE_FOLDER_ID
+            ]
 
     };
 
@@ -533,7 +1519,9 @@ async function uploadFile() {
 
             "Content-Type: application/json; charset=UTF-8\r\n\r\n",
 
-            JSON.stringify(metadata),
+            JSON.stringify(
+                metadata
+            ),
 
             delimiter,
 
@@ -551,7 +1539,7 @@ async function uploadFile() {
     const url =
         "https://www.googleapis.com/upload/drive/v3/files" +
         "?uploadType=multipart" +
-        "&fields=id,name,mimeType,webViewLink,parents,createdTime,modifiedTime,trashed";
+        "&fields=id,name,mimeType,size,webViewLink,parents,createdTime,modifiedTime,trashed";
 
 
     try {
@@ -569,7 +1557,7 @@ async function uploadFile() {
 
                             "Authorization":
                                 "Bearer " +
-                                accessToken,
+                                driveAccessToken,
 
                             "Content-Type":
                                 "multipart/related; boundary=" +
@@ -614,23 +1602,31 @@ async function uploadFile() {
         }
 
 
-        appCreatedFile =
+        currentDriveFile =
             data;
 
 
+        displayDriveFile(
+            data
+        );
+
+
+        enableDriveButtons();
+
+
         log(
-            "UPLOAD SUCCESS."
+            "DRIVE UPLOAD SUCCESS."
         );
 
 
         log(
-            "Created File ID: " +
+            "File ID: " +
             data.id
         );
 
 
         log(
-            "Created File Name: " +
+            "File Name: " +
             data.name
         );
 
@@ -648,20 +1644,11 @@ async function uploadFile() {
         );
 
 
-        displayFile(
-            data
-        );
-
-
-        enableFileButtons();
-
-
     } catch (error) {
 
         log(
-            "UPLOAD FAILED:"
+            "DRIVE UPLOAD FAILED:"
         );
-
 
         log(
             JSON.stringify(
@@ -677,37 +1664,39 @@ async function uploadFile() {
 
 
 /* =========================================================
-   DISPLAY FILE
-   ========================================================= */
+   DISPLAY DRIVE FILE
+========================================================= */
 
-function displayFile(file) {
+function displayDriveFile(file) {
 
     document.getElementById(
-        "fileName"
+        "driveFileName"
     ).textContent =
         file.name || "None";
 
 
     document.getElementById(
-        "fileId"
+        "driveFileId"
     ).textContent =
         file.id || "None";
 
 
     document.getElementById(
-        "fileMime"
+        "driveFileMime"
     ).textContent =
         file.mimeType || "None";
 
 
     document.getElementById(
-        "createdByApp"
+        "driveFileSize"
     ).textContent =
-        "YES";
+        file.size
+            ? file.size + " bytes"
+            : "Unknown";
 
 
     document.getElementById(
-        "fileUrl"
+        "driveFileUrl"
     ).textContent =
         file.webViewLink || "None";
 
@@ -715,34 +1704,35 @@ function displayFile(file) {
 
 
 /* =========================================================
-   ENABLE FILE BUTTONS
-   ========================================================= */
+   ENABLE DRIVE BUTTONS
+========================================================= */
 
-function enableFileButtons() {
+function enableDriveButtons() {
 
-    if (!appCreatedFile) {
+    if (!currentDriveFile) {
 
         return;
+
     }
 
 
     document.getElementById(
-        "openBtn"
+        "checkDriveBtn"
     ).disabled = false;
 
 
     document.getElementById(
-        "checkBtn"
+        "openDriveBtn"
     ).disabled = false;
 
 
     document.getElementById(
-        "renameBtn"
+        "renameDriveBtn"
     ).disabled = false;
 
 
     document.getElementById(
-        "updateBtn"
+        "metadataBtn"
     ).disabled = false;
 
 
@@ -755,49 +1745,67 @@ function enableFileButtons() {
         "restoreBtn"
     ).disabled = false;
 
+
+    document.getElementById(
+        "deleteBtn"
+    ).disabled = false;
+
+
+    document.getElementById(
+        "contentUpdateBtn"
+    ).disabled = false;
+
+
+    document.getElementById(
+        "saveDriveToFirestoreBtn"
+    ).disabled = false;
+
 }
 
 
 /* =========================================================
-   GET FILE
-   ========================================================= */
+   GET DRIVE FILE
+========================================================= */
 
-async function getFile() {
+async function getDriveFile() {
 
-    if (!appCreatedFile) {
+    if (!currentDriveFile) {
 
         throw new Error(
-            "No app-created file exists."
+            "No current Drive file."
         );
 
     }
 
 
-    const fileId =
-        appCreatedFile.id;
+    const fields = [
 
+        "id",
+        "name",
+        "mimeType",
+        "size",
+        "description",
+        "webViewLink",
+        "webContentLink",
+        "parents",
+        "createdTime",
+        "modifiedTime",
+        "trashed",
+        "ownedByMe",
+        "capabilities"
 
-    const fields =
-        [
-            "id",
-            "name",
-            "mimeType",
-            "webViewLink",
-            "webContentLink",
-            "parents",
-            "createdTime",
-            "modifiedTime",
-            "trashed",
-            "ownedByMe",
-            "capabilities"
-        ].join(",");
+    ].join(",");
 
 
     const url =
         "https://www.googleapis.com/drive/v3/files/" +
-        encodeURIComponent(fileId) +
+        encodeURIComponent(
+            currentDriveFile.id
+        ) +
         "?fields=" +
-        encodeURIComponent(fields);
+        encodeURIComponent(
+            fields
+        );
 
 
     const response =
@@ -809,7 +1817,7 @@ async function getFile() {
                     "GET",
 
                 headers:
-                    authHeaders()
+                    driveHeaders()
 
             }
         );
@@ -851,56 +1859,51 @@ async function getFile() {
 
 
 /* =========================================================
-   CHECK FILE
-   ========================================================= */
+   CHECK DRIVE FILE
+========================================================= */
 
-async function checkFile() {
+async function checkDriveFile() {
 
-    if (!accessToken) {
-
-        authorizeDrive();
+    if (!ensureDriveAuth()) {
 
         return;
+
     }
 
 
-    if (!appCreatedFile) {
+    if (!currentDriveFile) {
 
         log(
-            "No app-created file to check."
+            "No Drive file."
         );
 
         return;
+
     }
-
-
-    log(
-        "Checking app-created file..."
-    );
 
 
     try {
 
         const file =
-            await getFile();
+            await getDriveFile();
 
 
-        appCreatedFile =
+        currentDriveFile =
             file;
 
 
-        displayFile(
+        displayDriveFile(
             file
         );
 
 
         log(
-            "files.get SUCCESS."
+            "Drive files.get SUCCESS."
         );
 
 
         log(
-            "File exists in Google Drive."
+            "Exists: YES"
         );
 
 
@@ -937,9 +1940,8 @@ async function checkFile() {
     } catch (error) {
 
         log(
-            "CHECK FAILED:"
+            "DRIVE CHECK FAILED:"
         );
-
 
         log(
             JSON.stringify(
@@ -955,224 +1957,52 @@ async function checkFile() {
 
 
 /* =========================================================
-   OPEN FILE
-   ========================================================= */
+   OPEN DRIVE FILE
+========================================================= */
 
-function openFile() {
+function openDriveFile() {
 
     if (
-        !appCreatedFile ||
-        !appCreatedFile.webViewLink
+        !currentDriveFile ||
+        !currentDriveFile.webViewLink
     ) {
 
         log(
-            "File URL is not available."
+            "Drive URL not available."
         );
 
         return;
+
     }
 
 
     window.open(
-        appCreatedFile.webViewLink,
+        currentDriveFile.webViewLink,
         "_blank"
     );
 
 
     log(
-        "Opened app-created file in Google Drive."
+        "Drive file opened."
     );
 
 }
 
 
 /* =========================================================
-   RENAME FILE
-   ========================================================= */
+   PATCH DRIVE FILE
+========================================================= */
 
-async function renameFile() {
-
-    if (!appCreatedFile) {
-
-        log(
-            "No app-created file."
-        );
-
-        return;
-    }
-
-
-    const newName =
-        prompt(
-            "Enter new file name:",
-            appCreatedFile.name
-        );
-
-
-    if (!newName) {
-
-        return;
-    }
-
-
-    log(
-        "Renaming app-created file..."
-    );
-
-
-    try {
-
-        const file =
-            await patchFile(
-                {
-                    name:
-                        newName
-                }
-            );
-
-
-        appCreatedFile =
-            file;
-
-
-        displayFile(
-            file
-        );
-
-
-        log(
-            "RENAME SUCCESS."
-        );
-
-
-        log(
-            "New name: " +
-            file.name
-        );
-
-
-    } catch (error) {
-
-        log(
-            "RENAME FAILED:"
-        );
-
-
-        log(
-            JSON.stringify(
-                error,
-                null,
-                2
-            )
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   UPDATE METADATA
-   ========================================================= */
-
-async function updateFileDescription() {
-
-    if (!appCreatedFile) {
-
-        log(
-            "No app-created file."
-        );
-
-        return;
-    }
-
-
-    const description =
-        prompt(
-            "Enter a description for this file:",
-            "Uploaded by MyWebApps"
-        );
-
-
-    if (
-        description === null
-    ) {
-
-        return;
-    }
-
-
-    log(
-        "Updating file metadata..."
-    );
-
-
-    try {
-
-        const file =
-            await patchFile(
-                {
-                    description:
-                        description
-                }
-            );
-
-
-        appCreatedFile =
-            file;
-
-
-        displayFile(
-            file
-        );
-
-
-        log(
-            "UPDATE METADATA SUCCESS."
-        );
-
-
-        log(
-            "Description updated."
-        );
-
-
-    } catch (error) {
-
-        log(
-            "UPDATE FAILED:"
-        );
-
-
-        log(
-            JSON.stringify(
-                error,
-                null,
-                2
-            )
-        );
-
-    }
-
-}
-
-
-/* =========================================================
-   PATCH FILE
-   ========================================================= */
-
-async function patchFile(properties) {
-
-    const fileId =
-        appCreatedFile.id;
-
+async function patchDriveFile(properties) {
 
     const url =
         "https://www.googleapis.com/drive/v3/files/" +
-        encodeURIComponent(fileId) +
+        encodeURIComponent(
+            currentDriveFile.id
+        ) +
         "?fields=" +
         encodeURIComponent(
-            "id,name,mimeType,webViewLink,parents,createdTime,modifiedTime,trashed,description,ownedByMe,capabilities"
+            "id,name,mimeType,size,description,webViewLink,parents,createdTime,modifiedTime,trashed,ownedByMe,capabilities"
         );
 
 
@@ -1189,7 +2019,7 @@ async function patchFile(properties) {
 
                         "Authorization":
                             "Bearer " +
-                            accessToken,
+                            driveAccessToken,
 
                         "Content-Type":
                             "application/json"
@@ -1241,73 +2071,382 @@ async function patchFile(properties) {
 
 
 /* =========================================================
-   MOVE TO TRASH
-   ========================================================= */
+   RENAME
+========================================================= */
 
-async function moveToTrash() {
+async function renameDriveFile() {
 
-    if (!appCreatedFile) {
+    if (!ensureDriveAuth()) {
+
+        return;
+
+    }
+
+
+    if (!currentDriveFile) {
+
+        return;
+
+    }
+
+
+    const newName =
+        prompt(
+            "Enter new file name:",
+            currentDriveFile.name
+        );
+
+
+    if (!newName) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const file =
+            await patchDriveFile({
+
+                name:
+                    newName
+
+            });
+
+
+        currentDriveFile =
+            file;
+
+
+        displayDriveFile(
+            file
+        );
+
 
         log(
-            "No app-created file."
+            "DRIVE RENAME SUCCESS."
+        );
+
+
+    } catch (error) {
+
+        log(
+            "DRIVE RENAME FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   UPDATE METADATA
+========================================================= */
+
+async function updateDriveMetadata() {
+
+    if (!ensureDriveAuth()) {
+
+        return;
+
+    }
+
+
+    const description =
+        prompt(
+            "Enter file description:",
+            "Uploaded by MyWebApps"
+        );
+
+
+    if (
+        description === null
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const file =
+            await patchDriveFile({
+
+                description:
+                    description
+
+            });
+
+
+        currentDriveFile =
+            file;
+
+
+        displayDriveFile(
+            file
+        );
+
+
+        log(
+            "DRIVE METADATA UPDATE SUCCESS."
+        );
+
+
+    } catch (error) {
+
+        log(
+            "DRIVE METADATA UPDATE FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   REPLACE DRIVE FILE CONTENT
+========================================================= */
+
+async function updateDriveFileContent() {
+
+    if (!ensureDriveAuth()) {
+
+        return;
+
+    }
+
+
+    if (!currentDriveFile) {
+
+        log(
+            "No current Drive file."
         );
 
         return;
+
+    }
+
+
+    const input =
+        document.getElementById(
+            "replacementFileInput"
+        );
+
+
+    if (
+        !input.files ||
+        input.files.length === 0
+    ) {
+
+        alert(
+            "Please select replacement file."
+        );
+
+        return;
+
+    }
+
+
+    const file =
+        input.files[0];
+
+
+    log(
+        "Replacing Drive file content..."
+    );
+
+
+    try {
+
+        const url =
+            "https://www.googleapis.com/upload/drive/v3/files/" +
+            encodeURIComponent(
+                currentDriveFile.id
+            ) +
+            "?uploadType=media" +
+            "&fields=id,name,mimeType,size,webViewLink,parents,modifiedTime,trashed";
+
+
+        const response =
+            await fetch(
+                url,
+                {
+
+                    method:
+                        "PATCH",
+
+                    headers:
+                        {
+
+                            "Authorization":
+                                "Bearer " +
+                                driveAccessToken,
+
+                            "Content-Type":
+                                file.type ||
+                                "application/octet-stream"
+
+                        },
+
+                    body:
+                        file
+
+                }
+            );
+
+
+        const text =
+            await response.text();
+
+
+        let data;
+
+
+        try {
+
+            data =
+                JSON.parse(text);
+
+        } catch {
+
+            data =
+                {
+                    raw:
+                        text
+                };
+
+        }
+
+
+        if (!response.ok) {
+
+            throw data;
+
+        }
+
+
+        currentDriveFile =
+            data;
+
+
+        displayDriveFile(
+            data
+        );
+
+
+        log(
+            "DRIVE FILE CONTENT UPDATE SUCCESS."
+        );
+
+
+        log(
+            "New content file:"
+        );
+
+
+        log(
+            file.name
+        );
+
+
+    } catch (error) {
+
+        log(
+            "DRIVE FILE CONTENT UPDATE FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   MOVE TO TRASH
+========================================================= */
+
+async function trashDriveFile() {
+
+    if (!ensureDriveAuth()) {
+
+        return;
+
+    }
+
+
+    if (!currentDriveFile) {
+
+        return;
+
     }
 
 
     if (
         !confirm(
-            "Move this app-created file to Google Drive Trash?"
+            "Move this Drive file to Trash?"
         )
     ) {
 
         return;
+
     }
-
-
-    log(
-        "Moving app-created file to Trash..."
-    );
 
 
     try {
 
         const file =
-            await patchFile(
-                {
-                    trashed:
-                        true
-                }
-            );
+            await patchDriveFile({
+
+                trashed:
+                    true
+
+            });
 
 
-        appCreatedFile =
+        currentDriveFile =
             file;
 
 
-        displayFile(
+        displayDriveFile(
             file
         );
 
 
         log(
-            "MOVE TO TRASH SUCCESS."
-        );
-
-
-        log(
-            "Trashed: " +
-            file.trashed
+            "DRIVE TRASH SUCCESS."
         );
 
 
     } catch (error) {
 
         log(
-            "MOVE TO TRASH FAILED:"
+            "DRIVE TRASH FAILED:"
         );
-
 
         log(
             JSON.stringify(
@@ -1323,63 +2462,55 @@ async function moveToTrash() {
 
 
 /* =========================================================
-   RESTORE FILE
-   ========================================================= */
+   RESTORE
+========================================================= */
 
-async function restoreFile() {
+async function restoreDriveFile() {
 
-    if (!appCreatedFile) {
-
-        log(
-            "No app-created file."
-        );
+    if (!ensureDriveAuth()) {
 
         return;
+
     }
 
 
-    log(
-        "Restoring app-created file..."
-    );
+    if (!currentDriveFile) {
+
+        return;
+
+    }
 
 
     try {
 
         const file =
-            await patchFile(
-                {
-                    trashed:
-                        false
-                }
-            );
+            await patchDriveFile({
+
+                trashed:
+                    false
+
+            });
 
 
-        appCreatedFile =
+        currentDriveFile =
             file;
 
 
-        displayFile(
+        displayDriveFile(
             file
         );
 
 
         log(
-            "RESTORE SUCCESS."
-        );
-
-
-        log(
-            "Trashed: " +
-            file.trashed
+            "DRIVE RESTORE SUCCESS."
         );
 
 
     } catch (error) {
 
         log(
-            "RESTORE FAILED:"
+            "DRIVE RESTORE FAILED:"
         );
-
 
         log(
             JSON.stringify(
@@ -1395,40 +2526,1020 @@ async function restoreFile() {
 
 
 /* =========================================================
-   SIGN OUT
-   ========================================================= */
+   PERMANENT DELETE
+========================================================= */
 
-function signOut() {
+async function permanentlyDeleteDriveFile() {
 
-    if (!accessToken) {
-
-        log(
-            "No active Google authorization."
-        );
+    if (!ensureDriveAuth()) {
 
         return;
+
     }
 
 
-    google.accounts.oauth2.revoke(
-        accessToken,
-        function() {
+    if (!currentDriveFile) {
 
-            accessToken =
-                null;
+        return;
+
+    }
 
 
-            log(
-                "Google Drive authorization revoked for this session."
+    if (
+        !confirm(
+            "WARNING: Permanently delete this Drive file?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        !confirm(
+            "This cannot normally be undone. Continue?"
+        )
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        const url =
+            "https://www.googleapis.com/drive/v3/files/" +
+            encodeURIComponent(
+                currentDriveFile.id
             );
 
+
+        const response =
+            await fetch(
+                url,
+                {
+
+                    method:
+                        "DELETE",
+
+                    headers:
+                        driveHeaders()
+
+                }
+            );
+
+
+        if (!response.ok) {
+
+            const text =
+                await response.text();
+
+
+            let data;
+
+
+            try {
+
+                data =
+                    JSON.parse(text);
+
+            } catch {
+
+                data =
+                    {
+                        raw:
+                            text
+                    };
+
+            }
+
+
+            throw data;
+
+        }
+
+
+        log(
+            "DRIVE PERMANENT DELETE SUCCESS."
+        );
+
+
+        currentDriveFile =
+            null;
+
+
+        clearDriveFileDisplay();
+
+
+        disableDriveFileButtons();
+
+
+    } catch (error) {
+
+        log(
+            "DRIVE PERMANENT DELETE FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   CLEAR DRIVE DISPLAY
+========================================================= */
+
+function clearDriveFileDisplay() {
+
+    document.getElementById(
+        "driveFileName"
+    ).textContent =
+        "None";
+
+
+    document.getElementById(
+        "driveFileId"
+    ).textContent =
+        "None";
+
+
+    document.getElementById(
+        "driveFileMime"
+    ).textContent =
+        "None";
+
+
+    document.getElementById(
+        "driveFileSize"
+    ).textContent =
+        "None";
+
+
+    document.getElementById(
+        "driveFileUrl"
+    ).textContent =
+        "None";
+
+}
+
+
+/* =========================================================
+   DISABLE DRIVE BUTTONS
+========================================================= */
+
+function disableDriveFileButtons() {
+
+    const ids = [
+
+        "checkDriveBtn",
+        "openDriveBtn",
+        "renameDriveBtn",
+        "metadataBtn",
+        "trashBtn",
+        "restoreBtn",
+        "deleteBtn",
+        "contentUpdateBtn",
+        "saveDriveToFirestoreBtn"
+
+    ];
+
+
+    ids.forEach(
+        function(id) {
 
             document.getElementById(
-                "uploadBtn"
+                id
             ).disabled = true;
 
         }
     );
+
+}
+
+
+/* =========================================================
+   SAVE DRIVE FILE TO FIRESTORE
+========================================================= */
+
+async function saveDriveFileToFirestore() {
+
+    try {
+
+        await ensureFirebaseAuth();
+
+
+        if (!currentDriveFile) {
+
+            log(
+                "No Drive file to save."
+            );
+
+            return;
+
+        }
+
+
+        const data = {
+
+            type:
+                "driveAttachment",
+
+            driveFileId:
+                currentDriveFile.id,
+
+            fileName:
+                currentDriveFile.name || null,
+
+            mimeType:
+                currentDriveFile.mimeType || null,
+
+            fileSize:
+                currentDriveFile.size || null,
+
+            driveUrl:
+                currentDriveFile.webViewLink || null,
+
+            driveFolderId:
+                DRIVE_FOLDER_ID,
+
+            driveCreatedTime:
+                currentDriveFile.createdTime || null,
+
+            driveModifiedTime:
+                currentDriveFile.modifiedTime || null,
+
+            firebaseUid:
+                firebaseUser.uid,
+
+            createdAt:
+                firebase.firestore.FieldValue.serverTimestamp(),
+
+            updatedAt:
+                firebase.firestore.FieldValue.serverTimestamp()
+
+        };
+
+
+        const ref =
+            await firestore
+                .collection(
+                    FIRESTORE_COLLECTION
+                )
+                .add(data);
+
+
+        driveFirestoreDocId =
+            ref.id;
+
+
+        document.getElementById(
+            "driveFirestoreDocId"
+        ).textContent =
+            driveFirestoreDocId;
+
+
+        log(
+            "Drive information saved to Firestore SUCCESS."
+        );
+
+
+        log(
+            "Firestore Document ID: " +
+            driveFirestoreDocId
+        );
+
+
+        await readDriveRecordFromFirestore();
+
+    } catch (error) {
+
+        log(
+            "SAVE DRIVE TO FIRESTORE FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   READ DRIVE RECORD FROM FIRESTORE
+========================================================= */
+
+async function readDriveRecordFromFirestore() {
+
+    try {
+
+        await ensureFirebaseAuth();
+
+
+        if (!driveFirestoreDocId) {
+
+            log(
+                "No Drive Firestore document ID."
+            );
+
+            return;
+
+        }
+
+
+        const snapshot =
+            await firestore
+                .collection(
+                    FIRESTORE_COLLECTION
+                )
+                .doc(
+                    driveFirestoreDocId
+                )
+                .get();
+
+
+        if (!snapshot.exists) {
+
+            log(
+                "Drive Firestore record not found."
+            );
+
+            return;
+
+        }
+
+
+        const data =
+            snapshot.data();
+
+
+        document.getElementById(
+            "driveFirestoreData"
+        ).textContent =
+            JSON.stringify(
+                data,
+                null,
+                2
+            );
+
+
+        log(
+            "Drive Firestore READ SUCCESS."
+        );
+
+
+        log(
+            "Drive File ID from Firestore: " +
+            data.driveFileId
+        );
+
+
+    } catch (error) {
+
+        log(
+            "READ DRIVE FIRESTORE RECORD FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   MULTIPLE FILE UPLOAD
+========================================================= */
+
+async function uploadMultipleFiles() {
+
+    if (!ensureDriveAuth()) {
+
+        return;
+
+    }
+
+
+    const input =
+        document.getElementById(
+            "multipleFilesInput"
+        );
+
+
+    if (
+        !input.files ||
+        input.files.length === 0
+    ) {
+
+        alert(
+            "Please select files."
+        );
+
+        return;
+
+    }
+
+
+    multipleUploadedFiles = [];
+
+
+    log(
+        "Starting multiple file upload..."
+    );
+
+
+    for (
+        const file of input.files
+    ) {
+
+        try {
+
+            const uploaded =
+                await uploadSingleDriveFile(
+                    file
+                );
+
+
+            multipleUploadedFiles.push(
+                uploaded
+            );
+
+
+            log(
+                "Multiple upload SUCCESS: " +
+                file.name
+            );
+
+
+        } catch (error) {
+
+            log(
+                "Multiple upload FAILED: " +
+                file.name
+            );
+
+
+            log(
+                JSON.stringify(
+                    error,
+                    null,
+                    2
+                )
+            );
+
+        }
+
+    }
+
+
+    displayMultipleFiles();
+
+
+    log(
+        "Multiple file upload completed."
+    );
+
+}
+
+
+/* =========================================================
+   SINGLE DRIVE UPLOAD HELPER
+========================================================= */
+
+async function uploadSingleDriveFile(file) {
+
+    const metadata = {
+
+        name:
+            file.name,
+
+        parents:
+            [
+                DRIVE_FOLDER_ID
+            ]
+
+    };
+
+
+    const boundary =
+        "----MyWebAppsBoundary" +
+        Date.now() +
+        Math.random()
+            .toString(16)
+            .slice(2);
+
+
+    const delimiter =
+        "\r\n--" +
+        boundary +
+        "\r\n";
+
+
+    const closeDelimiter =
+        "\r\n--" +
+        boundary +
+        "--";
+
+
+    const mimeType =
+        file.type ||
+        "application/octet-stream";
+
+
+    const body =
+        new Blob([
+
+            "--" +
+            boundary +
+            "\r\n",
+
+            "Content-Type: application/json; charset=UTF-8\r\n\r\n",
+
+            JSON.stringify(
+                metadata
+            ),
+
+            delimiter,
+
+            "Content-Type: " +
+            mimeType +
+            "\r\n\r\n",
+
+            file,
+
+            closeDelimiter
+
+        ]);
+
+
+    const url =
+        "https://www.googleapis.com/upload/drive/v3/files" +
+        "?uploadType=multipart" +
+        "&fields=id,name,mimeType,size,webViewLink,parents,createdTime,modifiedTime,trashed";
+
+
+    const response =
+        await fetch(
+            url,
+            {
+
+                method:
+                    "POST",
+
+                headers:
+                    {
+
+                        "Authorization":
+                            "Bearer " +
+                            driveAccessToken,
+
+                        "Content-Type":
+                            "multipart/related; boundary=" +
+                            boundary
+
+                    },
+
+                body:
+                    body
+
+            }
+        );
+
+
+    const text =
+        await response.text();
+
+
+    let data;
+
+
+    try {
+
+        data =
+            JSON.parse(text);
+
+    } catch {
+
+        data =
+            {
+                raw:
+                    text
+            };
+
+    }
+
+
+    if (!response.ok) {
+
+        throw data;
+
+    }
+
+
+    return data;
+
+}
+
+
+/* =========================================================
+   DISPLAY MULTIPLE FILES
+========================================================= */
+
+function displayMultipleFiles() {
+
+    const box =
+        document.getElementById(
+            "multipleFilesList"
+        );
+
+
+    box.innerHTML = "";
+
+
+    if (
+        multipleUploadedFiles.length === 0
+    ) {
+
+        box.textContent =
+            "No files uploaded.";
+
+        return;
+
+    }
+
+
+    multipleUploadedFiles.forEach(
+        function(file, index) {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+
+            div.className =
+                "file-item";
+
+
+            div.innerHTML =
+
+                "<strong>" +
+                (index + 1) +
+                ". " +
+                escapeHtml(
+                    file.name
+                ) +
+                "</strong>" +
+
+                "<br>ID: " +
+                escapeHtml(
+                    file.id
+                ) +
+
+                "<br>MIME: " +
+                escapeHtml(
+                    file.mimeType ||
+                    ""
+                ) +
+
+                "<br>URL: " +
+                escapeHtml(
+                    file.webViewLink ||
+                    ""
+                );
+
+
+            box.appendChild(
+                div
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   SAVE MULTIPLE ATTACHMENTS
+========================================================= */
+
+async function saveMultipleAttachmentsToFirestore() {
+
+    try {
+
+        await ensureFirebaseAuth();
+
+
+        if (
+            multipleUploadedFiles.length === 0
+        ) {
+
+            log(
+                "No multiple uploaded files."
+            );
+
+            return;
+
+        }
+
+
+        const attachments =
+            multipleUploadedFiles.map(
+                function(file) {
+
+                    return {
+
+                        driveFileId:
+                            file.id,
+
+                        fileName:
+                            file.name,
+
+                        mimeType:
+                            file.mimeType ||
+                            null,
+
+                        fileSize:
+                            file.size ||
+                            null,
+
+                        driveUrl:
+                            file.webViewLink ||
+                            null,
+
+                        driveFolderId:
+                            DRIVE_FOLDER_ID
+
+                    };
+
+                }
+            );
+
+
+        const ref =
+            await firestore
+                .collection(
+                    FIRESTORE_COLLECTION
+                )
+                .add({
+
+                    type:
+                        "multipleAttachments",
+
+                    firebaseUid:
+                        firebaseUser.uid,
+
+                    attachments:
+                        attachments,
+
+                    attachmentCount:
+                        attachments.length,
+
+                    createdAt:
+                        firebase.firestore.FieldValue.serverTimestamp()
+
+                });
+
+
+        log(
+            "MULTIPLE ATTACHMENTS SAVED TO FIRESTORE."
+        );
+
+
+        log(
+            "Firestore Document ID: " +
+            ref.id
+        );
+
+
+    } catch (error) {
+
+        log(
+            "MULTIPLE ATTACHMENTS FIRESTORE SAVE FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   RELOAD / PERSISTENCE TEST
+========================================================= */
+
+async function reloadPersistenceTest() {
+
+    try {
+
+        await ensureFirebaseAuth();
+
+
+        if (!driveFirestoreDocId) {
+
+            document.getElementById(
+                "reloadResult"
+            ).textContent =
+                "No Drive Firestore Document ID is available.";
+
+            log(
+                "Reload test cannot run because no Drive Firestore record exists."
+            );
+
+            return;
+
+        }
+
+
+        const snapshot =
+            await firestore
+                .collection(
+                    FIRESTORE_COLLECTION
+                )
+                .doc(
+                    driveFirestoreDocId
+                )
+                .get();
+
+
+        if (!snapshot.exists) {
+
+            document.getElementById(
+                "reloadResult"
+            ).textContent =
+                "Firestore record not found.";
+
+            return;
+
+        }
+
+
+        const data =
+            snapshot.data();
+
+
+        const result = {
+
+            firestoreDocumentId:
+                driveFirestoreDocId,
+
+            driveFileId:
+                data.driveFileId,
+
+            fileName:
+                data.fileName,
+
+            driveUrl:
+                data.driveUrl,
+
+            folderId:
+                data.driveFolderId
+
+        };
+
+
+        document.getElementById(
+            "reloadResult"
+        ).textContent =
+            JSON.stringify(
+                result,
+                null,
+                2
+            );
+
+
+        log(
+            "RELOAD/PERSISTENCE TEST SUCCESS."
+        );
+
+
+        log(
+            "Drive File ID recovered from Firestore: " +
+            data.driveFileId
+        );
+
+
+    } catch (error) {
+
+        log(
+            "RELOAD TEST FAILED:"
+        );
+
+        log(
+            JSON.stringify(
+                error,
+                null,
+                2
+            )
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   SIGN OUT DRIVE
+========================================================= */
+
+function signOutDrive() {
+
+    if (!driveAccessToken) {
+
+        log(
+            "No active Google Drive authorization."
+        );
+
+        return;
+
+    }
+
+
+    google.accounts.oauth2.revoke(
+        driveAccessToken,
+        function() {
+
+            driveAccessToken =
+                null;
+
+
+            document.getElementById(
+                "driveAuthStatus"
+            ).textContent =
+                "Signed out";
+
+
+            document.getElementById(
+                "uploadBtn"
+            ).disabled =
+                true;
+
+
+            log(
+                "Google Drive authorization revoked."
+            );
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   HTML ESCAPE
+========================================================= */
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        )
+        .replace(
+            /"/g,
+            "&quot;"
+        )
+        .replace(
+            /'/g,
+            "&#039;"
+        );
 
 }
 
