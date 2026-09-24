@@ -3,90 +3,316 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Google Drive Test 3 - Diagnostic</title>
+
+<title>Google Drive Test 4</title>
 
 <style>
-body {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    background: #f5f5f5;
+* {
+    box-sizing: border-box;
 }
 
-.box {
-    max-width: 800px;
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background: #f5f7fa;
+    color: #222;
+}
+
+.container {
+    max-width: 900px;
     margin: auto;
     background: white;
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 14px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.10);
+}
+
+h1 {
+    margin-top: 0;
+}
+
+.info {
+    background: #f0f4f8;
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    line-height: 1.7;
+    word-break: break-word;
 }
 
 .status {
-    padding: 15px;
+    padding: 14px;
+    border-radius: 8px;
     margin: 15px 0;
     background: #fff3cd;
-    border-radius: 8px;
+    color: #664d03;
     white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 15px 0;
 }
 
 button {
-    padding: 12px 18px;
-    margin: 5px;
     border: 0;
-    border-radius: 7px;
+    padding: 11px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
     background: #1976d2;
     color: white;
-    cursor: pointer;
+}
+
+button:hover {
+    opacity: .9;
 }
 
 button:disabled {
-    opacity: .4;
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+.success {
+    background: #2e7d32;
+}
+
+.secondary {
+    background: #616161;
+}
+
+.warning {
+    background: #ef6c00;
+}
+
+.danger {
+    background: #d32f2f;
+}
+
+.section {
+    border-top: 1px solid #ddd;
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.file-box {
+    display: none;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 20px;
+}
+
+.file-row {
+    margin: 8px 0;
+    word-break: break-word;
+}
+
+.label {
+    font-weight: bold;
+}
+
+input[type="file"],
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    font-size: 15px;
+}
+
+.small {
+    color: #666;
+    font-size: 13px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="box">
+<div class="container">
 
-<h1>Google Drive Test 3</h1>
+<h1>Google Drive Test 4</h1>
 
-<p>
+<div class="info">
+
+<div>
 <strong>Target Folder:</strong>
 MyWebApps Attachments
-</p>
+</div>
 
-<p>
+<div>
 <strong>Folder ID:</strong>
 1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT
-</p>
+</div>
+
+</div>
+
 
 <div id="status" class="status">
-Page loaded.
-Waiting for Google libraries...
+Loading Google libraries...
 </div>
 
+
+<div class="buttons">
+
 <button
-    id="authorizeBtn"
-    onclick="authorizeGoogle()"
-    disabled>
-    Authorize Google Drive
+id="authorizeBtn"
+onclick="authorizeGoogle()"
+disabled>
+Authorize Google Drive
 </button>
 
 <button
-    id="pickerBtn"
-    onclick="openPicker()"
-    disabled>
-    Open Google Picker
+id="pickerBtn"
+onclick="openPicker()"
+disabled>
+Open Google Picker
 </button>
 
 <button
-    id="signOutBtn"
-    onclick="signOutGoogle()"
-    disabled>
-    Sign Out
+id="signOutBtn"
+class="secondary"
+onclick="signOutGoogle()"
+disabled>
+Sign Out
 </button>
 
 </div>
+
+
+<!-- =====================================================
+     UPLOAD
+     ===================================================== -->
+
+<div class="section">
+
+<h2>Upload File</h2>
+
+<input
+type="file"
+id="fileInput">
+
+<button
+id="uploadBtn"
+class="success"
+onclick="uploadFile()"
+disabled>
+Upload to Drive Folder
+</button>
+
+</div>
+
+
+<!-- =====================================================
+     SELECTED FILE
+     ===================================================== -->
+
+<div
+id="fileBox"
+class="file-box">
+
+<h2>Selected File</h2>
+
+
+<div class="file-row">
+<span class="label">Name:</span>
+<span id="fileName"></span>
+</div>
+
+
+<div class="file-row">
+<span class="label">File ID:</span>
+<span id="fileId"></span>
+</div>
+
+
+<div class="file-row">
+<span class="label">MIME Type:</span>
+<span id="fileMime"></span>
+</div>
+
+
+<div class="file-row">
+<span class="label">Drive URL:</span>
+<span id="fileUrl"></span>
+</div>
+
+
+<!-- =====================================================
+     OPEN
+     ===================================================== -->
+
+<div class="buttons">
+
+<button
+class="success"
+onclick="openSelectedFile()">
+Open File
+</button>
+
+</div>
+
+
+<!-- =====================================================
+     RENAME
+     ===================================================== -->
+
+<h3>Rename / Update</h3>
+
+<input
+type="text"
+id="newFileName"
+placeholder="Enter new file name">
+
+<button
+class="warning"
+onclick="renameSelectedFile()">
+Rename / Update
+</button>
+
+
+<!-- =====================================================
+     TRASH
+     ===================================================== -->
+
+<h3>Delete / Move to Trash</h3>
+
+<button
+class="danger"
+onclick="trashSelectedFile()">
+Move to Trash
+</button>
+
+</div>
+
+
+<p class="small">
+Google Drive API + Google Picker only.
+Firebase is not used in this test.
+</p>
+
+</div>
+
+
+<!-- =====================================================
+     GOOGLE LIBRARIES
+     ===================================================== -->
+
+<script
+src="https://apis.google.com/js/api.js"
+onload="gapiLoaded()">
+</script>
+
+<script
+src="https://accounts.google.com/gsi/client"
+onload="gisLoaded()">
+</script>
 
 
 <script>
@@ -112,51 +338,72 @@ const SCOPES =
 
 
 /* =========================================================
-   STATE
+   VARIABLES
    ========================================================= */
 
 let tokenClient = null;
 
 let accessToken = null;
 
-let pickerReady = false;
+let gapiReady = false;
 
 let gisReady = false;
+
+let pickerReady = false;
+
+let selectedFile = null;
+
+let pickerSelectionHandled = false;
 
 
 /* =========================================================
    STATUS
    ========================================================= */
 
-function status(text) {
+function setStatus(message, type = "normal") {
 
-    document.getElementById("status")
-        .textContent = text;
+    const element =
+        document.getElementById("status");
 
-    console.log(text);
+    element.textContent = message;
+
+
+    if (type === "success") {
+
+        element.style.background = "#d1e7dd";
+        element.style.color = "#0f5132";
+
+    }
+
+    else if (type === "error") {
+
+        element.style.background = "#f8d7da";
+        element.style.color = "#842029";
+
+    }
+
+    else if (type === "info") {
+
+        element.style.background = "#cff4fc";
+        element.style.color = "#055160";
+
+    }
+
+    else {
+
+        element.style.background = "#fff3cd";
+        element.style.color = "#664d03";
+    }
 }
 
 
 /* =========================================================
-   GOOGLE API LOADED
+   GAPI
    ========================================================= */
 
 function gapiLoaded() {
 
-    console.log(
-        "1. gapi.js loaded"
-    );
-
-    status(
-        "Google API library loaded.\n" +
-        "Loading Google Picker..."
-    );
-
-
-    /*
-       Google کی موجودہ Picker documentation
-       کے مطابق client:picker load کیا جا رہا ہے۔
-    */
+    console.log("GAPI loaded.");
 
     gapi.load(
         "client:picker",
@@ -171,65 +418,41 @@ function gapiLoaded() {
 
 async function initializePicker() {
 
-    console.log(
-        "2. client:picker loaded"
-    );
-
     try {
-
-        /*
-           Drive discovery document بھی load کریں۔
-        */
 
         await gapi.client.load(
             "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
         );
 
-
+        gapiReady = true;
         pickerReady = true;
 
-
-        console.log(
-            "3. Google Picker initialized"
-        );
-
-
-        status(
-            "Google API + Picker loaded successfully.\n\n" +
-            "Waiting for Google authorization..."
-        );
-
-
         updateButtons();
+
+        checkReady();
 
     }
 
     catch (error) {
 
-        console.error(
-            "Picker initialization error:",
-            error
-        );
+        console.error(error);
 
-
-        status(
-            "Google Picker initialization failed:\n\n" +
-            error.message
+        setStatus(
+            "Google Picker initialization failed:\n" +
+            error.message,
+            "error"
         );
     }
 }
 
 
 /* =========================================================
-   GIS LOADED
+   GIS
    ========================================================= */
 
 function gisLoaded() {
 
-    console.log(
-        "4. Google Identity Services loaded"
-    );
-
+    console.log("GIS loaded.");
 
     try {
 
@@ -250,47 +473,78 @@ function gisLoaded() {
 
         gisReady = true;
 
-
-        console.log(
-            "5. GIS initialized"
-        );
-
-
-        status(
-            "Google authorization system loaded.\n\n" +
-            "You can now click Authorize Google Drive."
-        );
-
-
         updateButtons();
+
+        checkReady();
 
     }
 
     catch (error) {
 
-        console.error(
-            "GIS initialization error:",
-            error
-        );
+        console.error(error);
 
-
-        status(
-            "Google authorization initialization failed:\n\n" +
-            error.message
+        setStatus(
+            "Google authorization initialization failed:\n" +
+            error.message,
+            "error"
         );
     }
 }
 
 
 /* =========================================================
-   BUTTON STATE
+   READY CHECK
+   ========================================================= */
+
+function checkReady() {
+
+    if (gapiReady && gisReady) {
+
+        setStatus(
+            "Google Drive is ready.\n\n" +
+            "Click 'Authorize Google Drive'.",
+            "success"
+        );
+
+        return;
+    }
+
+
+    if (gisReady) {
+
+        setStatus(
+            "Google authorization loaded.\n" +
+            "Waiting for Google Picker...",
+            "info"
+        );
+
+        return;
+    }
+
+
+    if (gapiReady) {
+
+        setStatus(
+            "Google Picker loaded.\n" +
+            "Waiting for Google authorization...",
+            "info"
+        );
+
+        return;
+    }
+}
+
+
+/* =========================================================
+   BUTTONS
    ========================================================= */
 
 function updateButtons() {
 
     document.getElementById(
         "authorizeBtn"
-    ).disabled = !gisReady;
+    ).disabled =
+        !gisReady;
 
 
     document.getElementById(
@@ -301,6 +555,12 @@ function updateButtons() {
 
 
     document.getElementById(
+        "uploadBtn"
+    ).disabled =
+        !accessToken;
+
+
+    document.getElementById(
         "signOutBtn"
     ).disabled =
         !accessToken;
@@ -308,23 +568,25 @@ function updateButtons() {
 
 
 /* =========================================================
-   AUTHORIZE
+   AUTHORIZATION
    ========================================================= */
 
 function authorizeGoogle() {
 
     if (!tokenClient) {
 
-        status(
-            "Authorization system is not ready."
+        setStatus(
+            "Google authorization is not ready.",
+            "error"
         );
 
         return;
     }
 
 
-    status(
-        "Opening Google authorization..."
+    setStatus(
+        "Opening Google authorization...",
+        "info"
     );
 
 
@@ -348,13 +610,39 @@ function handleTokenResponse(response) {
 
     if (response.error) {
 
-        status(
-            "Google authorization error:\n\n" +
+        /*
+           اگر موجودہ permission کافی نہیں ہے
+           تو ایک بار consent مانگیں۔
+        */
+
+        if (
+            response.error ===
+            "interaction_required"
+        ) {
+
+            setStatus(
+                "Google permission is required.\n" +
+                "Opening consent...",
+                "info"
+            );
+
+
+            tokenClient.requestAccessToken({
+                prompt: "consent"
+            });
+
+            return;
+        }
+
+
+        setStatus(
+            "Google authorization failed:\n\n" +
             JSON.stringify(
                 response,
                 null,
                 2
-            )
+            ),
+            "error"
         );
 
         return;
@@ -363,8 +651,9 @@ function handleTokenResponse(response) {
 
     if (!response.access_token) {
 
-        status(
-            "Google did not return an access token."
+        setStatus(
+            "No Google access token received.",
+            "error"
         );
 
         return;
@@ -378,11 +667,64 @@ function handleTokenResponse(response) {
     updateButtons();
 
 
-    status(
-        "Google Drive authorized successfully.\n\n" +
-        "Access token received.\n\n" +
-        "You can now click Open Google Picker."
+    setStatus(
+        "Google Drive authorized successfully.",
+        "success"
     );
+}
+
+
+/* =========================================================
+   SIGN OUT
+   ========================================================= */
+
+function signOutGoogle() {
+
+    if (!accessToken) {
+        return;
+    }
+
+
+    google.accounts.oauth2.revoke(
+        accessToken,
+        function() {
+
+            accessToken = null;
+
+            selectedFile = null;
+
+            hideSelectedFile();
+
+            updateButtons();
+
+
+            setStatus(
+                "Google Drive authorization revoked.",
+                "info"
+            );
+        }
+    );
+}
+
+
+/* =========================================================
+   AUTH CHECK
+   ========================================================= */
+
+function requireAuth() {
+
+    if (!accessToken) {
+
+        setStatus(
+            "Please authorize Google Drive first.",
+            "error"
+        );
+
+        return false;
+    }
+
+
+    return true;
 }
 
 
@@ -392,35 +734,38 @@ function handleTokenResponse(response) {
 
 function openPicker() {
 
-    if (!accessToken) {
-
-        status(
-            "Please authorize Google Drive first."
-        );
-
+    if (!requireAuth()) {
         return;
     }
 
 
     if (!pickerReady) {
 
-        status(
-            "Google Picker is not ready yet."
+        setStatus(
+            "Google Picker is not ready.",
+            "error"
         );
 
         return;
     }
 
 
-    status(
-        "Opening Google Picker..."
+    pickerSelectionHandled = false;
+
+
+    setStatus(
+        "Opening Google Picker...",
+        "info"
     );
 
 
     const view =
         new google.picker.DocsView()
+
             .setIncludeFolders(false)
+
             .setSelectFolderEnabled(false)
+
             .setParent(FOLDER_ID);
 
 
@@ -475,25 +820,46 @@ function pickerCallback(data) {
         google.picker.Action.PICKED
     ) {
 
-        const file =
-            data.docs[0];
+        pickerSelectionHandled = true;
 
 
-        status(
-            "File selected successfully.\n\n" +
+        if (
+            data.docs &&
+            data.docs.length > 0
+        ) {
 
-            "Name: " +
-            (file.name || "") +
+            const doc =
+                data.docs[0];
 
-            "\n\nID: " +
-            (file.id || "") +
 
-            "\n\nMIME: " +
-            (file.mimeType || "") +
+            selectedFile = {
 
-            "\n\nURL: " +
-            (file.url || "")
-        );
+                id:
+                    doc.id || "",
+
+                name:
+                    doc.name || "",
+
+                mimeType:
+                    doc.mimeType || "",
+
+                url:
+                    doc.url || "",
+
+                webViewLink:
+                    doc.url || ""
+
+            };
+
+
+            showSelectedFile();
+
+
+            setStatus(
+                "File selected successfully.",
+                "success"
+            );
+        }
 
 
         return;
@@ -505,65 +871,593 @@ function pickerCallback(data) {
         google.picker.Action.CANCEL
     ) {
 
-        status(
-            "Picker cancelled."
+        if (pickerSelectionHandled) {
+            return;
+        }
+
+
+        setStatus(
+            "Picker cancelled.",
+            "info"
         );
     }
 }
 
 
 /* =========================================================
-   SIGN OUT
+   SHOW SELECTED FILE
    ========================================================= */
 
-function signOutGoogle() {
+function showSelectedFile() {
 
-    if (!accessToken) {
+    if (!selectedFile) {
         return;
     }
 
 
-    google.accounts.oauth2.revoke(
-        accessToken,
-        function() {
-
-            accessToken = null;
-
-            updateButtons();
+    document.getElementById(
+        "fileBox"
+    ).style.display = "block";
 
 
-            status(
-                "Google Drive authorization revoked."
+    document.getElementById(
+        "fileName"
+    ).textContent =
+        selectedFile.name;
+
+
+    document.getElementById(
+        "fileId"
+    ).textContent =
+        selectedFile.id;
+
+
+    document.getElementById(
+        "fileMime"
+    ).textContent =
+        selectedFile.mimeType;
+
+
+    document.getElementById(
+        "fileUrl"
+    ).textContent =
+        selectedFile.webViewLink ||
+        selectedFile.url;
+
+
+    document.getElementById(
+        "newFileName"
+    ).value =
+        selectedFile.name;
+}
+
+
+/* =========================================================
+   HIDE FILE
+   ========================================================= */
+
+function hideSelectedFile() {
+
+    document.getElementById(
+        "fileBox"
+    ).style.display = "none";
+}
+
+
+/* =========================================================
+   UPLOAD
+   ========================================================= */
+
+async function uploadFile() {
+
+    if (!requireAuth()) {
+        return;
+    }
+
+
+    const input =
+        document.getElementById(
+            "fileInput"
+        );
+
+
+    if (
+        !input.files ||
+        input.files.length === 0
+    ) {
+
+        setStatus(
+            "Please select a file first.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const file =
+        input.files[0];
+
+
+    setStatus(
+        "Uploading:\n" +
+        file.name,
+        "info"
+    );
+
+
+    try {
+
+        const metadata = {
+
+            name:
+                file.name,
+
+            mimeType:
+                file.type ||
+                "application/octet-stream",
+
+            parents:
+                [FOLDER_ID]
+
+        };
+
+
+        const boundary =
+            "----DriveUploadBoundary" +
+            Date.now();
+
+
+        const delimiter =
+            "--" +
+            boundary +
+            "\r\n";
+
+
+        const closeDelimiter =
+            "\r\n--" +
+            boundary +
+            "--";
+
+
+        const metadataPart =
+            delimiter +
+            "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+            JSON.stringify(metadata) +
+            "\r\n";
+
+
+        const mediaPart =
+            delimiter +
+            "Content-Type: " +
+            (
+                file.type ||
+                "application/octet-stream"
+            ) +
+            "\r\n\r\n";
+
+
+        const body =
+            new Blob(
+                [
+                    metadataPart,
+                    mediaPart,
+                    file,
+                    closeDelimiter
+                ],
+                {
+                    type:
+                        "multipart/related; boundary=" +
+                        boundary
+                }
             );
 
+
+        const response =
+            await fetch(
+                "https://www.googleapis.com/upload/drive/v3/files" +
+                "?uploadType=multipart" +
+                "&fields=id,name,mimeType,webViewLink,parents",
+                {
+
+                    method: "POST",
+
+                    headers: {
+
+                        Authorization:
+                            "Bearer " +
+                            accessToken
+
+                    },
+
+                    body:
+                        body
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Upload response:",
+            result
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.error?.message ||
+                "Upload failed."
+            );
         }
+
+
+        selectedFile = {
+
+            id:
+                result.id,
+
+            name:
+                result.name,
+
+            mimeType:
+                result.mimeType,
+
+            url:
+                result.webViewLink || "",
+
+            webViewLink:
+                result.webViewLink || ""
+
+        };
+
+
+        showSelectedFile();
+
+
+        setStatus(
+            "Upload successful!\n\n" +
+            "Name: " +
+            result.name +
+            "\n\nID: " +
+            result.id,
+            "success"
+        );
+
+
+        input.value = "";
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        setStatus(
+            "Upload failed:\n\n" +
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   OPEN FILE
+   ========================================================= */
+
+function openSelectedFile() {
+
+    if (!selectedFile) {
+
+        setStatus(
+            "Please select a file first.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const url =
+        selectedFile.webViewLink ||
+        selectedFile.url ||
+        (
+            "https://drive.google.com/open?id=" +
+            encodeURIComponent(
+                selectedFile.id
+            )
+        );
+
+
+    window.open(
+        url,
+        "_blank",
+        "noopener,noreferrer"
     );
 }
 
 
 /* =========================================================
-   INITIAL
+   RENAME / UPDATE
    ========================================================= */
 
-status(
-    "Page loaded.\n\n" +
-    "Waiting for Google API and Google Identity Services..."
-);
+async function renameSelectedFile() {
 
-</script>
-
-
-<!-- Google API -->
-<script
-    src="https://apis.google.com/js/api.js"
-    onload="gapiLoaded()">
-</script>
+    if (!requireAuth()) {
+        return;
+    }
 
 
-<!-- Google Identity Services -->
-<script
-    src="https://accounts.google.com/gsi/client"
-    onload="gisLoaded()">
+    if (!selectedFile) {
+
+        setStatus(
+            "Please select a file first.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const input =
+        document.getElementById(
+            "newFileName"
+        );
+
+
+    const newName =
+        input.value.trim();
+
+
+    if (!newName) {
+
+        setStatus(
+            "Please enter a new file name.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    if (
+        newName ===
+        selectedFile.name
+    ) {
+
+        setStatus(
+            "The file name has not changed.",
+            "info"
+        );
+
+        return;
+    }
+
+
+    setStatus(
+        "Updating file name...",
+        "info"
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "https://www.googleapis.com/drive/v3/files/" +
+                encodeURIComponent(
+                    selectedFile.id
+                ) +
+                "?fields=id,name,mimeType,webViewLink",
+                {
+
+                    method: "PATCH",
+
+                    headers: {
+
+                        Authorization:
+                            "Bearer " +
+                            accessToken,
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify({
+                            name: newName
+                        })
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Update response:",
+            result
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.error?.message ||
+                "Update failed."
+            );
+        }
+
+
+        selectedFile.name =
+            result.name;
+
+
+        selectedFile.mimeType =
+            result.mimeType ||
+            selectedFile.mimeType;
+
+
+        selectedFile.webViewLink =
+            result.webViewLink ||
+            selectedFile.webViewLink;
+
+
+        showSelectedFile();
+
+
+        setStatus(
+            "File name updated successfully.\n\n" +
+            "New name: " +
+            selectedFile.name,
+            "success"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        setStatus(
+            "Update failed:\n\n" +
+            error.message,
+            "error"
+        );
+    }
+}
+
+
+/* =========================================================
+   MOVE TO TRASH
+   ========================================================= */
+
+async function trashSelectedFile() {
+
+    if (!requireAuth()) {
+        return;
+    }
+
+
+    if (!selectedFile) {
+
+        setStatus(
+            "Please select a file first.",
+            "error"
+        );
+
+        return;
+    }
+
+
+    const confirmed =
+        confirm(
+            "Move this file to Google Drive Trash?\n\n" +
+            selectedFile.name
+        );
+
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    setStatus(
+        "Moving file to Trash...",
+        "info"
+    );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "https://www.googleapis.com/drive/v3/files/" +
+                encodeURIComponent(
+                    selectedFile.id
+                ) +
+                "?fields=id,name,trashed",
+                {
+
+                    method: "PATCH",
+
+                    headers: {
+
+                        Authorization:
+                            "Bearer " +
+                            accessToken,
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify({
+                            trashed: true
+                        })
+                }
+            );
+
+
+        const result =
+            await response.json();
+
+
+        console.log(
+            "Trash response:",
+            result
+        );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                result.error?.message ||
+                "Could not move file to Trash."
+            );
+        }
+
+
+        const oldName =
+            selectedFile.name;
+
+
+        selectedFile = null;
+
+
+        hideSelectedFile();
+
+
+        setStatus(
+            "File moved to Google Drive Trash.\n\n" +
+            oldName,
+            "success"
+        );
+
+    }
+
+    catch (error) {
+
+        console.error(error);
+
+
+        setStatus(
+            "Trash operation failed:\n\n" +
+            error.message,
+            "error"
+        );
+    }
+}
+
 </script>
 
 </body>
