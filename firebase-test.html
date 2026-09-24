@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firebase Test</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    button {
+      padding: 10px 16px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    .box {
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 15px;
+    }
+
+    #status {
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Firebase Test</h1>
+
+  <div class="box">
+    <strong>Authentication Status:</strong>
+    <div id="authStatus">Connecting...</div>
+  </div>
+
+  <div class="box">
+    <strong>Firebase UID:</strong>
+    <div id="uid">Waiting...</div>
+  </div>
+
+  <div class="box">
+    <button id="saveBtn" disabled>Save Test Data</button>
+    <button id="readBtn" disabled>Read Test Data</button>
+  </div>
+
+  <div class="box">
+    <strong>Status:</strong>
+    <div id="status">Starting...</div>
+  </div>
+
+  <div class="box">
+    <strong>Saved Data:</strong>
+    <pre id="data">No data loaded.</pre>
+  </div>
+
+
+  <script type="module">
+
+    // =========================================================
+    // FIREBASE CONFIGURATION
+    // =========================================================
+
+    import { initializeApp } from
+      "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+
+    import {
+      getAuth,
+      signInAnonymously,
+      onAuthStateChanged
+    } from
+      "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      serverTimestamp
+    } from
+      "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+      authDomain: "mywebapps-e3b63.firebaseapp.com",
+      projectId: "mywebapps-e3b63",
+      storageBucket: "mywebapps-e3b63.firebasestorage.app",
+      messagingSenderId: "46681415809",
+      appId: "1:46681415809:web:c4528b9da97abc310a2d80",
+      measurementId: "G-72NM0QDE46"
+    };
+
+
+    // =========================================================
+    // FIREBASE INITIALIZATION
+    // =========================================================
+
+    const app = initializeApp(firebaseConfig);
+
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+
+    // =========================================================
+    // TEST COLLECTION
+    // =========================================================
+
+    const COLLECTION_NAME = "FirebaseTest";
+
+
+    // =========================================================
+    // PAGE ELEMENTS
+    // =========================================================
+
+    const authStatus = document.getElementById("authStatus");
+    const uidElement = document.getElementById("uid");
+    const statusElement = document.getElementById("status");
+    const dataElement = document.getElementById("data");
+
+    const saveBtn = document.getElementById("saveBtn");
+    const readBtn = document.getElementById("readBtn");
+
+
+    // =========================================================
+    // ANONYMOUS AUTHENTICATION
+    // =========================================================
+
+    signInAnonymously(auth)
+      .then(() => {
+
+        statusElement.textContent =
+          "Anonymous authentication requested...";
+
+      })
+      .catch((error) => {
+
+        console.error(error);
+
+        authStatus.textContent = "Authentication failed";
+        statusElement.textContent =
+          "Authentication Error:\n" +
+          error.code + "\n" +
+          error.message;
+
+      });
+
+
+    // =========================================================
+    // AUTH STATE
+    // =========================================================
+
+    onAuthStateChanged(auth, (user) => {
+
+      if (user) {
+
+        authStatus.textContent =
+          "Authenticated successfully";
+
+        uidElement.textContent =
+          user.uid;
+
+        statusElement.textContent =
+          "Firebase connection and authentication are ready.";
+
+        saveBtn.disabled = false;
+        readBtn.disabled = false;
+
+      } else {
+
+        authStatus.textContent =
+          "Not authenticated";
+
+        uidElement.textContent =
+          "No UID";
+
+        saveBtn.disabled = true;
+        readBtn.disabled = true;
+
+      }
+
+    });
+
+
+    // =========================================================
+    // SAVE TEST DATA
+    // =========================================================
+
+    saveBtn.addEventListener("click", async () => {
+
+      try {
+
+        statusElement.textContent =
+          "Saving test data...";
+
+        const testData = {
+
+          message: "Firebase connection test",
+
+          createdAt: serverTimestamp(),
+
+          browser: navigator.userAgent,
+
+          testTime: new Date().toISOString()
+
+        };
+
+
+        const docRef = await addDoc(
+          collection(db, COLLECTION_NAME),
+          testData
+        );
+
+
+        statusElement.textContent =
+          "Data saved successfully.";
+
+        dataElement.textContent =
+          "Document ID: " + docRef.id;
+
+      }
+
+      catch (error) {
+
+        console.error(error);
+
+        statusElement.textContent =
+          "Save Error:\n" +
+          error.code + "\n" +
+          error.message;
+
+      }
+
+    });
+
+
+    // =========================================================
+    // READ TEST DATA
+    // =========================================================
+
+    readBtn.addEventListener("click", async () => {
+
+      try {
+
+        statusElement.textContent =
+          "Reading data...";
+
+        const snapshot = await getDocs(
+          collection(db, COLLECTION_NAME)
+        );
+
+
+        if (snapshot.empty) {
+
+          dataElement.textContent =
+            "No documents found.";
+
+        }
+
+        else {
+
+          const results = [];
+
+          snapshot.forEach((doc) => {
+
+            results.push({
+
+              id: doc.id,
+
+              data: doc.data()
+
+            });
+
+          });
+
+
+          dataElement.textContent =
+            JSON.stringify(results, null, 2);
+
+        }
+
+
+        statusElement.textContent =
+          "Data read successfully.";
+
+      }
+
+      catch (error) {
+
+        console.error(error);
+
+        statusElement.textContent =
+          "Read Error:\n" +
+          error.code + "\n" +
+          error.message;
+
+      }
+
+    });
+
+  </script>
+
+</body>
+</html>
