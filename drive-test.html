@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Google Drive Test 9 - App Created File</title>
+<title>Google Drive Test 9 - Account Selection</title>
 
 <style>
     body {
@@ -63,11 +63,6 @@
         background: #d93025;
     }
 
-    .success {
-        color: #137333;
-        font-weight: bold;
-    }
-
     input[type="file"] {
         margin: 10px 0;
         width: 100%;
@@ -92,11 +87,11 @@
 
 <div class="container">
 
-    <h1>Google Drive Test 9</h1>
+    <h1>Google Drive Test 9 - Account Selection</h1>
 
     <div class="info">
         <strong>Google Account:</strong>
-        shahid786imran1@gmail.com
+        Account will be selected from Google
     </div>
 
     <div class="info">
@@ -109,7 +104,7 @@
     <h2>1. Google Authorization</h2>
 
     <button id="authorizeBtn" onclick="authorizeDrive()">
-        Authorize Google Drive
+        Select Google Account
     </button>
 
     <button onclick="signOut()">
@@ -136,7 +131,6 @@
     >
         Upload File
     </button>
-
 
     <h2>3. App-Created File</h2>
 
@@ -166,7 +160,6 @@
         <span id="fileUrl">None</span>
 
     </div>
-
 
     <h2>4. File Operations</h2>
 
@@ -219,16 +212,13 @@
         Restore File
     </button>
 
-
     <h2>Status / Test Log</h2>
 
     <div id="log"></div>
 
 </div>
 
-
 <script src="https://accounts.google.com/gsi/client"></script>
-
 
 <script>
 
@@ -240,19 +230,12 @@ const CLIENT_ID =
 "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com";
 
 
-/*
- * اپنی Google Cloud والی EXACT API Key یہاں paste کریں۔
- */
 const API_KEY =
 "AIzaSyBSf3HKUR652Kja3l65D91FvCkQSoxgZDY";
 
 
 const FOLDER_ID =
 "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT";
-
-
-const GOOGLE_ACCOUNT =
-"shahid786imran1@gmail.com";
 
 
 const DRIVE_SCOPE =
@@ -413,17 +396,14 @@ function authorizeDrive() {
 
 
     log(
-        "Requesting Google Drive authorization..."
+        "Opening Google Account Selection..."
     );
 
 
     tokenClient.requestAccessToken({
 
         prompt:
-            "consent",
-
-        login_hint:
-            GOOGLE_ACCOUNT
+            "select_account"
 
     });
 
@@ -510,13 +490,6 @@ async function uploadFile() {
         (file.type || "application/octet-stream")
     );
 
-
-    /*
-     * Multipart upload.
-     *
-     * The file is explicitly created
-     * inside MyWebApps Attachments.
-     */
 
     const metadata = {
 
