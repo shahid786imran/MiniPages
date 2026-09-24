@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyWebApps Drive - Test 2</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 30px 20px;
+      background: #f5f7fa;
+      color: #222;
+    }
+
+    .box {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 3px 15px rgba(0,0,0,.10);
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      margin: 5px;
+    }
+
+    #authorizeBtn {
+      background: #1a73e8;
+      color: white;
+    }
+
+    #openPickerBtn {
+      background: #188038;
+      color: white;
+    }
+
+    #signoutBtn {
+      background: #d93025;
+      color: white;
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    #status {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f1f3f4;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #eef6ff;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .label {
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>Google Drive Test 2</h1>
+
+  <p>
+    This test checks Google Account authorization and Google Picker.
+  </p>
+
+  <p>
+    Target folder:
+    <strong>MyWebApps Attachments</strong>
+  </p>
+
+  <button id="authorizeBtn" disabled>
+    Authorize Google Drive
+  </button>
+
+  <button id="openPickerBtn" disabled>
+    Open Drive Picker
+  </button>
+
+  <button id="signoutBtn" disabled>
+    Sign Out
+  </button>
+
+  <div id="status">
+    Loading Google services...
+  </div>
+
+  <div id="result">
+    <div class="label">Selected File:</div>
+    <div id="fileInfo"></div>
+  </div>
+
+</div>
+
+
+<script>
+  /*
+   * ============================================================
+   * GOOGLE DRIVE CONFIGURATION
+   * ============================================================
+   */
+
+  // Paste your complete OAuth Client ID here.
+  const CLIENT_ID = "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com";
+
+  // Paste your Google Cloud API Key here.
+  const API_KEY = "AIzaSyBSf3HKUR652Kja3l65D91FvCkQSoxgZDY";
+
+  // Google Cloud Project Number.
+  const APP_ID = "46681415809";
+
+  // MyWebApps Attachments folder ID.
+  const FOLDER_ID = "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT";
+
+  // Required OAuth scope.
+  const SCOPES =
+    "https://www.googleapis.com/auth/drive.file";
+
+
+  /*
+   * ============================================================
+   * VARIABLES
+   * ============================================================
+   */
+
+  let tokenClient;
+  let accessToken = null;
+
+  let pickerReady = false;
+  let gisReady = false;
+
+
+  /*
+   * ============================================================
+   * ELEMENTS
+   * ============================================================
+   */
+
+  const authorizeBtn =
+    document.getElementById("authorizeBtn");
+
+  const openPickerBtn =
+    document.getElementById("openPickerBtn");
+
+  const signoutBtn =
+    document.getElementById("signoutBtn");
+
+  const status =
+    document.getElementById("status");
+
+  const result =
+    document.getElementById("result");
+
+  const fileInfo =
+    document.getElementById("fileInfo");
+
+
+  /*
+   * ============================================================
+   * STATUS
+   * ============================================================
+   */
+
+  function setStatus(message) {
+    status.textContent = message;
+  }
+
+
+  /*
+   * ============================================================
+   * GOOGLE API LOADED
+   * ============================================================
+   */
+
+  function gapiLoaded() {
+
+    setStatus("Google API loading...");
+
+    gapi.load("picker", () => {
+
+      pickerReady = true;
+
+      setStatus(
+        "Google Picker loaded.\nWaiting for Google authorization..."
+      );
+
+      checkReady();
+
+    });
+  }
+
+
+  /*
+   * ============================================================
+   * GOOGLE IDENTITY SERVICES LOADED
+   * ============================================================
+   */
+
+  function gisLoaded() {
+
+    tokenClient =
+      google.accounts.oauth2.initTokenClient({
+
+        client_id: CLIENT_ID,
+
+        scope: SCOPES,
+
+        callback: ""
+
+      });
+
+    gisReady = true;
+
+    checkReady();
+  }
+
+
+  /*
+   * ============================================================
+   * CHECK LIBRARIES
+   * ============================================================
+   */
+
+  function checkReady() {
+
+    if (pickerReady && gisReady) {
+
+      authorizeBtn.disabled = false;
+
+      setStatus(
+        "Google services are ready.\n\n" +
+        "Click 'Authorize Google Drive' to continue."
+      );
+    }
+  }
+
+
+  /*
+   * ============================================================
+   * GOOGLE AUTHORIZATION
+   * ============================================================
+   */
+
+  authorizeBtn.addEventListener("click", () => {
+
+    tokenClient.callback = (response) => {
+
+      if (response.error) {
+
+        console.error(response);
+
+        setStatus(
+          "Authorization failed:\n\n" +
+          JSON.stringify(response, null, 2)
+        );
+
+        return;
+      }
+
+      accessToken = response.access_token;
+
+      authorizeBtn.disabled = true;
+      openPickerBtn.disabled = false;
+      signoutBtn.disabled = false;
+
+      setStatus(
+        "Google Drive authorization successful.\n\n" +
+        "Access token received.\n\n" +
+        "You can now open the Drive Picker."
+      );
+    };
+
+
+    tokenClient.requestAccessToken({
+      prompt: "consent"
+    });
+
+  });
+
+
+  /*
+   * ============================================================
+   * OPEN GOOGLE PICKER
+   * ============================================================
+   */
+
+  openPickerBtn.addEventListener("click", () => {
+
+    if (!accessToken) {
+
+      setStatus(
+        "Please authorize Google Drive first."
+      );
+
+      return;
+    }
+
+    createPicker();
+
+  });
+
+
+  /*
+   * ============================================================
+   * CREATE PICKER
+   * ============================================================
+   */
+
+  function createPicker() {
+
+    /*
+     * Start inside MyWebApps Attachments folder.
+     */
+
+    const docsView =
+      new google.picker.DocsView(
+        google.picker.ViewId.DOCS
+      )
+        .setParent(FOLDER_ID)
+        .setIncludeFolders(false);
+
+
+    const picker =
+      new google.picker.PickerBuilder()
+
+        .setOAuthToken(accessToken)
+
+        .setDeveloperKey(API_KEY)
+
+        .setAppId(APP_ID)
+
+        .addView(docsView)
+
+        .setCallback(pickerCallback)
+
+        .setTitle(
+          "Select a file from MyWebApps Attachments"
+        )
+
+        .build();
+
+
+    picker.setVisible(true);
+
+  }
+
+
+  /*
+   * ============================================================
+   * PICKER CALLBACK
+   * ============================================================
+   */
+
+  function pickerCallback(data) {
+
+    if (
+      data.action ===
+      google.picker.Action.PICKED
+    ) {
+
+      const documents =
+        data[google.picker.Response.DOCUMENTS];
+
+      if (!documents || !documents.length) {
+        return;
+      }
+
+      const file = documents[0];
+
+      const fileId =
+        file[google.picker.Document.ID];
+
+      const fileName =
+        file[google.picker.Document.NAME];
+
+      const mimeType =
+        file[google.picker.Document.MIME_TYPE];
+
+      const url =
+        file[google.picker.Document.URL];
+
+
+      result.style.display = "block";
+
+      fileInfo.innerHTML = `
+        <p><strong>Name:</strong> ${escapeHtml(fileName || "")}</p>
+        <p><strong>File ID:</strong> ${escapeHtml(fileId || "")}</p>
+        <p><strong>MIME Type:</strong> ${escapeHtml(mimeType || "")}</p>
+        <p>
+          <strong>URL:</strong>
+          ${
+            url
+              ? `<a href="${escapeHtml(url)}" target="_blank">Open File</a>`
+              : "Not available"
+          }
+        </p>
+      `;
+
+
+      setStatus(
+        "File selected successfully.\n\n" +
+        "File ID:\n" +
+        fileId
+      );
+
+      console.log(
+        "Google Picker response:",
+        data
+      );
+
+    }
+
+    else if (
+      data.action ===
+      google.picker.Action.CANCEL
+    ) {
+
+      setStatus(
+        "Picker was cancelled."
+      );
+
+    }
+
+  }
+
+
+  /*
+   * ============================================================
+   * SIGN OUT
+   * ============================================================
+   */
+
+  signoutBtn.addEventListener("click", () => {
+
+    if (accessToken) {
+
+      google.accounts.oauth2.revoke(
+        accessToken,
+        () => {
+
+          accessToken = null;
+
+          authorizeBtn.disabled = false;
+          openPickerBtn.disabled = true;
+          signoutBtn.disabled = true;
+
+          result.style.display = "none";
+
+          setStatus(
+            "Google authorization revoked.\n\n" +
+            "You can authorize again."
+          );
+
+        }
+      );
+
+    }
+
+  });
+
+
+  /*
+   * ============================================================
+   * HTML ESCAPE
+   * ============================================================
+   */
+
+  function escapeHtml(value) {
+
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+</script>
+
+
+<!-- Google API Loader -->
+<script
+  async
+  defer
+  src="https://apis.google.com/js/api.js"
+  onload="gapiLoaded()">
+</script>
+
+
+<!-- Google Identity Services -->
+<script
+  async
+  defer
+  src="https://accounts.google.com/gsi/client"
+  onload="gisLoaded()">
+</script>
+
+</body>
+</html>
