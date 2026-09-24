@@ -3,75 +3,46 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Firestore + Google Drive Test Page</title>
+<title>Firestore + Drive Content Viewer / Editor Test</title>
 <style>
   :root {
-    --bg: #f4f6fb;
-    --card: #ffffff;
-    --border: #e2e6ef;
-    --text: #1c2333;
-    --muted: #6b7488;
-    --primary: #2f6df6;
-    --primary-dark: #1f57d0;
-    --danger: #d9453f;
-    --ok: #1f9d63;
-    --shadow: 0 2px 10px rgba(20, 30, 60, .07);
+    --bg: #f4f6fb; --card: #fff; --border: #e2e6ef; --text: #1c2333;
+    --muted: #6b7488; --primary: #2f6df6; --primary-dark: #1f57d0;
+    --danger: #d9453f; --ok: #1f9d63;
+    --shadow: 0 2px 10px rgba(20,30,60,.07);
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0;
-    padding: 0 0 60px;
-    background: var(--bg);
-    color: var(--text);
+    margin: 0; padding: 0 0 60px; background: var(--bg); color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    font-size: 15px;
-    line-height: 1.5;
+    font-size: 15px; line-height: 1.5;
   }
-  .wrap { max-width: 900px; margin: 0 auto; padding: 0 18px; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 18px; }
 
-  header.top {
-    background: #fff;
-    border-bottom: 1px solid var(--border);
-    padding: 18px 0;
-    margin-bottom: 26px;
-  }
+  header.top { background: #fff; border-bottom: 1px solid var(--border); padding: 18px 0; margin-bottom: 22px; }
   header.top .wrap { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
   h1 { font-size: 20px; margin: 0; }
   h1 small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); margin-top: 3px; }
+  h1 small code { background: #eef1f7; padding: 1px 6px; border-radius: 5px; }
   .status-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .pill {
-    font-size: 12px;
-    padding: 5px 11px;
-    border-radius: 999px;
-    background: #eef1f7;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    white-space: nowrap;
+    font-size: 12px; padding: 5px 11px; border-radius: 999px; background: #eef1f7;
+    color: var(--muted); border: 1px solid var(--border); white-space: nowrap;
   }
   .pill.ok { background: #e7f7ef; color: var(--ok); border-color: #c6ecda; }
   .pill.err { background: #fdeceb; color: var(--danger); border-color: #f7cfcd; }
 
   .card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    box-shadow: var(--shadow);
-    padding: 20px;
-    margin-bottom: 24px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    box-shadow: var(--shadow); padding: 20px; margin-bottom: 22px;
   }
-  .card h2 { margin: 0 0 16px; font-size: 16px; }
+  .card h2 { margin: 0 0 14px; font-size: 16px; }
 
   label.field { display: block; margin-bottom: 14px; font-weight: 600; font-size: 13px; color: #37405a; }
   label.field span.hint { font-weight: 400; color: var(--muted); }
   input[type="text"], textarea, input[type="file"] {
-    width: 100%;
-    margin-top: 6px;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font: inherit;
-    color: var(--text);
-    background: #fbfcfe;
+    width: 100%; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--border);
+    border-radius: 8px; font: inherit; color: var(--text); background: #fbfcfe;
   }
   input[type="text"]:focus, textarea:focus {
     outline: none; border-color: var(--primary); background: #fff;
@@ -82,15 +53,9 @@
 
   .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
   button {
-    font: inherit;
-    font-weight: 600;
-    padding: 9px 16px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: #fff;
-    color: var(--text);
-    cursor: pointer;
-    transition: background .15s, border-color .15s, opacity .15s;
+    font: inherit; font-weight: 600; padding: 9px 16px; border-radius: 8px;
+    border: 1px solid var(--border); background: #fff; color: var(--text);
+    cursor: pointer; transition: background .15s, border-color .15s, opacity .15s;
   }
   button:hover:not(:disabled) { background: #f3f5fa; }
   button:disabled { opacity: .55; cursor: not-allowed; }
@@ -100,30 +65,71 @@
   button.danger:hover:not(:disabled) { background: #fdf1f0; }
   button.tiny { padding: 5px 11px; font-size: 12.5px; border-radius: 7px; }
 
+  .info-banner {
+    background: #eef4ff; border: 1px solid #d3e0ff; color: #2b4c96;
+    padding: 10px 14px; border-radius: 9px; font-size: 13px; margin-bottom: 16px;
+  }
+
   .existing-att {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-    font-size: 13px; background: #f6f8fc; border: 1px dashed var(--border);
-    border-radius: 8px; padding: 9px 12px; margin: -4px 0 14px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px;
+    background: #f6f8fc; border: 1px dashed var(--border); border-radius: 8px;
+    padding: 9px 12px; margin: -4px 0 14px;
   }
   .existing-att .name { font-weight: 600; word-break: break-all; }
 
   .record {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 15px 17px;
-    margin-bottom: 12px;
-    background: #fff;
+    border: 1px solid var(--border); border-radius: 10px; padding: 15px 17px;
+    margin-bottom: 14px; background: #fff;
   }
   .record h3 { margin: 0 0 5px; font-size: 15.5px; word-break: break-word; }
   .record p.desc { margin: 0 0 8px; color: #495066; white-space: pre-wrap; word-break: break-word; }
-  .record .meta { font-size: 11.5px; color: var(--muted); margin-bottom: 9px; }
-  .record .attachment {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-    background: #f6f8fc; border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px 11px; margin-bottom: 10px; font-size: 13px;
+  .record .meta { font-size: 11.5px; color: var(--muted); margin-bottom: 11px; }
+
+  .attachment-box {
+    border: 1px solid var(--border); border-radius: 9px; background: #fafbfe;
+    padding: 11px 13px; margin-bottom: 11px;
   }
-  .record .attachment .att-name { font-weight: 600; word-break: break-all; flex: 1 1 160px; }
-  .record-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .att-header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 9px; font-size: 13px;
+    margin-bottom: 9px;
+  }
+  .att-header .att-name { font-weight: 600; word-break: break-all; flex: 1 1 180px; }
+  .att-header .att-size { color: var(--muted); font-size: 12px; }
+
+  .content-area { margin-top: 4px; }
+
+  .content-textarea {
+    width: 100%; min-height: 200px; max-height: 480px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px; line-height: 1.55; padding: 12px; border-radius: 8px;
+    border: 1px solid var(--border); background: #fff; resize: vertical;
+  }
+  .content-textarea[readonly] { background: #f9fafc; }
+  .content-textarea:focus { outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(47,109,246,.12); }
+
+  .content-actions {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px;
+  }
+  .save-status { font-size: 12.5px; color: var(--muted); }
+  .save-status.ok { color: var(--ok); font-weight: 600; }
+  .save-status.err { color: var(--danger); font-weight: 600; }
+
+  .content-image {
+    display: block; max-width: 100%; max-height: 480px;
+    border-radius: 8px; border: 1px solid var(--border); background: #fff;
+  }
+  .content-pdf {
+    width: 100%; height: 480px; border: 1px solid var(--border);
+    border-radius: 8px; background: #fff;
+  }
+  .content-other, .load-error, .loading {
+    font-size: 13px; color: var(--muted); padding: 12px;
+    background: #fff; border: 1px dashed var(--border); border-radius: 8px;
+  }
+  .load-error { color: var(--danger); border-color: #f7cfcd; background: #fdf1f0; }
+
+  .record-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 
   .empty { color: var(--muted); font-style: italic; margin: 0; }
   .notice { font-size: 13px; color: var(--muted); margin: 0 0 14px; }
@@ -131,7 +137,7 @@
   #toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 99; }
   .toast {
     background: #232b3d; color: #fff; padding: 11px 15px; border-radius: 9px;
-    font-size: 13.5px; max-width: 330px; box-shadow: 0 6px 20px rgba(10,15,30,.25);
+    font-size: 13.5px; max-width: 340px; box-shadow: 0 6px 20px rgba(10,15,30,.25);
     transition: opacity .3s, transform .3s;
   }
   .toast.error { background: #b8332d; }
@@ -144,7 +150,7 @@
 <header class="top">
   <div class="wrap">
     <h1>
-      Firestore + Google Drive Test Page
+      Firestore + Drive Inline Content Test
       <small>Collection: <code>Test-FireStore-Collection-Name</code></small>
     </h1>
     <div class="status-group">
@@ -157,11 +163,17 @@
 
 <div class="wrap">
 
+  <div class="info-banner">
+    <strong>Inline content test:</strong> Text files (.txt, .md, .csv, .json, .xml, code etc.)
+    load directly into an editable box. Images show as preview. PDFs embed. You can edit
+    text content and save it back to the same Drive file — the file ID stays the same.
+  </div>
+
   <section class="card">
     <h2 id="formTitle">Add New Record</h2>
     <p class="notice">
-      Records are stored in Firestore. Attachments are uploaded to the Google Drive folder
-      “MyWebApps Attachments”. Only files created by this page are ever accessed.
+      Metadata is stored in Firestore. The file itself goes to “MyWebApps Attachments” on
+      Google Drive. Only files created by this page are ever accessed.
     </p>
     <form id="recordForm" novalidate>
       <label class="field">
@@ -197,7 +209,6 @@
 
 <div id="toasts"></div>
 
-<!-- Google Identity Services (OAuth token client) -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <script type="module">
@@ -225,6 +236,11 @@ const DRIVE_CONFIG = {
 /* The Firestore top-level collection for THIS page only. */
 const FIRESTORE_COLLECTION_NAME = "Test-FireStore-Collection-Name";
 
+/* Limits */
+const MAX_UPLOAD_BYTES        = 25 * 1024 * 1024;   // 25 MB upload limit
+const MAX_INLINE_TEXT_BYTES   = 500 * 1024;         // 500 KB text preview limit
+const MAX_INLINE_IMAGE_BYTES  = 5 * 1024 * 1024;    // 5 MB image preview limit
+
 /* ============================================================
    ==============  END OF CONFIGURATION  ======================
    ============================================================ */
@@ -245,48 +261,60 @@ const db   = getFirestore(firebaseApp);
 const recordsCol = collection(db, FIRESTORE_COLLECTION_NAME);
 
 /* ---------- DOM refs ---------- */
-const authStatusEl        = document.getElementById('authStatus');
-const driveStatusEl       = document.getElementById('driveStatus');
-const connectDriveBtn     = document.getElementById('connectDriveBtn');
-const formTitleEl         = document.getElementById('formTitle');
-const recordForm          = document.getElementById('recordForm');
-const titleInput          = document.getElementById('titleInput');
-const descriptionInput    = document.getElementById('descriptionInput');
-const fileInput           = document.getElementById('fileInput');
-const existingAttEl       = document.getElementById('existingAttachment');
-const submitBtn           = document.getElementById('submitBtn');
-const cancelEditBtn       = document.getElementById('cancelEditBtn');
-const listEl              = document.getElementById('list');
-const toastsEl            = document.getElementById('toasts');
+const authStatusEl     = document.getElementById('authStatus');
+const driveStatusEl    = document.getElementById('driveStatus');
+const connectDriveBtn  = document.getElementById('connectDriveBtn');
+const formTitleEl      = document.getElementById('formTitle');
+const recordForm       = document.getElementById('recordForm');
+const titleInput       = document.getElementById('titleInput');
+const descriptionInput = document.getElementById('descriptionInput');
+const fileInput        = document.getElementById('fileInput');
+const existingAttEl    = document.getElementById('existingAttachment');
+const submitBtn        = document.getElementById('submitBtn');
+const cancelEditBtn    = document.getElementById('cancelEditBtn');
+const listEl           = document.getElementById('list');
+const toastsEl         = document.getElementById('toasts');
 
-/* ---------- State (in-memory only — no browser storage) ---------- */
-let currentUser            = null;
-let unsubscribeSnapshot    = null;
-let editingId              = null;
-let existingAttachment     = null;   // attachment object of the record being edited
-let removeExistingAtt      = false;  // user asked to remove the current attachment
+/* ---------- State ---------- */
+let currentUser         = null;
+let unsubscribeSnapshot = null;
+let editingId           = null;
+let existingAttachment  = null;
+let removeExistingAtt   = false;
 
-const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MB
+/* In-memory content cache: fileId -> { kind, text?, objectUrl? } */
+const contentCache = new Map();
 
 /* ============================================================
-   Toasts
+   Toasts + helpers
    ============================================================ */
 function showToast(message, type = 'info') {
   const el = document.createElement('div');
   el.className = 'toast' + (type === 'error' ? ' error' : type === 'ok' ? ' ok' : '');
   el.textContent = message;
   toastsEl.appendChild(el);
-  setTimeout(() => {
-    el.classList.add('hide');
-    setTimeout(() => el.remove(), 320);
-  }, 4200);
+  setTimeout(() => { el.classList.add('hide'); setTimeout(() => el.remove(), 320); }, 4200);
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function isTextMime(mime) {
+  if (!mime) return false;
+  if (mime.startsWith('text/')) return true;
+  return /json|xml|javascript|ecmascript|yaml|csv|markdown/.test(mime);
+}
+function isImageMime(mime) { return !!mime && mime.startsWith('image/'); }
+function isPdfMime(mime)   { return mime === 'application/pdf'; }
+
 /* ============================================================
-   Google Drive — OAuth token client (drive.file scope)
+   Google Drive — OAuth (drive.file scope)
    ============================================================ */
-let tokenClient    = null;
-let accessToken    = null;
+let tokenClient = null;
+let accessToken = null;
 let tokenExpiresAt = 0;
 let pendingResolve = null;
 let pendingReject  = null;
@@ -296,9 +324,8 @@ function waitForGoogle(timeoutMs = 12000) {
     const started = Date.now();
     (function check() {
       if (window.google && google.accounts && google.accounts.oauth2) return resolve();
-      if (Date.now() - started > timeoutMs) {
-        return reject(new Error('Google Identity Services failed to load. Check your connection.'));
-      }
+      if (Date.now() - started > timeoutMs)
+        return reject(new Error('Google Identity Services failed to load.'));
       setTimeout(check, 100);
     })();
   });
@@ -311,15 +338,13 @@ function initTokenClient() {
     callback: (resp) => {
       const resolve = pendingResolve, reject = pendingReject;
       pendingResolve = pendingReject = null;
-
       if (resp && resp.error) {
         setDriveStatus('not connected', false);
         reject && reject(new Error(resp.error_description || resp.error));
         return;
       }
       accessToken = resp.access_token;
-      const expiresIn = Number(resp.expires_in || 3600);
-      tokenExpiresAt = Date.now() + (expiresIn * 1000) - 60000; // refresh 1 min early
+      tokenExpiresAt = Date.now() + (Number(resp.expires_in || 3600) * 1000) - 60000;
       setDriveStatus('connected', true);
       resolve && resolve(accessToken);
     },
@@ -334,19 +359,13 @@ function initTokenClient() {
 
 async function getAccessToken() {
   if (accessToken && Date.now() < tokenExpiresAt) return accessToken;
-
   await waitForGoogle();
   if (!tokenClient) initTokenClient();
-
   return new Promise((resolve, reject) => {
     pendingResolve = resolve;
     pendingReject  = reject;
-    try {
-      tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' });
-    } catch (e) {
-      pendingResolve = pendingReject = null;
-      reject(e);
-    }
+    try { tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' }); }
+    catch (e) { pendingResolve = pendingReject = null; reject(e); }
   });
 }
 
@@ -356,21 +375,16 @@ function setDriveStatus(text, ok) {
 }
 
 /* ============================================================
-   Google Drive — file operations (drive.file scope only)
+   Google Drive — file ops
    ============================================================ */
 
-/** Uploads a File into the configured "MyWebApps Attachments" folder. */
+/** Upload a new file to the configured folder. */
 async function uploadFileToDrive(file) {
-  if (file.size > MAX_UPLOAD_BYTES) {
+  if (file.size > MAX_UPLOAD_BYTES)
     throw new Error('File is larger than the 25 MB limit.');
-  }
 
   const token = await getAccessToken();
-
-  const metadata = {
-    name: file.name || 'attachment',
-    parents: [DRIVE_CONFIG.folderId]
-  };
+  const metadata = { name: file.name || 'attachment', parents: [DRIVE_CONFIG.folderId] };
 
   const boundary = 'mywebapps_boundary_' + Date.now() + '_' + Math.random().toString(36).slice(2);
   const body = new Blob([
@@ -412,33 +426,59 @@ async function uploadFileToDrive(file) {
   };
 }
 
-/** Deletes a Drive file previously created/uploaded by this page. */
+/** Update the CONTENT of an existing Drive file (same fileId). */
+async function updateFileContent(fileId, newContent, mimeType) {
+  const token = await getAccessToken();
+  const res = await fetch(
+    `https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(fileId)}`
+    + `?uploadType=media&supportsAllDrives=true&fields=id,name,mimeType,size,modifiedTime`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Authorization': 'Bearer ' + token,
+        'Content-Type': mimeType || 'text/plain'
+      },
+      body: newContent
+    }
+  );
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error('Content update failed (' + res.status + '). ' + errText.slice(0, 200));
+  }
+  return await res.json();
+}
+
+/** Delete a Drive file created/uploaded by this page. */
 async function deleteDriveFile(fileId) {
   const token = await getAccessToken();
   const res = await fetch(
     `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`,
     { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }
   );
-  // 404 means it is already gone — treat as success.
   if (!res.ok && res.status !== 404) {
     const errText = await res.text().catch(() => '');
     throw new Error('Drive delete failed (' + res.status + '). ' + errText.slice(0, 200));
   }
 }
 
-/** Downloads a Drive file created by this page as a blob. */
-async function downloadDriveFile(attachment) {
+/** Fetch the raw content (blob URL or text) of a Drive file. */
+async function fetchFileBlob(fileId) {
   const token = await getAccessToken();
   const res = await fetch(
-    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(attachment.fileId)}` +
-    `?alt=media&supportsAllDrives=true`,
+    `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}`
+    + `?alt=media&supportsAllDrives=true`,
     { headers: { 'Authorization': 'Bearer ' + token } }
   );
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
-    throw new Error('Drive download failed (' + res.status + '). ' + errText.slice(0, 200));
+    throw new Error('Fetch failed (' + res.status + '). ' + errText.slice(0, 200));
   }
-  const blob = await res.blob();
+  return await res.blob();
+}
+
+/** Download a Drive file to the user's disk. */
+async function downloadDriveFile(attachment) {
+  const blob = await fetchFileBlob(attachment.fileId);
   const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = objectUrl;
@@ -450,7 +490,7 @@ async function downloadDriveFile(attachment) {
 }
 
 /* ============================================================
-   Firebase Anonymous Authentication (no login screen)
+   Firebase Anonymous Auth
    ============================================================ */
 onAuthStateChanged(auth, (user) => {
   if (user) {
@@ -476,9 +516,7 @@ signInAnonymously(auth).catch((err) => {
    ============================================================ */
 function startListening() {
   if (unsubscribeSnapshot) return;
-
   const q = query(recordsCol, orderBy('createdAt', 'desc'));
-
   unsubscribeSnapshot = onSnapshot(q, (snap) => {
     const records = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     renderList(records);
@@ -488,7 +526,7 @@ function startListening() {
 }
 
 /* ============================================================
-   Rendering
+   Formatting helpers
    ============================================================ */
 function formatDate(value) {
   if (!value) return '…';
@@ -496,22 +534,21 @@ function formatDate(value) {
     const d = typeof value.toDate === 'function' ? value.toDate() : new Date(value);
     if (isNaN(d.getTime())) return '…';
     return d.toLocaleString();
-  } catch {
-    return '…';
-  }
+  } catch { return '…'; }
 }
-
 function formatSize(bytes) {
   const n = Number(bytes);
   if (!n || isNaN(n)) return '';
   if (n < 1024) return n + ' B';
   if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
-  return (n / (1024 * 1024)).toFixed(1) + ' MB';
+  return (n / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
+/* ============================================================
+   Render list + record cards
+   ============================================================ */
 function renderList(records) {
   listEl.innerHTML = '';
-
   if (!records.length) {
     const p = document.createElement('p');
     p.className = 'empty';
@@ -519,102 +556,267 @@ function renderList(records) {
     listEl.appendChild(p);
     return;
   }
+  records.forEach((rec) => listEl.appendChild(buildRecordCard(rec)));
+}
 
-  records.forEach((rec) => {
-    const card = document.createElement('div');
-    card.className = 'record';
+function buildRecordCard(rec) {
+  const card = document.createElement('div');
+  card.className = 'record';
 
-    const h3 = document.createElement('h3');
-    h3.textContent = rec.title || '(untitled)';
-    card.appendChild(h3);
+  const h3 = document.createElement('h3');
+  h3.textContent = rec.title || '(untitled)';
+  card.appendChild(h3);
 
-    if (rec.description) {
-      const p = document.createElement('p');
-      p.className = 'desc';
-      p.textContent = rec.description;
-      card.appendChild(p);
+  if (rec.description) {
+    const p = document.createElement('p');
+    p.className = 'desc';
+    p.textContent = rec.description;
+    card.appendChild(p);
+  }
+
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = 'Created: ' + formatDate(rec.createdAt)
+    + (rec.updatedAt ? '  ·  Updated: ' + formatDate(rec.updatedAt) : '');
+  card.appendChild(meta);
+
+  /* ---- Attachment box (with inline content) ---- */
+  if (rec.attachment && rec.attachment.fileId) {
+    const box = document.createElement('div');
+    box.className = 'attachment-box';
+
+    const header = document.createElement('div');
+    header.className = 'att-header';
+
+    const icon = document.createElement('span'); icon.textContent = '📎';
+    header.appendChild(icon);
+
+    const name = document.createElement('span');
+    name.className = 'att-name';
+    name.textContent = rec.attachment.name || 'Attachment';
+    header.appendChild(name);
+
+    const sizeEl = document.createElement('span');
+    sizeEl.className = 'att-size';
+    sizeEl.textContent = formatSize(rec.attachment.size);
+    header.appendChild(sizeEl);
+
+    if (rec.attachment.webViewLink) {
+      const openBtn = document.createElement('button');
+      openBtn.type = 'button'; openBtn.className = 'tiny'; openBtn.textContent = 'Open in Drive';
+      openBtn.addEventListener('click', () =>
+        window.open(rec.attachment.webViewLink, '_blank', 'noopener'));
+      header.appendChild(openBtn);
     }
 
-    const meta = document.createElement('div');
-    meta.className = 'meta';
-    meta.textContent = 'Created: ' + formatDate(rec.createdAt) +
-      (rec.updatedAt ? '  ·  Updated: ' + formatDate(rec.updatedAt) : '');
-    card.appendChild(meta);
+    const dlBtn = document.createElement('button');
+    dlBtn.type = 'button'; dlBtn.className = 'tiny'; dlBtn.textContent = 'Download';
+    dlBtn.addEventListener('click', async () => {
+      dlBtn.disabled = true; dlBtn.textContent = 'Downloading…';
+      try { await downloadDriveFile(rec.attachment); }
+      catch (err) { showToast(err.message, 'error'); }
+      finally { dlBtn.disabled = false; dlBtn.textContent = 'Download'; }
+    });
+    header.appendChild(dlBtn);
 
-    if (rec.attachment && rec.attachment.fileId) {
-      const att = document.createElement('div');
-      att.className = 'attachment';
+    box.appendChild(header);
 
-      const icon = document.createElement('span');
-      icon.textContent = '📎';
-      att.appendChild(icon);
+    const contentArea = document.createElement('div');
+    contentArea.className = 'content-area';
+    box.appendChild(contentArea);
 
-      const name = document.createElement('span');
-      name.className = 'att-name';
-      name.textContent = rec.attachment.name || 'Attachment' +
-        (rec.attachment.size ? '  (' + formatSize(rec.attachment.size) + ')' : '');
-      att.appendChild(name);
+    /* Lazy-load / cache-check content */
+    loadContent(rec, contentArea);
 
-      if (rec.attachment.webViewLink) {
-        const openBtn = document.createElement('button');
-        openBtn.type = 'button';
-        openBtn.className = 'tiny';
-        openBtn.textContent = 'Open';
-        openBtn.addEventListener('click', () => {
-          window.open(rec.attachment.webViewLink, '_blank', 'noopener');
-        });
-        att.appendChild(openBtn);
-      }
+    card.appendChild(box);
+  }
 
-      const dlBtn = document.createElement('button');
-      dlBtn.type = 'button';
-      dlBtn.className = 'tiny';
-      dlBtn.textContent = 'Download';
-      dlBtn.addEventListener('click', async () => {
-        dlBtn.disabled = true;
-        dlBtn.textContent = 'Downloading…';
-        try {
-          await downloadDriveFile(rec.attachment);
-        } catch (err) {
-          showToast(err.message, 'error');
-        } finally {
-          dlBtn.disabled = false;
-          dlBtn.textContent = 'Download';
-        }
-      });
-      att.appendChild(dlBtn);
+  /* ---- Record actions ---- */
+  const actions = document.createElement('div');
+  actions.className = 'record-actions';
 
-      card.appendChild(att);
-    }
+  const editBtn = document.createElement('button');
+  editBtn.type = 'button'; editBtn.className = 'tiny'; editBtn.textContent = 'Edit Record';
+  editBtn.addEventListener('click', () => startEdit(rec));
+  actions.appendChild(editBtn);
 
-    const actions = document.createElement('div');
-    actions.className = 'record-actions';
+  const delBtn = document.createElement('button');
+  delBtn.type = 'button'; delBtn.className = 'tiny danger'; delBtn.textContent = 'Delete';
+  delBtn.addEventListener('click', () => deleteRecord(rec, delBtn));
+  actions.appendChild(delBtn);
 
-    const editBtn = document.createElement('button');
-    editBtn.type = 'button';
-    editBtn.className = 'tiny';
-    editBtn.textContent = 'Edit';
-    editBtn.addEventListener('click', () => startEdit(rec));
-    actions.appendChild(editBtn);
-
-    const delBtn = document.createElement('button');
-    delBtn.type = 'button';
-    delBtn.className = 'tiny danger';
-    delBtn.textContent = 'Delete';
-    delBtn.addEventListener('click', () => deleteRecord(rec, delBtn));
-    actions.appendChild(delBtn);
-
-    card.appendChild(actions);
-    listEl.appendChild(card);
-  });
+  card.appendChild(actions);
+  return card;
 }
 
 /* ============================================================
-   Form: add / edit
+   Inline content loading + editing
+   ============================================================ */
+function loadContent(record, container) {
+  const att = record.attachment;
+  if (!att || !att.fileId) return;
+
+  /* Cached? Render immediately. */
+  if (contentCache.has(att.fileId)) {
+    renderCachedContent(record, container, contentCache.get(att.fileId));
+    return;
+  }
+
+  const mime = att.mimeType || '';
+  const size = att.size || 0;
+
+  /* Unsupported or too big for inline. */
+  if ((!isTextMime(mime) && !isImageMime(mime) && !isPdfMime(mime))
+      || (isTextMime(mime) && size > MAX_INLINE_TEXT_BYTES)
+      || (isImageMime(mime) && size > MAX_INLINE_IMAGE_BYTES)) {
+    contentCache.set(att.fileId, { kind: 'other' });
+    renderCachedContent(record, container, contentCache.get(att.fileId));
+    return;
+  }
+
+  container.innerHTML = '<div class="loading">Loading content…</div>';
+  fetchAndRender(record, container);
+}
+
+async function fetchAndRender(record, container) {
+  const att = record.attachment;
+  const mime = att.mimeType || '';
+  try {
+    if (isTextMime(mime)) {
+      const blob = await fetchFileBlob(att.fileId);
+      const text = await blob.text();
+      contentCache.set(att.fileId, { kind: 'text', text });
+    } else if (isImageMime(mime) || isPdfMime(mime)) {
+      const blob = await fetchFileBlob(att.fileId);
+      const objectUrl = URL.createObjectURL(blob);
+      contentCache.set(att.fileId, {
+        kind: isImageMime(mime) ? 'image' : 'pdf',
+        objectUrl
+      });
+    } else {
+      contentCache.set(att.fileId, { kind: 'other' });
+    }
+    if (container.isConnected) {
+      renderCachedContent(record, container, contentCache.get(att.fileId));
+    }
+  } catch (err) {
+    if (container.isConnected) {
+      container.innerHTML = '<div class="load-error">Could not load content: '
+        + escapeHtml(err.message) + '</div>';
+    }
+  }
+}
+
+function renderCachedContent(record, container, cached) {
+  container.innerHTML = '';
+
+  if (cached.kind === 'text') {
+    const textarea = document.createElement('textarea');
+    textarea.className = 'content-textarea';
+    textarea.value = cached.text;
+    textarea.readOnly = true;
+    textarea.spellcheck = false;
+    container.appendChild(textarea);
+
+    const bar = document.createElement('div');
+    bar.className = 'content-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button'; editBtn.className = 'tiny'; editBtn.textContent = 'Edit Content';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button'; saveBtn.className = 'tiny primary';
+    saveBtn.textContent = 'Save Content'; saveBtn.hidden = true;
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button'; cancelBtn.className = 'tiny';
+    cancelBtn.textContent = 'Cancel'; cancelBtn.hidden = true;
+
+    const status = document.createElement('span');
+    status.className = 'save-status';
+
+    editBtn.addEventListener('click', () => {
+      textarea.readOnly = false;
+      textarea.focus();
+      editBtn.hidden = true; saveBtn.hidden = false; cancelBtn.hidden = false;
+      status.textContent = ''; status.className = 'save-status';
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      textarea.value = cached.text;
+      textarea.readOnly = true;
+      editBtn.hidden = false; saveBtn.hidden = true; cancelBtn.hidden = true;
+      status.textContent = ''; status.className = 'save-status';
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      const newText = textarea.value;
+      saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
+      status.textContent = ''; status.className = 'save-status';
+      try {
+        const mime = record.attachment.mimeType || 'text/plain';
+        const updated = await updateFileContent(record.attachment.fileId, newText, mime);
+
+        /* Update cache */
+        cached.text = newText;
+
+        /* Update Firestore metadata (size + lastModified) */
+        const newSize = (updated && updated.size) ? Number(updated.size)
+                                                 : new Blob([newText]).size;
+        const lastModified = (updated && updated.modifiedTime)
+          ? updated.modifiedTime : new Date().toISOString();
+
+        await updateDoc(doc(db, FIRESTORE_COLLECTION_NAME, record.id), {
+          'attachment.size': newSize,
+          'attachment.lastModified': lastModified,
+          updatedAt: serverTimestamp()
+        });
+
+        textarea.readOnly = true;
+        editBtn.hidden = false; saveBtn.hidden = true; cancelBtn.hidden = true;
+        status.textContent = '✓ Content saved to Drive';
+        status.className = 'save-status ok';
+      } catch (err) {
+        status.textContent = '✗ ' + err.message;
+        status.className = 'save-status err';
+      } finally {
+        saveBtn.disabled = false; saveBtn.textContent = 'Save Content';
+      }
+    });
+
+    bar.appendChild(editBtn);
+    bar.appendChild(saveBtn);
+    bar.appendChild(cancelBtn);
+    bar.appendChild(status);
+    container.appendChild(bar);
+
+  } else if (cached.kind === 'image') {
+    const img = document.createElement('img');
+    img.className = 'content-image';
+    img.src = cached.objectUrl;
+    img.alt = record.attachment.name || 'attachment';
+    container.appendChild(img);
+
+  } else if (cached.kind === 'pdf') {
+    const iframe = document.createElement('iframe');
+    iframe.className = 'content-pdf';
+    iframe.src = cached.objectUrl;
+    iframe.title = record.attachment.name || 'PDF';
+    container.appendChild(iframe);
+
+  } else {
+    const div = document.createElement('div');
+    div.className = 'content-other';
+    div.textContent = 'This file type cannot be previewed inline. Use Download or Open in Drive.';
+    container.appendChild(div);
+  }
+}
+
+/* ============================================================
+   Top form: add / edit
    ============================================================ */
 function renderExistingAttachment() {
   existingAttEl.innerHTML = '';
-
   if (!existingAttachment) return;
 
   const box = document.createElement('div');
@@ -624,34 +826,19 @@ function renderExistingAttachment() {
     const msg = document.createElement('span');
     msg.textContent = 'Current attachment will be removed on save.';
     box.appendChild(msg);
-
     const undo = document.createElement('button');
-    undo.type = 'button';
-    undo.className = 'tiny';
-    undo.textContent = 'Undo';
-    undo.addEventListener('click', () => {
-      removeExistingAtt = false;
-      renderExistingAttachment();
-    });
+    undo.type = 'button'; undo.className = 'tiny'; undo.textContent = 'Undo';
+    undo.addEventListener('click', () => { removeExistingAtt = false; renderExistingAttachment(); });
     box.appendChild(undo);
   } else {
-    const label = document.createElement('span');
-    label.textContent = 'Current attachment:';
+    const label = document.createElement('span'); label.textContent = 'Current attachment:';
     box.appendChild(label);
-
-    const name = document.createElement('span');
-    name.className = 'name';
+    const name = document.createElement('span'); name.className = 'name';
     name.textContent = existingAttachment.name || 'Attachment';
     box.appendChild(name);
-
     const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.className = 'tiny danger';
-    remove.textContent = 'Remove';
-    remove.addEventListener('click', () => {
-      removeExistingAtt = true;
-      renderExistingAttachment();
-    });
+    remove.type = 'button'; remove.className = 'tiny danger'; remove.textContent = 'Remove';
+    remove.addEventListener('click', () => { removeExistingAtt = true; renderExistingAttachment(); });
     box.appendChild(remove);
   }
 
@@ -679,10 +866,8 @@ function resetForm() {
   editingId          = null;
   existingAttachment = null;
   removeExistingAtt  = false;
-
   recordForm.reset();
   existingAttEl.innerHTML = '';
-
   formTitleEl.textContent = 'Add New Record';
   submitBtn.textContent   = 'Save Record';
   cancelEditBtn.hidden    = true;
@@ -692,23 +877,15 @@ cancelEditBtn.addEventListener('click', resetForm);
 
 recordForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-
-  if (!currentUser) {
-    showToast('Still signing in — please try again in a moment.', 'error');
-    return;
-  }
+  if (!currentUser) { showToast('Still signing in — please try again.', 'error'); return; }
 
   const title = titleInput.value.trim();
   const description = descriptionInput.value.trim();
   const file = fileInput.files && fileInput.files[0] ? fileInput.files[0] : null;
 
-  if (!title) {
-    showToast('Title is required.', 'error');
-    titleInput.focus();
-    return;
-  }
+  if (!title) { showToast('Title is required.', 'error'); titleInput.focus(); return; }
 
-  const originalSubmitText = submitBtn.textContent;
+  const originalText = submitBtn.textContent;
   submitBtn.disabled = true;
   submitBtn.textContent = file ? 'Uploading…' : 'Saving…';
 
@@ -716,118 +893,95 @@ recordForm.addEventListener('submit', async (e) => {
     let attachment = existingAttachment;
 
     if (file) {
-      // Upload the new file first, then remove the old one.
       const uploaded = await uploadFileToDrive(file);
       if (existingAttachment && existingAttachment.fileId) {
         try {
           await deleteDriveFile(existingAttachment.fileId);
-        } catch (cleanupErr) {
-          console.warn('Old attachment could not be removed:', cleanupErr);
-        }
+          /* Drop stale cache entry + revoke object URL */
+          const stale = contentCache.get(existingAttachment.fileId);
+          if (stale && stale.objectUrl) URL.revokeObjectURL(stale.objectUrl);
+          contentCache.delete(existingAttachment.fileId);
+        } catch (cleanupErr) { console.warn('Old attachment could not be removed:', cleanupErr); }
       }
       attachment = uploaded;
     } else if (removeExistingAtt && existingAttachment) {
-      try {
-        await deleteDriveFile(existingAttachment.fileId);
-      } catch (cleanupErr) {
-        console.warn('Attachment could not be removed:', cleanupErr);
-        showToast('Note: the old Drive file could not be deleted.', 'error');
-      }
+      try { await deleteDriveFile(existingAttachment.fileId); }
+      catch (cleanupErr) { showToast('Note: old Drive file could not be deleted.', 'error'); }
+      const stale = contentCache.get(existingAttachment.fileId);
+      if (stale && stale.objectUrl) URL.revokeObjectURL(stale.objectUrl);
+      contentCache.delete(existingAttachment.fileId);
       attachment = null;
     }
 
     if (editingId) {
       await updateDoc(doc(db, FIRESTORE_COLLECTION_NAME, editingId), {
-        title,
-        description,
-        attachment,
-        updatedAt: serverTimestamp()
+        title, description, attachment, updatedAt: serverTimestamp()
       });
       showToast('Record updated.', 'ok');
     } else {
       await addDoc(recordsCol, {
-        title,
-        description,
-        attachment,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        title, description, attachment,
+        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
       });
       showToast('Record saved.', 'ok');
     }
-
     resetForm();
   } catch (err) {
     showToast(err.message || 'Something went wrong.', 'error');
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = originalSubmitText === 'Uploading…' || originalSubmitText === 'Saving…'
-      ? (editingId ? 'Update Record' : 'Save Record')
-      : originalSubmitText;
+    submitBtn.textContent = originalText === 'Uploading…' || originalText === 'Saving…'
+      ? (editingId ? 'Update Record' : 'Save Record') : originalText;
   }
 });
 
 /* ============================================================
-   Delete record (Drive attachment first, then Firestore doc)
+   Delete record (Drive first, then Firestore doc)
    ============================================================ */
 async function deleteRecord(rec, buttonEl) {
-  if (!currentUser) {
-    showToast('Still signing in — please try again.', 'error');
-    return;
-  }
+  if (!currentUser) { showToast('Still signing in — please try again.', 'error'); return; }
 
-  const hasAttachment = rec.attachment && rec.attachment.fileId;
-  const confirmMsg = hasAttachment
+  const hasAtt = rec.attachment && rec.attachment.fileId;
+  const msg = hasAtt
     ? 'Delete this record and its Drive attachment?'
     : 'Delete this record?';
-  if (!window.confirm(confirmMsg)) return;
+  if (!window.confirm(msg)) return;
 
-  buttonEl.disabled = true;
-  buttonEl.textContent = 'Deleting…';
+  buttonEl.disabled = true; buttonEl.textContent = 'Deleting…';
 
   try {
-    if (hasAttachment) {
-      try {
-        await deleteDriveFile(rec.attachment.fileId);
-      } catch (driveErr) {
+    if (hasAtt) {
+      try { await deleteDriveFile(rec.attachment.fileId); }
+      catch (driveErr) {
         const proceed = window.confirm(
-          'The Drive attachment could not be deleted:\n' + driveErr.message +
-          '\n\nDelete the Firestore record anyway?'
-        );
-        if (!proceed) {
-          buttonEl.disabled = false;
-          buttonEl.textContent = 'Delete';
-          return;
-        }
+          'Drive attachment could not be deleted:\n' + driveErr.message
+          + '\n\nDelete the Firestore record anyway?');
+        if (!proceed) { buttonEl.disabled = false; buttonEl.textContent = 'Delete'; return; }
       }
+      const stale = contentCache.get(rec.attachment.fileId);
+      if (stale && stale.objectUrl) URL.revokeObjectURL(stale.objectUrl);
+      contentCache.delete(rec.attachment.fileId);
     }
 
     await deleteDoc(doc(db, FIRESTORE_COLLECTION_NAME, rec.id));
-
     if (editingId === rec.id) resetForm();
     showToast('Record deleted.', 'ok');
   } catch (err) {
     showToast(err.message || 'Delete failed.', 'error');
-    buttonEl.disabled = false;
-    buttonEl.textContent = 'Delete';
+    buttonEl.disabled = false; buttonEl.textContent = 'Delete';
   }
 }
 
 /* ============================================================
-   Manual Drive connect button
+   Manual Drive connect
    ============================================================ */
 connectDriveBtn.addEventListener('click', async () => {
   connectDriveBtn.disabled = true;
   const original = connectDriveBtn.textContent;
   connectDriveBtn.textContent = 'Connecting…';
-  try {
-    await getAccessToken();
-    showToast('Google Drive connected.', 'ok');
-  } catch (err) {
-    showToast(err.message || 'Could not connect to Google Drive.', 'error');
-  } finally {
-    connectDriveBtn.disabled = false;
-    connectDriveBtn.textContent = original;
-  }
+  try { await getAccessToken(); showToast('Google Drive connected.', 'ok'); }
+  catch (err) { showToast(err.message || 'Could not connect to Google Drive.', 'error'); }
+  finally { connectDriveBtn.disabled = false; connectDriveBtn.textContent = original; }
 });
 </script>
 </body>
