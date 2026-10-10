@@ -965,6 +965,7 @@ function pushUndo() {
   undoStack.push(snapshot());
   if (undoStack.length > 80) undoStack.shift();
   redoStack = [];
+  firebaseStatus.historyDirty = true;
   markDirty();
 }
 function restore(s) {
@@ -1211,16 +1212,19 @@ function markDirty() {
   clearTimeout(firebaseStatus.savingTimer);
   firebaseStatus.savingTimer = setTimeout(() => {
     if (firebaseStatus.online && currentUser) {
+      // Save current working state (auto-save)
       saveCurrentState();
-      // Save to history (debounced — only if table has data)
+
+      // History: only save on meaningful events, debounced longer
       clearTimeout(firebaseStatus._histTimer);
       firebaseStatus._histTimer = setTimeout(() => {
-        if (S.headers.length) {
+        if (S.headers.length && firebaseStatus.historyDirty) {
+          firebaseStatus.historyDirty = false;
           saveHistoryRecord().then(() => loadHistory());
         }
-      }, 2000);
+      }, 5000);
     }
-  }, 600);
+  }, 800);
 }
 
 /* ============================================================
