@@ -445,8 +445,7 @@ async function fetchQrDataUrl(url,sizePx){
 async function exportJpg(){
   toast('Generating JPG… please wait');
   const data=getIncludedData();const headers=data.headers,rows=data.rows,incRows=data.incRows,incCols=data.incCols;
-  const isLandscape=headers.length>6;
-  const _or=window._orPref||'auto';
+const _or=window._orPref||'auto';
   const isLandscape=_or==='landscape'?true:(_or==='portrait'?false:headers.length>6);
   const wrapper=document.createElement('div');
   wrapper.style.cssText='position:fixed;left:-9999px;top:0;background:#fff;padding:20px;font-family:'+SETTINGS.exportFontStyle+';font-size:'+SETTINGS.exportFontSize+'pt;width:'+(isLandscape?'277mm':'190mm');
