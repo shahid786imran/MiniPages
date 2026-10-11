@@ -368,7 +368,7 @@ async function doExport(fmt){
     const{Document,Packer,Paragraph,Table,TableRow,TableCell,TextRun,WidthType,BorderStyle,ExternalHyperlink}=window.docx;
     const border={style:BorderStyle.SINGLE,size:6,color:'000000'};
     const tableRows=[new TableRow({children:headers.map(h=>new TableCell({children:[new Paragraph({children:[new TextRun({text:h,bold:true})]})],borders:{top:border,bottom:border,left:border,right:border}}))})];
-    rows.forEach(r=>{tableRows.push(new TableRow({children:r.map(v=>{const s=String(v||'');const kids=isUrl(s)?[new ExternalHyperlink({children:[new TextRun({text:s,style:'Hyperlink',color:'2563EB'})],link:s.trim()})]:[new TextRun(s)];return new TableCell({children:[new Paragraph({children:kids})],borders:{top:border,bottom:border,left:border,right:border}})}))}))});
+    rows.forEach(r=>{tableRows.push(new TableRow({children:r.map(v=>{const s=String(v||'');const kids=isUrl(s)?[new ExternalHyperlink({children:[new TextRun({text:s,style:'Hyperlink',color:'2563EB'})],link:s.trim()})]:[new TextRun(s)];return new TableCell({children:[new Paragraph({children:kids})],borders:{top:border,bottom:border,left:border,right:border}})})})}))});
     const doc=new Document({sections:[{children:[new Table({rows:tableRows,width:{size:100,type:WidthType.PERCENTAGE}})]}]});
     const blob=await Packer.toBlob(doc);
     const url=URL.createObjectURL(blob);
