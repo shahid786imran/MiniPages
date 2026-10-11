@@ -154,22 +154,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 </div>
 <div class="toast" id="toast"></div>
 
-<script>
-/* ============================================================
-   CONFIGURATION
-   ============================================================ */
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
-  authDomain: "mywebapps-e3b63.firebaseapp.com",
-  projectId: "mywebapps-e3b63",
-  storageBucket: "mywebapps-e3b63.firebasestorage.app",
-  messagingSenderId: "46681415809",
-  appId: "1:46681415809:web:c4528b9da97abc310a2d80"
-};
-const FIRESTORE_COLLECTION_NAME = "Excel Sheet Table Export";
-const GLOBAL_DOC = "global";
-</script>
-
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import{getAuth,signInAnonymously,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -188,6 +172,7 @@ let undoStack=[],redoStack=[];
 let SETTINGS={theme:'flat',dayNight:'day',exportFontSize:12,exportFontStyle:'system',qrPrintSize:2,borderColour:'#000000',screenFontSize:15,stepSize:5,locks:{theme:false,dayNight:false,exportFontSize:false,exportFontStyle:false,qrPrintSize:false,borderColour:false}};
 let fbStatus={online:true,dirty:false,saving:false,savingTimer:null,_histTimer:null,_lastHistId:null,lastSave:null};
 let historyRecords=[];
+let exportQrOn=true;
 
 const $=id=>document.getElementById(id);
 const tableScroll=$('tableScroll'),tableHead=$('tableHead'),tableBody=$('tableBody'),emptyMsg=$('emptyMsg'),pagination=$('pagination'),pageInfo=$('pageInfo'),addBtn=$('addBtn'),toastEl=$('toast'),rowMenu=$('rowMenu'),colMenu=$('colMenu'),moreMenu=$('moreMenu'),modalBg=$('modalBg'),modalBox=$('modalBox'),historyPanel=$('historyPanel'),historyList=$('historyList'),qrPreview=$('qrPreview'),qrGrid=$('qrGrid'),mainTable=$('mainTable');
@@ -204,17 +189,17 @@ function applyTheme(){document.body.classList.remove('night','theme-flat','theme
 
 function setAddStatus(s){addBtn.classList.remove('online','saving','offline','nodata');if(s==='online'){addBtn.classList.add('online');addBtn.title='Connected'}else if(s==='saving'){addBtn.classList.add('saving');addBtn.title='Saving…'}else if(s==='offline'){addBtn.classList.add('offline');addBtn.title='Offline'}else{addBtn.classList.add('nodata');addBtn.title='Click to paste'}}
 
-async function initFirebase(){try{onAuthStateChanged(auth,async u=>{if(u){currentUser=u;globalDocRef=doc(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC);try{await ensureGlobalDoc();await loadSettings();await loadCurrent();await loadHistory()}catch(e){}setAddStatus('online')}else{try{await signInAnonymously(auth)}catch(e){setAddStatus('offline')}}})}catch(e){console.error(e)}}
+async function initFirebase(){try{onAuthStateChanged(auth,async u=>{if(u){currentUser=u;globalDocRef=doc(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC);try{await ensureGlobalDoc();await loadSettings();await loadCurrent();await loadHistory()}catch(e){console.error(e)}setAddStatus('online')}else{try{await signInAnonymously(auth)}catch(e){console.error(e);setAddStatus('offline')}}})}catch(e){console.error(e)}}
 async function ensureGlobalDoc(){const snap=await getDoc(globalDocRef);if(!snap.exists())await setDoc(globalDocRef,{createdAt:new Date().toISOString(),settings:SETTINGS,current:null,lastQrRef:1000})}
-async function loadSettings(){try{const snap=await getDoc(globalDocRef);if(snap.exists()&&snap.data().settings){SETTINGS={...SETTINGS,...snap.data().settings};SETTINGS.locks={...SETTINGS.locks,...(snap.data().settings.locks||{})};applyTheme()}}catch(e){}}
+async function loadSettings(){try{const snap=await getDoc(globalDocRef);if(snap.exists()&&snap.data().settings){SETTINGS={...SETTINGS,...snap.data().settings};SETTINGS.locks={...SETTINGS.locks,...(snap.data().settings.locks||{})};applyTheme()}}catch(e){console.error(e)}}
 async function saveSettings(){if(!globalDocRef)return;try{setAddStatus('saving');await updateDoc(globalDocRef,{settings:SETTINGS});setAddStatus('online')}catch(e){setAddStatus('offline')}}
-async function loadCurrent(){try{const snap=await getDoc(globalDocRef);if(snap.exists()){const d=snap.data();S.lastQrRef=d.lastQrRef||1000;if(d.current&&d.current.json){const c=JSON.parse(d.current.json);S.headers=c.headers||[];S.rows=c.rows||[];S.includedRows=c.includedRows||[];S.includedCols=c.includedCols||[];S.colWidths=c.colWidths||[];S.rowHeights=c.rowHeights||[];S.headerRowIndex=c.headerRowIndex??-1;S.qrCol=c.qrCol||false;S.qrSection=c.qrSection||false;S.headerHidden=c.headerHidden||false;S.currentPage=1;render();autoQrSensor()}}}catch(e){}}
+async function loadCurrent(){try{const snap=await getDoc(globalDocRef);if(snap.exists()){const d=snap.data();S.lastQrRef=d.lastQrRef||1000;if(d.current&&d.current.json){const c=JSON.parse(d.current.json);S.headers=c.headers||[];S.rows=c.rows||[];S.includedRows=c.includedRows||[];S.includedCols=c.includedCols||[];S.colWidths=c.colWidths||[];S.rowHeights=c.rowHeights||[];S.headerRowIndex=c.headerRowIndex??-1;S.qrCol=c.qrCol||false;S.qrSection=c.qrSection||false;S.headerHidden=c.headerHidden||false;S.currentPage=1;render();autoQrSensor()}}}catch(e){console.error(e)}}
 async function saveCurrentState(){if(!globalDocRef)return;try{setAddStatus('saving');await updateDoc(globalDocRef,{current:{json:JSON.stringify({headers:S.headers,rows:S.rows,includedRows:S.includedRows,includedCols:S.includedCols,colWidths:S.colWidths,rowHeights:S.rowHeights,headerRowIndex:S.headerRowIndex,qrCol:S.qrCol,qrSection:S.qrSection,headerHidden:S.headerHidden})},lastQrRef:S.lastQrRef,currentUpdatedAt:new Date().toISOString()});fbStatus.dirty=false;fbStatus.lastSave=new Date();setAddStatus('online')}catch(e){setAddStatus('offline')}}
 
-async function saveHistoryRecord(){if(!globalDocRef||!S.headers.length)return;try{const recordsRef=collection(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC,'records');const recId=fbStatus._lastHistId||'rec_'+Date.now();const recRef=doc(recordsRef,recId);await setDoc(recRef,{timestamp:new Date().toISOString(),json:JSON.stringify({headers:S.headers,rows:S.rows,includedRows:S.includedRows,includedCols:S.includedCols,headerRowIndex:S.headerRowIndex,lastQrRef:S.lastQrRef})});fbStatus._lastHistId=recId}catch(e){}}
-async function loadHistory(){if(!globalDocRef)return;try{const recordsRef=collection(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC,'records');const q=query(recordsRef,orderBy('timestamp','desc'),limit(50));const snap=await getDocs(q);historyRecords=[];snap.forEach(d=>{try{const p=JSON.parse(d.data().json);historyRecords.push({id:d.id,timestamp:d.data().timestamp,...p})}catch(e){}})}catch(e){}}
-async function deleteHistoryRecord(id){try{await deleteDoc(doc(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC,'records',id));historyRecords=historyRecords.filter(r=>r.id!==id)}catch(e){}}
-async function deleteAllHistoryRecords(){if(!globalDocRef)return;try{const recordsRef=collection(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC,'records');const snap=await getDocs(recordsRef);const batch=writeBatch(db);snap.forEach(d=>batch.delete(d.ref));await batch.commit();historyRecords=[];fbStatus._lastHistId=null}catch(e){}}
+async function saveHistoryRecord(){if(!globalDocRef||!S.headers.length)return;try{const recordsRef=collection(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC,'records');const recId=fbStatus._lastHistId||'rec_'+Date.now();const recRef=doc(recordsRef,recId);await setDoc(recRef,{timestamp:new Date().toISOString(),json:JSON.stringify({headers:S.headers,rows:S.rows,includedRows:S.includedRows,includedCols:S.includedCols,headerRowIndex:S.headerRowIndex,lastQrRef:S.lastQrRef})});fbStatus._lastHistId=recId}catch(e){console.error(e)}}
+async function loadHistory(){if(!globalDocRef)return;try{const recordsRef=collection(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC,'records');const q=query(recordsRef,orderBy('timestamp','desc'),limit(50));const snap=await getDocs(q);historyRecords=[];snap.forEach(d=>{try{const p=JSON.parse(d.data().json);historyRecords.push({id:d.id,timestamp:d.data().timestamp,...p})}catch(e){}})}catch(e){console.error(e)}}
+async function deleteHistoryRecord(id){try{await deleteDoc(doc(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC,'records',id));historyRecords=historyRecords.filter(r=>r.id!==id)}catch(e){console.error(e)}}
+async function deleteAllHistoryRecords(){if(!globalDocRef)return;try{const recordsRef=collection(db,FIRESTORE_COLLECTION_NAME,GLOBAL_DOC,'records');const snap=await getDocs(recordsRef);const batch=writeBatch(db);snap.forEach(d=>batch.delete(d.ref));await batch.commit();historyRecords=[];fbStatus._lastHistId=null}catch(e){console.error(e)}}
 
 function markDirty(){fbStatus.dirty=true;setAddStatus('saving');clearTimeout(fbStatus.savingTimer);fbStatus.savingTimer=setTimeout(()=>{if(fbStatus.online&&currentUser)saveCurrentState()},1000)}
 function saveHistoryNow(){if(!currentUser||!S.headers.length)return;clearTimeout(fbStatus._histTimer);fbStatus._histTimer=setTimeout(()=>{saveHistoryRecord().then(()=>loadHistory())},3000)}
@@ -278,7 +263,7 @@ function closeMenus(){rowMenu.classList.remove('open');colMenu.classList.remove(
 document.addEventListener('click',e=>{if(!e.target.closest('.menu')&&!e.target.closest('[data-row-menu]')&&!e.target.closest('[data-row-zero]')&&!e.target.closest('[data-col-head]')&&!e.target.closest('[data-qr-head]')&&!e.target.closest('#moreBtn'))closeMenus()});
 function openMenu(menu,x,y,items,ctx){closeMenus();menu.innerHTML=items.map(it=>it.sep?'<div class="menu-sep"></div>':(it.html?it.html:`<button class="menu-item ${it.danger?'danger':''}" data-act="${it.act}"><span class="mi-icon">${it.icon||''}</span><span class="mi-label">${it.label}</span>${it.value?`<span class="mi-value">${it.value}</span>`:''}</button>`)).join('');menu.classList.add('open');menu._ctx=ctx;requestAnimationFrame(()=>{const w=menu.offsetWidth,h=menu.offsetHeight,vw=window.innerWidth,vh=window.innerHeight;let left=Math.min(x,vw-w-10),top=Math.min(y,vh-h-10);if(left<10)left=10;if(top<10)top=10;menu.style.left=left+'px';menu.style.top=top+'px'})}
 
-function showRowZeroMenu(x,y){openMenu(rowMenu,x,y,[{act:'toggleHeader',icon:S.headerHidden?'👁':'🙈',label:S.headerHidden?'Show header row':'Hide header row'},{act:'setHeaderFromFirst',icon:'📌',label:'Set first data row as header'}]);}
+function showRowZeroMenu(x,y){openMenu(rowMenu,x,y,[{act:'toggleHeader',icon:S.headerHidden?'👁':'🙈',label:S.headerHidden?'Show header row':'Hide header row'},{act:'setHeaderFromFirst',icon:'📌',label:'Set first data row as header'}],{})}
 
 function showRowMenu(gi,x,y){const inc=S.includedRows[gi];openMenu(rowMenu,x,y,[{act:'insAbove',icon:'➕',label:'Insert row above'},{act:'insBelow',icon:'➕',label:'Insert row below'},{sep:1},{act:'setHeader',icon:'📌',label:'Set as Header Row'},{act:'hideHeader',icon:S.headerHidden?'👁':'🙈',label:S.headerHidden?'Show header row':'Hide header row'},{sep:1},{act:'moveUp',icon:'⬆️',label:'Move up'},{act:'moveDown',icon:'⬇️',label:'Move down'},{sep:1},{act:'toggleRow',icon:inc?'🚫':'👁',label:inc?'Exclude row':'Include row'},{act:'delRow',icon:'🗑️',label:'Delete row',danger:1}],{gi})}
 
@@ -355,132 +340,92 @@ function fallbackCopy(text,msg){const ta=document.createElement('textarea');ta.v
 
 function loadScript(src){return new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`))return res();const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s)})}
 
-let exportQrOn=true;
-$('exportBtn').addEventListener('click',()=>{if(!S.headers.length){toast('No table');return}modalBox.innerHTML='';const h3=document.createElement('h3');h3.textContent='🚀 Export as';modalBox.appendChild(h3);const qrRow=document.createElement('div');qrRow.className='qr-toggle-row';qrRow.innerHTML=`<span>🔳 Include QR codes</span><div class="toggle-switch ${exportQrOn?'on':''}" id="qrToggle"></div>`;modalBox.appendChild(qrRow);const grid=document.createElement('div');grid.className='export-grid';const opts=[['xlsx','📊 Excel (.xlsx)'],['csv','📄 CSV (.csv)'],['pdf','📕 PDF (.pdf)'],['docx','📝 Word (.docx)'],['txt','📃 Text (.txt)'],['jpg','🖼️ JPG (.jpg)'],['html','🌐 HTML (.html)'],['print','🖨️ Print']];opts.forEach(([v,l])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{closeModal();doExport(v)};grid.appendChild(b)});modalBox.appendChild(grid);const actions=document.createElement('div');actions.className='modal-actions';const cancelBtn=document.createElement('button');cancelBtn.textContent='Cancel';cancelBtn.style.background='#f1f5f9';cancelBtn.style.color='#334155';actions.appendChild(cancelBtn);modalBox.appendChild(actions);cancelBtn.onclick=closeModal;const tgl=$('qrToggle');tgl.onclick=()=>{exportQrOn=!exportQrOn;tgl.classList.toggle('on',exportQrOn)};modalBg.classList.add('open')});
+$('exportBtn').addEventListener('click',()=>{if(!S.headers.length){toast('No table');return}modalBox.innerHTML='';const h3=document.createElement('h3');h3.textContent='🚀 Export as';modalBox.appendChild(h3);const qrRow=document.createElement('div');qrRow.className='qr-toggle-row';qrRow.innerHTML=`<span>🔳 Include QR codes</span><div class="toggle-switch ${exportQrOn?'on':''}" id="qrToggle"></div>`;modalBox.appendChild(qrRow);const grid=document.createElement('div');grid.className='export-grid';const opts=[['xlsx','📊 Excel (.xlsx)'],['csv','📄 CSV (.csv)'],['pdf','📕 PDF (.pdf)'],['docx','📝 Word (.docx)'],['txt','📃 Text (.txt)'],['jpg','🖼️ JPG (.jpg)'],['html','🌐 HTML (.html)'],['print','🖨️ Print']];opts.forEach(pair=>{const v=pair[0],l=pair[1];const b=document.createElement('button');b.textContent=l;b.onclick=()=>{closeModal();doExport(v)};grid.appendChild(b)});modalBox.appendChild(grid);const actions=document.createElement('div');actions.className='modal-actions';const cancelBtn=document.createElement('button');cancelBtn.textContent='Cancel';cancelBtn.style.background='#f1f5f9';cancelBtn.style.color='#334155';actions.appendChild(cancelBtn);modalBox.appendChild(actions);cancelBtn.onclick=closeModal;const tgl=$('qrToggle');if(tgl)tgl.onclick=()=>{exportQrOn=!exportQrOn;tgl.classList.toggle('on',exportQrOn)};modalBg.classList.add('open')});
 
 function getIncludedData(){const incRows=S.includedRows.map((x,i)=>x?i:-1).filter(i=>i>=0);const incCols=S.includedCols.map((x,i)=>x?i:-1).filter(i=>i>=0);const headers=incCols.map(c=>S.headers[c]||`Column ${c+1}`);const rows=incRows.map(ri=>incCols.map(c=>S.rows[ri][c]||''));return{headers,rows,incRows,incCols}}
 
-async function doExport(fmt){if(fmt==='print'){await doPrint();return}if(fmt==='html'){doHtmlExport();return}const{headers,rows}=getIncludedData();if(fmt==='csv'||fmt==='txt'){const delim=fmt==='csv'?',':'\t';let content=headers.map(h=>fmt==='csv'?`"${h.replace(/"/g,'""')}"`:h).join(delim)+'\n';rows.forEach(r=>{content+=r.map(v=>fmt==='csv'?`"${String(v).replace(/"/g,'""')}"`:v).join(delim)+'\n'});downloadBlob(content,`table.${fmt}`,'text/plain;charset=utf-8');toast(`.${fmt} downloaded`)}else if(fmt==='xlsx'){await loadScript('https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js');const wsData=[headers,...rows];const ws=XLSX.utils.aoa_to_sheet(wsData);rows.forEach((r,ri)=>{r.forEach((v,ci)=>{const cellAddr=XLSX.utils.encode_cell({r:ri+1,c:ci});if(isUrl(v)){if(!ws[cellAddr])ws[cellAddr]={v:String(v),t:'s'};ws[cellAddr].l={Target:String(v).trim(),Tooltip:'Open link'}}})});const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Sheet1');XLSX.writeFile(wb,'table.xlsx');toast('.xlsx downloaded')}else if(fmt==='docx'){await loadScript('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');const{Document,Packer,Paragraph,Table,TableRow,TableCell,TextRun,WidthType,BorderStyle,ExternalHyperlink}=window.docx;const border={style:BorderStyle.SINGLE,size:6,color:'000000'};const tableRows=[new TableRow({children:headers.map(h=>new TableCell({children:[new Paragraph({children:[new TextRun({text:h,bold:true})]})],borders:{top:border,bottom:border,left:border,right:border}}))})];rows.forEach(r=>{tableRows.push(new TableRow({children:r.map(v=>{const s=String(v||'');const kids=isUrl(s)?[new ExternalHyperlink({children:[new TextRun({text:s,style:'Hyperlink',color:'2563EB'})],link:s.trim()})]:[new TextRun(s)];return new TableCell({children:[new Paragraph({children:kids})],borders:{top:border,bottom:border,left:border,right:border}})}))}))});const doc=new Document({sections:[{children:[new Table({rows:tableRows,width:{size:100,type:WidthType.PERCENTAGE}})]}]});const blob=await Packer.toBlob(doc);const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='table.docx';a.click();URL.revokeObjectURL(url);toast('.docx downloaded')}else if(fmt==='pdf'){await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');await exportPdfWithQR();}else if(fmt==='jpg'){await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');await exportJpg();}}
+async function doExport(fmt){
+  if(fmt==='print'){await doPrint();return}
+  if(fmt==='html'){doHtmlExport();return}
+  const{headers,rows}=getIncludedData();
+  if(fmt==='csv'||fmt==='txt'){
+    const delim=fmt==='csv'?',':'\t';
+    let content=headers.map(h=>fmt==='csv'?`"${h.replace(/"/g,'""')}"`:h).join(delim)+'\n';
+    rows.forEach(r=>{content+=r.map(v=>fmt==='csv'?`"${String(v).replace(/"/g,'""')}"`:v).join(delim)+'\n'});
+    downloadBlob(content,`table.${fmt}`,'text/plain;charset=utf-8');
+    toast(`.${fmt} downloaded`);
+  } else if(fmt==='xlsx'){
+    await loadScript('https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js');
+    const wsData=[headers,...rows];
+    const ws=XLSX.utils.aoa_to_sheet(wsData);
+    rows.forEach((r,ri)=>{r.forEach((v,ci)=>{const cellAddr=XLSX.utils.encode_cell({r:ri+1,c:ci});if(isUrl(v)){if(!ws[cellAddr])ws[cellAddr]={v:String(v),t:'s'};ws[cellAddr].l={Target:String(v).trim(),Tooltip:'Open link'}}})});
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+    XLSX.writeFile(wb,'table.xlsx');
+    toast('.xlsx downloaded');
+  } else if(fmt==='docx'){
+    await loadScript('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js');
+    const{Document,Packer,Paragraph,Table,TableRow,TableCell,TextRun,WidthType,BorderStyle,ExternalHyperlink}=window.docx;
+    const border={style:BorderStyle.SINGLE,size:6,color:'000000'};
+    const tableRows=[new TableRow({children:headers.map(h=>new TableCell({children:[new Paragraph({children:[new TextRun({text:h,bold:true})]})],borders:{top:border,bottom:border,left:border,right:border}}))})];
+    rows.forEach(r=>{tableRows.push(new TableRow({children:r.map(v=>{const s=String(v||'');const kids=isUrl(s)?[new ExternalHyperlink({children:[new TextRun({text:s,style:'Hyperlink',color:'2563EB'})],link:s.trim()})]:[new TextRun(s)];return new TableCell({children:[new Paragraph({children:kids})],borders:{top:border,bottom:border,left:border,right:border}})}))}))});
+    const doc=new Document({sections:[{children:[new Table({rows:tableRows,width:{size:100,type:WidthType.PERCENTAGE}})]}]});
+    const blob=await Packer.toBlob(doc);
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='table.docx';a.click();URL.revokeObjectURL(url);
+    toast('.docx downloaded');
+  } else if(fmt==='pdf'){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    await exportPdfWithQR();
+  } else if(fmt==='jpg'){
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    await exportJpg();
+  }
+}
 
-async function doPrint(){const{headers,rows}=getIncludedData();const w=window.open('','_blank');let html='<html><head><title>Print Table</title><style>body{font-family:system-ui,sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:12pt}th,td{border:1px solid #000;padding:6px;text-align:left}th{background:#f0f0f0}a{color:#2563eb;text-decoration:none}.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:20px}.qr-item{text-align:center;border:1.5px solid #000;padding:10px;border-radius:6px;display:flex;flex-direction:column;align-items:center}.qr-ref{font-family:monospace;font-weight:bold;font-size:10pt;margin-bottom:6px;border-bottom:1px solid #ccc;padding-bottom:4px;width:100%}@media print{.qr-item{page-break-inside:avoid}}</style></head><body>';html+='<table><thead><tr>';headers.forEach(h=>{html+=`<th>${esc(h)}</th>`});const allRefs=[];let counter=1000;S.rows.forEach((r,gi)=>{if(!S.includedRows[gi])return;S.headers.forEach((_,ci)=>{if(!S.includedCols[ci])return;const v=(r[ci]||'').trim();if(isUrl(v)){counter++;allRefs.push({ref:String(counter),url:v})}})});if(exportQrOn&&(S.qrSection||S.qrCol))html+='<th>QR</th>';html+='</tr></thead><tbody>';rows.forEach((r,ri)=>{html+='<tr>';r.forEach(v=>{const s=String(v||'');html+=isUrl(s)?`<td><a href="${esc(s.trim())}" target="_blank" rel="noopener">${esc(s)}</a></td>`:`<td>${esc(s)}</td>`});if(exportQrOn&&(S.qrSection||S.qrCol))html+='<td>-</td>';html+='</tr>'});html+='</tbody></table>';if(exportQrOn&&(S.qrSection||S.qrCol)&&allRefs.length){html+='<div class="qr-grid">';allRefs.forEach(e=>{html+=`<div class="qr-item"><div class="qr-ref">${e.ref}</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(e.url)}" style="width:1.5in;height:1.5in;display:block"></div>`});html+='</div>'}html+='</body></html>';w.document.write(html);w.document.close();setTimeout(()=>w.print(),800);toast('Print dialog opened')}
+async function doPrint(){
+  const{headers,rows}=getIncludedData();
+  const w=window.open('','_blank');
+  let html='<html><head><title>Print Table</title><style>body{font-family:system-ui,sans-serif;padding:20px}table{border-collapse:collapse;width:100%;font-size:12pt}th,td{border:1px solid #000;padding:6px;text-align:left}th{background:#f0f0f0}a{color:#2563eb;text-decoration:none}.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:20px}.qr-item{text-align:center;border:1.5px solid #000;padding:10px;border-radius:6px;display:flex;flex-direction:column;align-items:center}.qr-ref{font-family:monospace;font-weight:bold;font-size:10pt;margin-bottom:6px;border-bottom:1px solid #ccc;padding-bottom:4px;width:100%}@media print{.qr-item{page-break-inside:avoid}}</style></head><body>';
+  html+='<table><thead><tr>';
+  headers.forEach(h=>{html+=`<th>${esc(h)}</th>`});
+  const allRefs=[];let counter=1000;
+  S.rows.forEach((r,gi)=>{if(!S.includedRows[gi])return;S.headers.forEach((_,ci)=>{if(!S.includedCols[ci])return;const v=(r[ci]||'').trim();if(isUrl(v)){counter++;allRefs.push({ref:String(counter),url:v})}})});
+  if(exportQrOn&&(S.qrSection||S.qrCol))html+='<th>QR</th>';
+  html+='</tr></thead><tbody>';
+  rows.forEach((r,ri)=>{html+='<tr>';r.forEach(v=>{const s=String(v||'');html+=isUrl(s)?`<td><a href="${esc(s.trim())}" target="_blank" rel="noopener">${esc(s)}</a></td>`:`<td>${esc(s)}</td>`});if(exportQrOn&&(S.qrSection||S.qrCol))html+='<td>-</td>';html+='</tr>'});
+  html+='</tbody></table>';
+  if(exportQrOn&&(S.qrSection||S.qrCol)&&allRefs.length){html+='<div class="qr-grid">';allRefs.forEach(e=>{html+=`<div class="qr-item"><div class="qr-ref">${e.ref}</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(e.url)}" style="width:1.5in;height:1.5in;display:block"></div>`});html+='</div>'}
+  html+='</body></html>';
+  w.document.write(html);w.document.close();
+  setTimeout(()=>w.print(),800);
+  toast('Print dialog opened');
+}
 
-function doHtmlExport(){const{headers,rows}=getIncludedData();let html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Table Export</title><style>body{font-family:system-ui,sans-serif;padding:20px;background:#f8fafc}table{border-collapse:collapse;width:100%;font-size:0.9rem;background:#fff}th,td{border:1px solid #e2e8f0;padding:8px;text-align:left}th{background:#f1f5f9}a{color:#2563eb;text-decoration:none}.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:20px}.qr-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px;text-align:center;display:flex;flex-direction:column;align-items:center}.qr-ref{font-family:monospace;font-weight:bold;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px;width:100%}</style></head><body>';html+='<h1>Exported Table</h1><table><thead><tr>';headers.forEach(h=>{html+=`<th>${esc(h)}</th>`});const allRefs=[];let counter=1000;S.rows.forEach((r,gi)=>{if(!S.includedRows[gi])return;S.headers.forEach((_,ci)=>{if(!S.includedCols[ci])return;const v=(r[ci]||'').trim();if(isUrl(v)){counter++;allRefs.push({ref:String(counter),url:v})}})});if(exportQrOn&&(S.qrSection||S.qrCol))html+='<th>QR</th>';html+='</tr></thead><tbody>';let cnt=1000;rows.forEach((r)=>{const refs=[];r.forEach(v=>{const t=(v||'').trim();if(isUrl(t)){cnt++;refs.push(String(cnt))}});html+='<tr>';r.forEach(v=>{const s=String(v||'');html+=isUrl(s)?`<td><a href="${esc(s.trim())}" target="_blank" rel="noopener">${esc(s)}</a></td>`:`<td>${esc(s)}</td>`});if(exportQrOn&&(S.qrSection||S.qrCol))html+=`<td>${refs.length?refs.join(', '):'-'}</td>`;html+='</tr>'});html+='</tbody></table>';if(exportQrOn&&(S.qrSection||S.qrCol)&&allRefs.length){html+='<div class="qr-grid">';allRefs.forEach(e=>{html+=`<div class="qr-card"><div class="qr-ref">${e.ref}</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(e.url)}" width="100" height="100"></div>`});html+='</div>'}html+='</body></html>';downloadBlob(html,'table.html','text/html;charset=utf-8');toast('.html downloaded')}
+function doHtmlExport(){
+  const{headers,rows}=getIncludedData();
+  let html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Table Export</title><style>body{font-family:system-ui,sans-serif;padding:20px;background:#f8fafc}table{border-collapse:collapse;width:100%;font-size:0.9rem;background:#fff}th,td{border:1px solid #e2e8f0;padding:8px;text-align:left}th{background:#f1f5f9}a{color:#2563eb;text-decoration:none}.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:20px}.qr-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px;text-align:center;display:flex;flex-direction:column;align-items:center}.qr-ref{font-family:monospace;font-weight:bold;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px;width:100%}</style></head><body>';
+  html+='<h1>Exported Table</h1><table><thead><tr>';
+  headers.forEach(h=>{html+=`<th>${esc(h)}</th>`});
+  const allRefs=[];let counter=1000;
+  S.rows.forEach((r,gi)=>{if(!S.includedRows[gi])return;S.headers.forEach((_,ci)=>{if(!S.includedCols[ci])return;const v=(r[ci]||'').trim();if(isUrl(v)){counter++;allRefs.push({ref:String(counter),url:v})}})});
+  if(exportQrOn&&(S.qrSection||S.qrCol))html+='<th>QR</th>';
+  html+='</tr></thead><tbody>';
+  let cnt=1000;
+  rows.forEach(r=>{const refs=[];r.forEach(v=>{const t=(v||'').trim();if(isUrl(t)){cnt++;refs.push(String(cnt))}});html+='<tr>';r.forEach(v=>{const s=String(v||'');html+=isUrl(s)?`<td><a href="${esc(s.trim())}" target="_blank" rel="noopener">${esc(s)}</a></td>`:`<td>${esc(s)}</td>`});if(exportQrOn&&(S.qrSection||S.qrCol))html+=`<td>${refs.length?refs.join(', '):'-'}</td>`;html+='</tr>'});
+  html+='</tbody></table>';
+  if(exportQrOn&&(S.qrSection||S.qrCol)&&allRefs.length){html+='<div class="qr-grid">';allRefs.forEach(e=>{html+=`<div class="qr-card"><div class="qr-ref">${e.ref}</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(e.url)}" width="100" height="100"></div>`});html+='</div>'}
+  html+='</body></html>';
+  downloadBlob(html,'table.html','text/html;charset=utf-8');
+  toast('.html downloaded');
+}
 
 async function fetchQrDataUrl(url,sizePx){
   try{
     const res=await fetch(`https://api.qrserver.com/v1/create-qr-code/?size=${Math.round(sizePx)}x${Math.round(sizePx)}&data=${encodeURIComponent(url)}`);
     const blob=await res.blob();
     return await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onloadend=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(blob)});
-  }catch(e){return '';}
-}
-
-async function exportPdfWithQR(){
-  toast('Generating PDF… please wait');
-  const {headers,rows,incRows,incCols}=getIncludedData();
-  const isLandscape=headers.length>6;
-  const pageOrientation=isLandscape?'landscape':'portrait';
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF({orientation:pageOrientation,unit:'mm',format:'a4'});
-  const pageW=pdf.internal.pageSize.getWidth();
-  const pageH=pdf.internal.pageSize.getHeight();
-  const margin=10;
-  const usableW=pageW-margin*2;
-  const usableH=pageH-margin*2;
-  const fs=SETTINGS.exportFontSize;
-  const ptToMm=0.352778;
-  const lineH=fs*ptToMm*1.6;
-  const cellPad=1.5;
-  const colCount=headers.length+(exportQrOn&&(S.qrSection||S.qrCol)?1:0);
-  const colW=usableW/colCount;
-  const maxCharsPerLine=Math.max(4,Math.floor((colW-cellPad*2)/(fs*ptToMm*0.5)));
-  function wrap(text,max){const s=String(text||'');const out=[];for(let i=0;i<s.length;i+=max)out.push(s.substring(i,i+max));return out.length?out:[''];}
-  const rowHeights=rows.map(r=>{let maxLines=1;r.forEach(v=>{const lines=wrap(v,maxCharsPerLine);if(lines.length>maxLines)maxLines=lines.length});return maxLines*lineH+cellPad*2;});
-  const headerLines=headers.map(h=>wrap(h,maxCharsPerLine));
-  const headerMaxLines=Math.max(1,...headerLines.map(l=>l.length));
-  const headerH=headerMaxLines*lineH+cellPad*2;
-  // Draw table
-  let y=margin;
-  function drawHeader(){
-    let x=margin;
-    pdf.setFontSize(fs);pdf.setFont(undefined,'bold');
-    pdf.setFillColor(240,240,240);
-    pdf.rect(margin,y,usableW,headerH,'F');
-    pdf.setDrawColor(0,0,0);pdf.setLineWidth(0.2);
-    headers.forEach((h,ci)=>{
-      pdf.rect(x,y,colW,headerH);
-      const lines=headerLines[ci];
-      lines.forEach((ln,li)=>{pdf.text(ln,x+cellPad,y+cellPad+(li+1)*lineH-1)});
-      x+=colW;
-    });
-    if(exportQrOn&&(S.qrSection||S.qrCol)){pdf.rect(x,y,colW,headerH);pdf.text('QR',x+cellPad,y+cellPad+lineH-1);x+=colW;}
-    y+=headerH;
-    pdf.setFont(undefined,'normal');
-  }
-  drawHeader();
-  let counter=1000;
-  const allRefs=[];
-  incRows.forEach(ri=>{S.headers.forEach((_,ci)=>{if(!S.includedCols[ci])return;const v=(S.rows[ri][ci]||'').trim();if(isUrl(v)){counter++;allRefs.push({ref:String(counter),url:v,rowIndex:ri})}})});
-  // Draw rows
-  rows.forEach((r,idx)=>{
-    const rh=rowHeights[idx];
-    if(y+rh>pageH-margin){pdf.addPage();y=margin;drawHeader();}
-    let x=margin;
-    const refs=allRefs.filter(rr=>rr.rowIndex===incRows[idx]).map(rr=>rr.ref);
-    r.forEach((v,ci)=>{
-      pdf.rect(x,y,colW,rh);
-      const lines=wrap(v,maxCharsPerLine);
-      lines.forEach((ln,li)=>{
-        const s=String(v||'').trim();
-        if(isUrl(s)){
-          pdf.setTextColor(37,99,235);
-          const tx=x+cellPad,ty=y+cellPad+(li+1)*lineH-1;
-          pdf.textWithLink(ln,tx,ty,{url:s});
-          pdf.setTextColor(0,0,0);
-        }else{
-          pdf.text(ln,x+cellPad,y+cellPad+(li+1)*lineH-1);
-        }
-      });
-      x+=colW;
-    });
-    if(exportQrOn&&(S.qrSection||S.qrCol)){pdf.rect(x,y,colW,rh);const txt=refs.length?refs.join(', '):'-';pdf.setFontSize(fs*0.85);pdf.text(txt,x+cellPad,y+cellPad+lineH-1);pdf.setFontSize(fs);x+=colW;}
-    y+=rh;
-  });
-  // QR section — new page, no splits
-  if(exportQrOn&&(S.qrSection||S.qrCol)&&allRefs.length){
-    pdf.addPage();
-    y=margin;
-    pdf.setFontSize(fs+2);pdf.setFont(undefined,'bold');
-    pdf.text('QR Codes',margin,y+5);
-    y+=10;
-    pdf.setFont(undefined,'normal');pdf.setFontSize(fs);
-    const qrSizeIn=SETTINGS.qrPrintSize;
-    const qrSizeMm=qrSizeIn*25.4;
-    const boxPad=2;
-    const boxW=qrSizeMm+boxPad*2;
-    const boxH=qrSizeMm+boxPad*2+6;
-    const gap=3;
-    const cols=Math.max(1,Math.floor((usableW+gap)/(boxW+gap)));
-    let col=0;
-    for(const e of allRefs){
-      if(col>=cols){col=0;y+=boxH+gap;}
-      if(y+boxH>pageH-margin){pdf.addPage();y=margin;col=0;}
-      const x=margin+col*(boxW+gap);
-      pdf.setDrawColor(0,0,0);pdf.setLineWidth(0.3);
-      pdf.rect(x,y,boxW,boxH);
-      // Ref number top center
-      pdf.setFontSize(fs*0.85);pdf.setFont(undefined,'bold');
-      pdf.text(e.ref,x+boxW/2,y+4,{align:'center'});
-      pdf.setFont(undefined,'normal');
-      pdf.setLineWidth(0.1);
-      pdf.line(x+2,y+5.5,x+boxW-2,y+5.5);
-      // QR image
-      const dataUrl=await fetchQrDataUrl(e.url,qrSizeIn*96);
-      if(dataUrl){try{pdf.addImage(dataUrl,'PNG',x+boxPad,y+7,qrSizeMm,qrSizeMm)}catch(err){}}
-      col++;
-    }
-  }
-  pdf.save('table.pdf');
-  toast('.pdf downloaded');
+  }catch(e){return ''}
 }
 
 async function exportJpg(){
@@ -498,7 +443,7 @@ async function exportJpg(){
   incRows.forEach(ri=>{
     const refs=allRefs.filter(r=>r.rowIndex===ri).map(r=>r.ref);
     html+='<tr>';
-    incCols.forEach(ci=>{const s=String(S.rows[ri][ci]||'');if(isUrl(s)){html+=`<td style="border:1px solid ${SETTINGS.borderColour};padding:6px"><a class="link" href="${esc(s.trim())}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:none">${esc(s)}</a></td>`}else{html+=`<td style="border:1px solid ${SETTINGS.borderColour};padding:6px">${esc(s)}</td>`}});
+    incCols.forEach(ci=>{const s=String(S.rows[ri][ci]||'');if(isUrl(s)){html+=`<td style="border:1px solid ${SETTINGS.borderColour};padding:6px"><a href="${esc(s.trim())}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:none">${esc(s)}</a></td>`}else{html+=`<td style="border:1px solid ${SETTINGS.borderColour};padding:6px">${esc(s)}</td>`}});
     if(exportQrOn&&(S.qrSection||S.qrCol))html+=`<td style="border:1px solid ${SETTINGS.borderColour};padding:6px;text-align:center;font-family:monospace;font-size:0.75em">${refs.length?refs.join(', '):'-'}</td>`;
     html+='</tr>';
   });
@@ -518,6 +463,108 @@ async function exportJpg(){
   const imgData=canvas.toDataURL('image/jpeg',0.92);
   const link=document.createElement('a');link.href=imgData;link.download='table.jpg';link.click();
   toast('.jpg downloaded');
+}
+
+async function exportPdfWithQR(){
+  toast('Generating PDF… please wait');
+  const{headers,rows,incRows,incCols}=getIncludedData();
+  const isLandscape=headers.length>6;
+  const pageOrientation=isLandscape?'landscape':'portrait';
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:pageOrientation,unit:'mm',format:'a4'});
+  const pageW=pdf.internal.pageSize.getWidth();
+  const pageH=pdf.internal.pageSize.getHeight();
+  const margin=10;
+  const usableW=pageW-margin*2;
+  const fs=SETTINGS.exportFontSize;
+  const ptToMm=0.352778;
+  const lineH=fs*ptToMm*1.6;
+  const cellPad=1.5;
+  const colCount=headers.length+(exportQrOn&&(S.qrSection||S.qrCol)?1:0);
+  const colW=usableW/colCount;
+  const maxChars=Math.max(4,Math.floor((colW-cellPad*2)/(fs*ptToMm*0.5)));
+  function wrap(text,max){const s=String(text||'');const out=[];for(let i=0;i<s.length;i+=max)out.push(s.substring(i,i+max));return out.length?out:['']}
+  const rowHeights=rows.map(r=>{let maxLines=1;r.forEach(v=>{const lines=wrap(v,maxChars);if(lines.length>maxLines)maxLines=lines.length});return maxLines*lineH+cellPad*2});
+  const headerLines=headers.map(h=>wrap(h,maxChars));
+  const headerMaxLines=Math.max(1,...headerLines.map(l=>l.length));
+  const headerH=headerMaxLines*lineH+cellPad*2;
+  let y=margin;
+  function drawHeader(){
+    let x=margin;
+    pdf.setFontSize(fs);pdf.setFont(undefined,'bold');
+    pdf.setFillColor(240,240,240);
+    pdf.rect(margin,y,usableW,headerH,'F');
+    pdf.setDrawColor(0,0,0);pdf.setLineWidth(0.2);
+    headers.forEach((h,ci)=>{
+      pdf.rect(x,y,colW,headerH);
+      headerLines[ci].forEach((ln,li)=>{pdf.text(ln,x+cellPad,y+cellPad+(li+1)*lineH-1)});
+      x+=colW;
+    });
+    if(exportQrOn&&(S.qrSection||S.qrCol)){pdf.rect(x,y,colW,headerH);pdf.text('QR',x+cellPad,y+cellPad+lineH-1);x+=colW}
+    y+=headerH;
+    pdf.setFont(undefined,'normal');
+  }
+  drawHeader();
+  let counter=1000;
+  const allRefs=[];
+  incRows.forEach(ri=>{S.headers.forEach((_,ci)=>{if(!S.includedCols[ci])return;const v=(S.rows[ri][ci]||'').trim();if(isUrl(v)){counter++;allRefs.push({ref:String(counter),url:v,rowIndex:ri})}})});
+  rows.forEach((r,idx)=>{
+    const rh=rowHeights[idx];
+    if(y+rh>pageH-margin){pdf.addPage();y=margin;drawHeader()}
+    let x=margin;
+    const realRi=incRows[idx];
+    const refs=allRefs.filter(rr=>rr.rowIndex===realRi).map(rr=>rr.ref);
+    r.forEach((v,ci)=>{
+      pdf.rect(x,y,colW,rh);
+      const lines=wrap(v,maxChars);
+      const s=String(v||'').trim();
+      lines.forEach((ln,li)=>{
+        if(isUrl(s)){
+          pdf.setTextColor(37,99,235);
+          pdf.textWithLink(ln,x+cellPad,y+cellPad+(li+1)*lineH-1,{url:s});
+          pdf.setTextColor(0,0,0);
+        }else{
+          pdf.text(ln,x+cellPad,y+cellPad+(li+1)*lineH-1);
+        }
+      });
+      x+=colW;
+    });
+    if(exportQrOn&&(S.qrSection||S.qrCol)){pdf.rect(x,y,colW,rh);const txt=refs.length?refs.join(', '):'-';pdf.setFontSize(fs*0.85);pdf.text(txt,x+cellPad,y+cellPad+lineH-1);pdf.setFontSize(fs)}
+    y+=rh;
+  });
+  if(exportQrOn&&(S.qrSection||S.qrCol)&&allRefs.length){
+    pdf.addPage();
+    y=margin;
+    pdf.setFontSize(fs+2);pdf.setFont(undefined,'bold');
+    pdf.text('QR Codes',margin,y+5);
+    y+=10;
+    pdf.setFont(undefined,'normal');pdf.setFontSize(fs);
+    const qrSizeIn=SETTINGS.qrPrintSize;
+    const qrSizeMm=qrSizeIn*25.4;
+    const boxPad=2;
+    const boxW=qrSizeMm+boxPad*2;
+    const boxH=qrSizeMm+boxPad*2+6;
+    const gap=3;
+    const cols=Math.max(1,Math.floor((usableW+gap)/(boxW+gap)));
+    let col=0;
+    const dataUrls=await Promise.all(allRefs.map(async e=>({ref:e.ref,dataURL:await fetchQrDataUrl(e.url,qrSizeIn*96)})));
+    for(const e of dataUrls){
+      if(col>=cols){col=0;y+=boxH+gap}
+      if(y+boxH>pageH-margin){pdf.addPage();y=margin;col=0}
+      const x=margin+col*(boxW+gap);
+      pdf.setDrawColor(0,0,0);pdf.setLineWidth(0.3);
+      pdf.rect(x,y,boxW,boxH);
+      pdf.setFontSize(fs*0.85);pdf.setFont(undefined,'bold');
+      pdf.text(e.ref,x+boxW/2,y+4,{align:'center'});
+      pdf.setFont(undefined,'normal');
+      pdf.setLineWidth(0.1);
+      pdf.line(x+2,y+5.5,x+boxW-2,y+5.5);
+      if(e.dataURL){try{pdf.addImage(e.dataURL,'PNG',x+boxPad,y+7,qrSizeMm,qrSizeMm)}catch(err){}}
+      col++;
+    }
+  }
+  pdf.save('table.pdf');
+  toast('.pdf downloaded');
 }
 
 function downloadBlob(content,filename,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
