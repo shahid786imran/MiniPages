@@ -179,8 +179,8 @@ const tableScroll=$('tableScroll'),tableHead=$('tableHead'),tableBody=$('tableBo
 
 function toast(m,ms=1900){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(toastEl._t);toastEl._t=setTimeout(()=>toastEl.classList.remove('show'),ms)}
 function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
-function isUrl(v){return /^https?:\/\//i.test(String(v||'').trim())}
-function renderCell(v){const s=String(v??'');if(isUrl(s)){const u=s.trim();return '<a class="link" href="'+esc(u)+'" target="_blank" rel="noopener" data-link="1">'+esc(u)+'</a>'}return esc(s)}
+function isUrl(v){const s=String(v||'').trim();if(!s)return false;if(/^https?:\/\//i.test(s))return true;if(/^www\./i.test(s))return true;if(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(\/[^\s]*)?$/i.test(s)&&/[a-z]{2,}/i.test(s.split('/')[0].split('.').pop()))return true;return false}
+function renderCell(v){const s=String(v??'');if(isUrl(s)){const u=s.trim();const href=/^https?:\/\//i.test(u)?u:'https://'+u;return '<a class="link" href="'+esc(href)+'" target="_blank" rel="noopener" data-link="1">'+esc(u)+'</a>'}return esc(s)}
 function snapshot(){return{headers:[...S.headers],rows:S.rows.map(r=>[...r]),includedRows:[...S.includedRows],includedCols:[...S.includedCols],colWidths:[...S.colWidths],rowHeights:[...S.rowHeights],headerRowIndex:S.headerRowIndex,qrCol:S.qrCol,qrSection:S.qrSection,lastQrRef:S.lastQrRef,headerHidden:S.headerHidden}}
 function pushUndo(){undoStack.push(snapshot());if(undoStack.length>80)undoStack.shift();redoStack=[];markDirty()}
 function restore(s){S.headers=[...s.headers];S.rows=s.rows.map(r=>[...r]);S.includedRows=[...s.includedRows];S.includedCols=[...s.includedCols];S.colWidths=[...(s.colWidths||[])];S.rowHeights=[...(s.rowHeights||[])];S.headerRowIndex=s.headerRowIndex;S.qrCol=s.qrCol;S.qrSection=s.qrSection;S.lastQrRef=s.lastQrRef||1000;S.headerHidden=s.headerHidden||false;S.currentPage=1;render()}
@@ -357,7 +357,7 @@ async function doExport(fmt){
     await loadScript('https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js');
     const wsData=[headers].concat(rows);
     const ws=XLSX.utils.aoa_to_sheet(wsData);
-    rows.forEach((r,ri)=>{r.forEach((v,ci)=>{const cellAddr=XLSX.utils.encode_cell({r:ri+1,c:ci});if(isUrl(v)){if(!ws[cellAddr])ws[cellAddr]={v:String(v),t:'s'};ws[cellAddr].l={Target:String(v).trim(),Tooltip:'Open link'}}})});
+    rows.forEach((r,ri)=>{r.forEach((v,ci)=>{const cellAddr=XLSX.utils.encode_cell({r:ri+1,c:ci});if(isUrl(v)){if(!ws[cellAddr])ws[cellAddr]={v:String(v),t:'s'};const uu=String(v).trim();ws[cellAddr].l={Target:/^https?:\/\//i.test(uu)?uu:'https://'+uu,Tooltip:'Open link'}}})});
     const wb=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
     XLSX.writeFile(wb,'table.xlsx');
@@ -373,7 +373,7 @@ async function doExport(fmt){
         const s=String(v||'');
         let kids;
         if(isUrl(s)){
-          kids=[new D.ExternalHyperlink({children:[new D.TextRun({text:s,style:'Hyperlink',color:'2563EB'})],link:s.trim()})];
+          const uu=s.trim();kids=[new D.ExternalHyperlink({children:[new D.TextRun({text:s,style:'Hyperlink',color:'2563EB'})],link:/^https?:\/\//i.test(uu)?uu:'https://'+uu})];
         }else{
           kids=[new D.TextRun(s)];
         }
@@ -407,7 +407,7 @@ async function doPrint(){
   S.rows.forEach((r,gi)=>{if(!S.includedRows[gi])return;S.headers.forEach((_,ci)=>{if(!S.includedCols[ci])return;const v=(r[ci]||'').trim();if(isUrl(v)){counter++;allRefs.push({ref:String(counter),url:v})}})});
   if(exportQrOn&&(S.qrSection||S.qrCol))html+='<th>QR</th>';
   html+='</tr></thead><tbody>';
-  rows.forEach(r=>{html+='<tr>';r.forEach(v=>{const s=String(v||'');html+=isUrl(s)?'<td><a href="'+esc(s.trim())+'" target="_blank" rel="noopener">'+esc(s)+'</a></td>':'<td>'+esc(s)+'</td>'});if(exportQrOn&&(S.qrSection||S.qrCol))html+='<td>-</td>';html+='</tr>'});
+  rows.forEach(r=>{html+='<tr>';r.forEach(v=>{const s=String(v||'');html+=isUrl(s)?'<td><a href="'+esc(/^https?:\/\//i.test(s.trim())?s.trim():'https://'+s.trim())+'" target="_blank" rel="noopener">'+esc(s)+'</a></td>':'<td>'+esc(s)+'</td>'});if(exportQrOn&&(S.qrSection||S.qrCol))html+='<td>-</td>';html+='</tr>'});
   html+='</tbody></table>';
   if(exportQrOn&&(S.qrSection||S.qrCol)&&allRefs.length){html+='<div class="qr-grid">';allRefs.forEach(e=>{html+='<div class="qr-item"><div class="qr-ref">'+e.ref+'</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(e.url)+'" style="width:1.5in;height:1.5in;display:block"></div>'});html+='</div>'}
   html+='</body></html>';
@@ -426,7 +426,7 @@ function doHtmlExport(){
   if(exportQrOn&&(S.qrSection||S.qrCol))html+='<th>QR</th>';
   html+='</tr></thead><tbody>';
   let cnt=1000;
-  rows.forEach(r=>{const refs=[];r.forEach(v=>{const t=(v||'').trim();if(isUrl(t)){cnt++;refs.push(String(cnt))}});html+='<tr>';r.forEach(v=>{const s=String(v||'');html+=isUrl(s)?'<td><a href="'+esc(s.trim())+'" target="_blank" rel="noopener">'+esc(s)+'</a></td>':'<td>'+esc(s)+'</td>'});if(exportQrOn&&(S.qrSection||S.qrCol))html+='<td>'+(refs.length?refs.join(', '):'-')+'</td>';html+='</tr>'});
+  rows.forEach(r=>{const refs=[];r.forEach(v=>{const t=(v||'').trim();if(isUrl(t)){cnt++;refs.push(String(cnt))}});html+='<tr>';r.forEach(v=>{const s=String(v||'');html+=isUrl(s)?'<td><a href="'+esc(/^https?:\/\//i.test(s.trim())?s.trim():'https://'+s.trim())+'" target="_blank" rel="noopener">'+esc(s)+'</a></td>':'<td>'+esc(s)+'</td>'});if(exportQrOn&&(S.qrSection||S.qrCol))html+='<td>'+(refs.length?refs.join(', '):'-')+'</td>';html+='</tr>'});
   html+='</tbody></table>';
   if(exportQrOn&&(S.qrSection||S.qrCol)&&allRefs.length){html+='<div class="qr-grid">';allRefs.forEach(e=>{html+='<div class="qr-card"><div class="qr-ref">'+e.ref+'</div><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data='+encodeURIComponent(e.url)+'" width="100" height="100"></div>'});html+='</div>'}
   html+='</body></html>';
