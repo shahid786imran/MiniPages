@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<title>Google Drive Link Manager</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+:root {
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-2: #eef1f7;
+  --border: #d9dee8;
+  --text: #1a1d23;
+  --muted: #667085;
+  --accent: #4f8cff;
+  --danger: #ef4444;
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --grey: #9ca3af;
+  --shadow: 0 2px 10px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --bar-width: 290px;
+}
+html[data-theme="night"] {
+  --bg: #000000;
+  --surface: #000000;
+  --surface-2: #0a0a0a;
+  --border: #1a1a1a;
+  --text: #e7ebf3;
+  --muted: #8b93a3;
+  --shadow: 0 2px 10px rgba(0,0,0,0.6);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg); color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 15px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  touch-action: pan-y;
+}
+
+/* HEADER */
+header.app-header {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+header.app-header .icon-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+header.app-header .title {
+  flex: 1; text-align: center;
+  font-size: 15px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+header.app-header .timer {
+  font-size: 10px; color: var(--muted);
+  text-align: right; line-height: 1.1;
+  min-width: 60px;
+}
+
+/* Add button — connection status color */
+#addBtn { position: relative; }
+#addBtn.status-green { border-color: var(--green); color: var(--green); }
+#addBtn.status-amber { border-color: var(--amber); color: var(--amber); }
+#addBtn.status-grey  { border-color: var(--grey);  color: var(--grey); opacity: 0.7; }
+#addBtn[disabled] { cursor: not-allowed; }
+
+/* MAIN */
+main {
+  max-width: 900px; margin: 0 auto;
+  padding: 12px; padding-bottom: 80px;
+}
+.toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.toolbar input[type="search"] {
+  flex: 1; min-width: 140px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px; border-radius: var(--radius);
+  font-size: 14px; outline: none;
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--accent); color: #fff;
+  border: none; padding: 10px 14px;
+  border-radius: var(--radius); font-size: 14px; font-weight: 500;
+  cursor: pointer;
+}
+.btn.secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip {
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--muted); padding: 5px 10px;
+  border-radius: 999px; font-size: 12px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+}
+.chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px;
+  margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.card .title-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+.card .title-row h3 { margin: 0; font-size: 15px; flex: 1; word-break: break-word; }
+.card .desc { color: var(--muted); font-size: 13px; margin: 4px 0 8px; word-break: break-word; }
+.card .path { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.card .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+.tag {
+  background: rgba(79,140,255,0.15); color: var(--accent);
+  border: 1px solid rgba(79,140,255,0.35);
+  padding: 3px 8px; border-radius: 999px; font-size: 11px;
+}
+.card .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.card .actions .btn { padding: 7px 10px; font-size: 12px; }
+
+.empty { text-align: center; color: var(--muted); padding: 40px 12px; font-size: 14px; }
+
+/* BARS */
+.side-bar {
+  position: fixed; top: 0; bottom: 0;
+  width: var(--bar-width);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 90;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  overflow-y: auto;
+  padding: 16px 12px 90px;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+}
+.side-bar.right {
+  right: 0; left: auto;
+  border-right: none; border-left: 1px solid var(--border);
+  transform: translateX(100%);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.25);
+}
+.side-bar.open { transform: translateX(0); }
+.side-bar h3 {
+  font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--muted);
+  margin: 14px 0 8px;
+}
+.side-bar .side-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px; border-radius: 8px;
+  font-size: 14px; cursor: pointer; color: var(--text);
+}
+.side-bar .side-item:hover,
+.side-bar .side-item.active { background: var(--surface-2); }
+.side-bar .side-item .x {
+  margin-left: auto; color: var(--muted);
+  font-size: 16px; padding: 0 4px;
+}
+.bar-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 80; display: none;
+}
+.bar-overlay.show { display: block; }
+
+/* MODAL */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 100; display: none;
+  align-items: flex-end; justify-content: center;
+}
+.modal-backdrop.show { display: flex; }
+.modal {
+  background: var(--surface);
+  width: 100%; max-width: 600px;
+  max-height: 92vh; overflow-y: auto;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  padding: 16px;
+}
+.modal h2 { margin: 0 0 12px; font-size: 17px; }
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.field input, .field textarea, .field select {
+  width: 100%; background: var(--surface-2);
+  border: 1px solid var(--border); color: var(--text);
+  padding: 10px 12px; border-radius: 10px;
+  font-size: 14px; font-family: inherit; outline: none;
+}
+.field textarea { resize: vertical; min-height: 70px; }
+.field .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.modal-actions {
+  display: flex; gap: 8px; justify-content: flex-end;
+  margin-top: 16px; flex-wrap: wrap;
+}
+.inline-add { display: flex; gap: 6px; margin-top: 6px; }
+.inline-add input { flex: 1; }
+
+/* TOAST */
+.toast {
+  position: fixed; left: 50%; bottom: 30px;
+  transform: translateX(-50%);
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 16px; border-radius: 10px;
+  font-size: 13px; z-index: 200;
+  box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.toast.show { opacity: 1; }
+
+.section-title {
+  font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--muted);
+  margin: 18px 0 8px;
+}
+.log-item {
+  font-size: 12px; color: var(--muted);
+  padding: 6px 0; border-bottom: 1px dashed var(--border);
+}
+.log-item b { color: var(--text); font-weight: 500; }
+
+/* SETTINGS */
+.setting-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.setting-row .lock-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); width: 34px; height: 34px;
+  border-radius: 8px; font-size: 15px;
+  cursor: pointer; flex-shrink: 0;
+}
+.setting-row .lock-btn.locked { color: var(--danger); border-color: var(--danger); }
+.setting-row .setting-label { flex: 1; font-size: 14px; }
+.setting-row .setting-control { display: flex; align-items: center; gap: 6px; }
+.setting-row.disabled { opacity: 0.55; }
+.setting-row.disabled .setting-control { pointer-events: none; }
+
+/* CONTACT MENU */
+.contact-menu {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: var(--surface);
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border-top: 1px solid var(--border);
+  padding: 16px; z-index: 150;
+  transform: translateY(100%);
+  transition: transform 0.28s ease;
+  max-width: 600px; margin: 0 auto;
+  box-shadow: 0 -6px 30px rgba(0,0,0,0.35);
+}
+.contact-menu.open { transform: translateY(0); }
+.contact-menu .handle {
+  width: 40px; height: 4px; background: var(--border);
+  border-radius: 999px; margin: 0 auto 12px;
+}
+.contact-menu h3 { margin: 0 0 12px; font-size: 15px; }
+.contact-menu .contact-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+}
+.contact-menu .contact-item {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 6px; background: var(--surface-2);
+  border-radius: 10px; font-size: 12px;
+  color: var(--text); text-decoration: none;
+  cursor: pointer; border: 1px solid var(--border);
+}
+.contact-menu .contact-item .ico { font-size: 20px; }
+
+/* RECYCLE BIN item disabled state */
+.side-item.disabled { opacity: 0.4; pointer-events: none; }
+
+@media (min-width: 640px) {
+  .modal-backdrop { align-items: center; }
+  .modal { border-radius: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <button class="icon-btn" id="openLeft" title="Menu">☰</button>
+  <button class="icon-btn" id="addBtn" title="Add link">＋</button>
+  <div class="title">Drive Link Manager</div>
+  <div class="timer" id="lastTimer">—</div>
+  <button class="icon-btn" id="openRight" title="Right bar">⋯</button>
+</header>
+
+<!-- LEFT BAR -->
+<aside class="side-bar" id="leftBar">
+  <h3>Menu</h3>
+  <div class="side-item active" data-left-action="all-links">🔗 All Links</div>
+  <div class="side-item" id="leftActivityBtn">🕒 Activity</div>
+
+  <h3>Categories</h3>
+  <div id="leftCatList"></div>
+  <div style="margin-top:8px">
+    <button class="btn secondary" id="leftAddCategoryBtn" style="width:100%">+ Add Category</button>
+  </div>
+
+  <h3>Tags</h3>
+  <div id="leftTagList"></div>
+  <div style="margin-top:8px">
+    <button class="btn secondary" id="leftAddTagBtn" style="width:100%">+ Add Tag</button>
+  </div>
+
+  <div style="position:absolute;left:12px;right:12px;bottom:14px">
+    <button class="btn" id="leftSettingsBtn" style="width:100%">⚙ Settings</button>
+  </div>
+</aside>
+
+<!-- RIGHT BAR -->
+<aside class="side-bar right" id="rightBar">
+  <h3>Recycle Bin</h3>
+  <div id="recycleList">
+    <div class="side-item disabled">🗑 <span id="recycleName">Recycle Bin</span></div>
+  </div>
+  <div style="font-size:11px;color:var(--muted);padding:4px 10px" id="recycleCount">0 items</div>
+
+  <h3>Info</h3>
+  <div style="font-size:12px;color:var(--muted);padding:6px 10px">
+    Swipe right → left bar<br>Swipe left → right bar<br>Swipe up → contact
+  </div>
+</aside>
+
+<div class="bar-overlay" id="barOverlay"></div>
+
+<!-- APP -->
+<div id="app">
+  <main>
+    <div class="toolbar">
+      <input type="search" id="searchInput" placeholder="Search title or description…" />
+    </div>
+    <div class="chips" id="filterChips"></div>
+    <div id="linksList"></div>
+  </main>
+</div>
+
+<!-- CONTACT MENU -->
+<div class="contact-menu" id="contactMenu">
+  <div class="handle"></div>
+  <h3>Quick Contact</h3>
+  <div class="contact-grid">
+    <a class="contact-item" href="https://wa.me/" target="_blank" rel="noopener"><span class="ico">💬</span> WhatsApp</a>
+    <a class="contact-item" href="mailto:" target="_blank" rel="noopener"><span class="ico">✉️</span> Email</a>
+    <a class="contact-item" href="tel:" target="_blank" rel="noopener"><span class="ico">📞</span> Call</a>
+    <a class="contact-item" href="https://t.me/" target="_blank" rel="noopener"><span class="ico">📨</span> Telegram</a>
+    <a class="contact-item" href="#" id="aboutBtn"><span class="ico">ℹ️</span> About</a>
+    <a class="contact-item" href="#" id="helpBtn"><span class="ico">❓</span> Help</a>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+  authDomain: "mywebapps-e3b63.firebaseapp.com",
+  projectId: "mywebapps-e3b63",
+  storageBucket: "mywebapps-e3b63.firebasestorage.app",
+  messagingSenderId: "46681415809",
+  appId: "1:46681415809:web:c4528b9da97abc310a2d80"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const COLLECTION = "Google Drive Link Manager";
+const ROOT_DOC   = db.collection(COLLECTION).doc("app");
+
+const RECYCLE_NAMES = ["Recycle Bin", "Trash", "Bin", "Discarded", "Deleted"];
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  links: [],
+  categories: [],
+  tags: [],
+  logs: [],
+  recycle: [],
+  settings: {
+    theme: "night",
+    swipeBars: true,
+    recycleName: RECYCLE_NAMES[0],
+    lock_theme: false,
+    lock_swipeBars: false,
+    lock_recycleName: false
+  },
+  search: "",
+  filterCategoryId: "",
+  filterTagId: "",
+  editingLinkId: null,
+  connection: "connecting" // connecting | connected | disconnected
+};
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const now = () => Date.now();
+
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 2200);
+}
+function findCat(id){ return state.categories.find(c=>c.id===id)||null; }
+function findTag(id){ return state.tags.find(t=>t.id===id)||null; }
+function findLink(id){ return state.links.find(l=>l.id===id)||null; }
+
+function catPath(id){
+  const parts=[]; let cur=findCat(id), g=0;
+  while(cur && g++<20){ parts.unshift(cur.name); cur = cur.parentId?findCat(cur.parentId):null; }
+  return parts.join(" / ");
+}
+function catDescendants(rootId){
+  const out=new Set([rootId]); let added=true;
+  while(added){ added=false;
+    for(const c of state.categories){
+      if(c.parentId && out.has(c.parentId) && !out.has(c.id)){ out.add(c.id); added=true; }
+    }
+  }
+  return out;
+}
+function fmtTime(ts){
+  if(!ts) return "—";
+  const d=new Date(ts);
+  const pad=n=>String(n).padStart(2,"0");
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+/* ============================================================
+   FIRESTORE — GLOBAL SHARED (no per-user UID paths)
+   ============================================================ */
+function setConnection(c){
+  state.connection = c;
+  const btn = $("#addBtn");
+  if(!btn) return;
+  btn.classList.remove("status-green","status-amber","status-grey");
+  if(c==="connected"){ btn.classList.add("status-green"); btn.disabled=false; }
+  else if(c==="connecting"){ btn.classList.add("status-amber"); btn.disabled=true; }
+  else { btn.classList.add("status-grey"); btn.disabled=true; }
+}
+
+async function loadAll(){
+  try {
+    const snap = await ROOT_DOC.get();
+    const data = snap.exists ? snap.data() : {};
+    state.links      = data.links      || [];
+    state.categories = data.categories || [];
+    state.tags       = data.tags       || [];
+    state.logs       = data.logs       || [];
+    state.recycle    = data.recycle    || [];
+    state.settings   = Object.assign(state.settings, data.settings || {});
+    setConnection("connected");
+    updateTimer(data.updatedAt);
+  } catch(e){
+    console.error("loadAll failed", e);
+    setConnection("disconnected");
+    // silent — no more "Firestore read failed" toast
+  }
+}
+
+async function persist(){
+  try {
+    await ROOT_DOC.set({
+      links: state.links,
+      categories: state.categories,
+      tags: state.tags,
+      logs: state.logs.slice(0,300),
+      recycle: state.recycle,
+      settings: state.settings,
+      updatedAt: now()
+    }, { merge: true });
+    setConnection("connected");
+    updateTimer(now());
+  } catch(e){
+    console.error("persist failed", e);
+    setConnection("disconnected");
+    toast("Firestore write failed");
+  }
+}
+
+async function logAction(type, detail){
+  state.logs.unshift({ id: uid(), type, detail, at: now() });
+  if(state.logs.length>300) state.logs.length=300;
+}
+
+function updateTimer(ts){
+  const el = $("#lastTimer");
+  if(el) el.textContent = fmtTime(ts || state.logs[0]?.at);
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme", state.settings.theme);
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute("content", state.settings.theme==="night"?"#000000":"#f4f6fb");
+}
+
+/* ============================================================
+   LINK ACTIONS
+   ============================================================ */
+async function saveLink(payload){
+  if(state.connection !== "connected"){ toast("Firebase disconnected — cannot add"); return; }
+  const isEdit = !!payload.id;
+  const link = {
+    id: payload.id || uid(),
+    title: payload.title.trim(),
+    description: (payload.description||"").trim(),
+    url: payload.url.trim(),
+    categoryIds: payload.categoryIds||[],
+    tagIds: payload.tagIds||[],
+    createdAt: isEdit ? (findLink(payload.id)?.createdAt||now()) : now(),
+    updatedAt: now()
+  };
+  const i = state.links.findIndex(l=>l.id===link.id);
+  if(i>=0) state.links[i]=link; else state.links.unshift(link);
+  await logAction(isEdit?"edit":"add", `${link.title} — ${link.url}`);
+  await persist();
+  toast(isEdit?"Link updated":"Link added");
+  render();
+}
+
+async function removeLink(id){
+  const link = findLink(id);
+  if(!link) return;
+  if(!confirm(`Move "${link.title}" to ${state.settings.recycleName}?`)) return;
+  state.links = state.links.filter(l=>l.id!==id);
+  link.deletedAt = now();
+  state.recycle.unshift(link);
+  if(state.recycle.length>200) state.recycle.length=200;
+  await logAction("delete", link.title);
+  await persist();
+  toast("Moved to "+state.settings.recycleName);
+  render();
+}
+
+async function restoreFromRecycle(id){
+  const i = state.recycle.findIndex(l=>l.id===id);
+  if(i<0) return;
+  const [link] = state.recycle.splice(i,1);
+  delete link.deletedAt;
+  state.links.unshift(link);
+  await logAction("restore", link.title);
+  await persist();
+  toast("Restored");
+  render();
+}
+
+async function purgeFromRecycle(id){
+  if(!confirm("Permanently delete this item?")) return;
+  const item = state.recycle.find(l=>l.id===id);
+  state.recycle = state.recycle.filter(l=>l.id!==id);
+  await logAction("purge", item?.title || "");
+  await persist();
+  render();
+}
+
+function openDrive(id){
+  const link = findLink(id); if(!link) return;
+  window.open(link.url, "_blank", "noopener,noreferrer");
+  logAction("open", link.title);
+  persist();
+}
+
+async function addCategory(name, parentId){
+  name=(name||"").trim(); if(!name) return;
+  const cat={ id: uid(), name, parentId: parentId||"" };
+  state.categories.push(cat);
+  await logAction("add-category", catPath(cat.id));
+  await persist();
+  toast("Category added"); render();
+}
+async function removeCategory(id){
+  const cat=findCat(id); if(!cat) return;
+  if(!confirm(`Delete category "${cat.name}" and sub-categories?`)) return;
+  const del = catDescendants(id);
+  state.categories = state.categories.filter(c=>!del.has(c.id));
+  state.links.forEach(l=>{ l.categoryIds=(l.categoryIds||[]).filter(c=>!del.has(c)); });
+  await logAction("delete-category", cat.name);
+  await persist();
+  toast("Category deleted"); render();
+}
+async function addTag(name){
+  name=(name||"").trim(); if(!name) return;
+  if(state.tags.some(t=>t.name.toLowerCase()===name.toLowerCase())){ toast("Tag already exists"); return; }
+  const tag={ id: uid(), name };
+  state.tags.push(tag);
+  await logAction("add-tag", name);
+  await persist();
+  toast("Tag added"); render();
+}
+async function removeTag(id){
+  const tag=findTag(id); if(!tag) return;
+  if(!confirm(`Delete tag "${tag.name}"?`)) return;
+  state.tags = state.tags.filter(t=>t.id!==id);
+  state.links.forEach(l=>{ l.tagIds=(l.tagIds||[]).filter(t=>t!==id); });
+  await logAction("delete-tag", tag.name);
+  await persist();
+  toast("Tag deleted"); render();
+}
+
+/* ============================================================
+   FILTER
+   ============================================================ */
+function visibleLinks(){
+  const q=state.search.trim().toLowerCase();
+  let list=state.links.slice().sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(q) list=list.filter(l=>l.title.toLowerCase().includes(q)||(l.description||"").toLowerCase().includes(q));
+  if(state.filterCategoryId){ const set=catDescendants(state.filterCategoryId); list=list.filter(l=>(l.categoryIds||[]).some(c=>set.has(c))); }
+  if(state.filterTagId) list=list.filter(l=>(l.tagIds||[]).includes(state.filterTagId));
+  return list;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  applyTheme();
+  renderLinks();
+  renderFilters();
+  renderLeftBar();
+  renderRightBar();
+  updateTimer(state.logs[0]?.at);
+  setConnection(state.connection);
+}
+
+function renderFilters(){
+  const bits=[];
+  if(state.search) bits.push(`search: "${esc(state.search)}"`);
+  if(state.filterCategoryId) bits.push(`📁 ${esc(catPath(state.filterCategoryId))}`);
+  if(state.filterTagId) bits.push(`🏷 ${esc(findTag(state.filterTagId)?.name||"")}`);
+  const el=$("#filterChips");
+  if(!bits.length){ el.innerHTML=""; return; }
+  el.innerHTML = bits.map(b=>`<span class="chip active">${b}</span>`).join("") +
+    `<span class="chip" id="clearFilters">Clear ×</span>`;
+  $("#clearFilters").onclick = ()=>{ state.search=""; state.filterCategoryId=""; state.filterTagId=""; $("#searchInput").value=""; render(); };
+}
+
+function renderLinks(){
+  const list=visibleLinks();
+  const el=$("#linksList");
+  if(!list.length){
+    el.innerHTML = `<div class="empty">No saved links yet.<br>Tap ＋ in the header to add one.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(link=>{
+    const cats=(link.categoryIds||[]).map(catPath).filter(Boolean).map(esc).join(", ");
+    const tags=(link.tagIds||[]).map(findTag).filter(Boolean).map(t=>`<span class="tag">${esc(t.name)}</span>`).join("");
+    return `
+      <div class="card">
+        <div class="title-row"><h3>${esc(link.title)}</h3></div>
+        ${link.description?`<div class="desc">${esc(link.description)}</div>`:""}
+        ${cats?`<div class="path">📁 ${cats}</div>`:""}
+        ${tags?`<div class="tags">${tags}</div>`:""}
+        <div class="actions">
+          <button class="btn" data-open="${link.id}">Open in Drive</button>
+          <button class="btn secondary" data-edit="${link.id}">Edit</button>
+          <button class="btn danger" data-del="${link.id}">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+  el.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openDrive(b.dataset.open));
+  el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>openLinkModal(b.dataset.edit));
+  el.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>removeLink(b.dataset.del));
+}
+
+function renderLeftBar(){
+  $("#leftCatList").innerHTML = state.categories
+    .filter(c=>!c.parentId)
+    .sort((a,b)=>a.name.localeCompare(b.name))
+    .map(c=>renderCatNode(c,0)).join("") ||
+    `<div style="font-size:12px;color:var(--muted);padding:4px">No categories yet</div>`;
+
+  $("#leftTagList").innerHTML = state.tags
+    .map(t=>`<div class="side-item" data-tag-filter="${t.id}">🏷 ${esc(t.name)} <span class="x" data-del-tag="${t.id}">×</span></div>`)
+    .join("") ||
+    `<div style="font-size:12px;color:var(--muted);padding:4px">No tags yet</div>`;
+
+  $$("#leftCatList [data-cat-filter]").forEach(el=>{
+    el.onclick=(e)=>{ if(e.target.matches("[data-del-cat]")||e.target.matches("[data-add-sub]")) return;
+      state.filterCategoryId=el.dataset.catFilter; state.filterTagId=""; closeBars(); render(); };
+  });
+  $$("#leftCatList [data-del-cat]").forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); removeCategory(el.dataset.delCat); });
+  $$("#leftCatList [data-add-sub]").forEach(el=>el.onclick=(e)=>{ e.stopPropagation();
+    const name=prompt("Sub-category name:"); if(name) addCategory(name, el.dataset.addSub); });
+  $$("#leftTagList [data-del-tag]").forEach(el=>el.onclick=(e)=>{ e.stopPropagation(); removeTag(el.dataset.delTag); });
+  $$("#leftTagList [data-tag-filter]").forEach(el=>el.onclick=()=>{
+    state.filterTagId=el.dataset.tagFilter; state.filterCategoryId=""; closeBars(); render(); });
+
+  $("#leftAddCategoryBtn").onclick=()=>{ const n=prompt("Category name:"); if(n) addCategory(n,""); };
+  $("#leftAddTagBtn").onclick=()=>{ const n=prompt("Tag name:"); if(n) addTag(n); };
+  $("#leftActivityBtn").onclick=()=>{ closeBars(); openActivityModal(); };
+  $("#leftSettingsBtn").onclick=()=>{ closeBars(); openSettingsModal(); };
+}
+
+function renderCatNode(cat, depth){
+  const children = state.categories.filter(c=>c.parentId===cat.id).sort((a,b)=>a.name.localeCompare(b.name));
+  return `
+    <div class="side-item" data-cat-filter="${cat.id}" style="padding-left:${10+depth*14}px">
+      📁 ${esc(cat.name)}
+      <button class="x" data-add-sub="${cat.id}" style="border:none;background:transparent;color:var(--muted);cursor:pointer">+</button>
+      <span class="x" data-del-cat="${cat.id}">×</span>
+    </div>
+    ${children.map(c=>renderCatNode(c,depth+1)).join("")}
+  `;
+}
+
+function renderRightBar(){
+  $("#recycleName").textContent = state.settings.recycleName;
+  $("#recycleCount").textContent = state.recycle.length + " items";
+  const el = $("#recycleList");
+  if(!state.recycle.length){
+    el.innerHTML = `<div class="side-item disabled">🗑 ${esc(state.settings.recycleName)} (empty)</div>`;
+    return;
+  }
+  el.innerHTML = state.recycle.map(item=>`
+    <div class="side-item" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <div style="font-size:13px;font-weight:500">${esc(item.title)}</div>
+      <div style="display:flex;gap:6px;width:100%">
+        <button class="btn secondary" style="flex:1;padding:5px;font-size:11px" data-restore="${item.id}">Restore</button>
+        <button class="btn danger" style="flex:1;padding:5px;font-size:11px" data-purge="${item.id}">Delete</button>
+      </div>
+    </div>
+  `).join("");
+  el.querySelectorAll("[data-restore]").forEach(b=>b.onclick=()=>restoreFromRecycle(b.dataset.restore));
+  el.querySelectorAll("[data-purge]").forEach(b=>b.onclick=()=>purgeFromRecycle(b.dataset.purge));
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+function showModal(html){ $("#modalBody").innerHTML = html; $("#modalBackdrop").classList.add("show"); }
+function closeModal(){ $("#modalBackdrop").classList.remove("show"); }
+
+function openActivityModal(){
+  showModal(`
+    <h2>Activity</h2>
+    <div style="max-height:60vh;overflow:auto">
+      ${state.logs.length ? state.logs.slice(0,100).map(l=>
+        `<div class="log-item"><b>${esc(l.type)}</b> — ${esc(l.detail)} <span style="float:right">${new Date(l.at).toLocaleString()}</span></div>`
+      ).join("") : `<div class="empty">No activity yet</div>`}
+    </div>
+    <div class="modal-actions"><button class="btn" id="closeAct">Close</button></div>
+  `);
+  $("#closeAct").onclick = closeModal;
+}
+
+function openSettingsModal(){
+  const s = state.settings;
+  const canLock = (key) => !!s["lock_"+key];
+  const disabled = (key) => canLock(key) ? "disabled" : "";
+
+  showModal(`
+    <h2>Settings</h2>
+
+    <div class="setting-row ${canLock("theme")?"disabled":""}">
+      <button class="lock-btn ${canLock("theme")?"locked":""}" data-lock="theme">${canLock("theme")?"🔒":"🔓"}</button>
+      <div class="setting-label">Theme</div>
+      <div class="setting-control">
+        <select id="setTheme" ${disabled("theme")}>
+          <option value="day" ${s.theme==="day"?"selected":""}>Day</option>
+          <option value="night" ${s.theme==="night"?"selected":""}>Night</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="setting-row ${canLock("swipeBars")?"disabled":""}">
+      <button class="lock-btn ${canLock("swipeBars")?"locked":""}" data-lock="swipeBars">${canLock("swipeBars")?"🔒":"🔓"}</button>
+      <div class="setting-label">Swipe to show/hide bars</div>
+      <div class="setting-control">
+        <input type="checkbox" id="setSwipe" ${s.swipeBars?"checked":""} ${disabled("swipeBars")} />
+      </div>
+    </div>
+
+    <div class="setting-row ${canLock("recycleName")?"disabled":""}">
+      <button class="lock-btn ${canLock("recycleName")?"locked":""}" data-lock="recycleName">${canLock("recycleName")?"🔒":"🔓"}</button>
+      <div class="setting-label">Recycle Bin name</div>
+      <div class="setting-control">
+        <select id="setRecycleName" ${disabled("recycleName")}>
+          ${RECYCLE_NAMES.map(n=>`<option value="${n}" ${s.recycleName===n?"selected":""}>${n}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-actions"><button class="btn" id="closeSettings">Close</button></div>
+  `);
+
+  $("#closeSettings").onclick = closeModal;
+
+  $$(".lock-btn[data-lock]").forEach(btn=>{
+    btn.onclick = async ()=>{
+      const k = "lock_"+btn.dataset.lock;
+      state.settings[k] = !state.settings[k];
+      await persist();
+      openSettingsModal();
+    };
+  });
+
+  $("#setTheme").onchange = async (e)=>{
+    state.settings.theme = e.target.value;
+    await persist(); applyTheme(); render();
+  };
+  $("#setSwipe").onchange = async (e)=>{
+    state.settings.swipeBars = e.target.checked;
+    await persist();
+  };
+  $("#setRecycleName").onchange = async (e)=>{
+    state.settings.recycleName = e.target.value;
+    await persist(); render();
+  };
+}
+
+function openLinkModal(linkId){
+  const link = linkId ? findLink(linkId) : null;
+  if(!link && state.connection !== "connected"){
+    toast("Firebase disconnected — cannot add");
+    return;
+  }
+  state.editingLinkId = linkId || null;
+  const selCats = new Set(link?.categoryIds || []);
+  const selTags = new Set(link?.tagIds || []);
+
+  showModal(`
+    <h2>${link?"Edit link":"Add link"}</h2>
+    <div class="field"><label>Title</label>
+      <input id="f_title" value="${esc(link?.title||"")}" placeholder="e.g. March invoices" /></div>
+    <div class="field"><label>Description</label>
+      <textarea id="f_desc" placeholder="Short note…">${esc(link?.description||"")}</textarea></div>
+    <div class="field"><label>Google Drive folder URL</label>
+      <input id="f_url" value="${esc(link?.url||"")}" placeholder="https://drive.google.com/drive/folders/…" />
+      <div class="hint">Copy &amp; paste from Google Drive.</div></div>
+    <div class="field"><label>Categories</label>
+      <div id="catChecks" style="max-height:150px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:8px">
+        ${renderCatChecks(selCats)}
+      </div>
+      <div class="inline-add"><input id="modalNewCat" placeholder="New category…" />
+        <button class="btn secondary" id="modalAddCat">Add</button></div></div>
+    <div class="field"><label>Tags</label>
+      <div id="tagToggles" class="chips">
+        ${state.tags.map(t=>`<span class="chip ${selTags.has(t.id)?"active":""}" data-tag-toggle="${t.id}">${esc(t.name)}</span>`).join("") || `<span style="font-size:12px;color:var(--muted)">No tags yet</span>`}
+      </div>
+      <div class="inline-add"><input id="modalNewTag" placeholder="New tag…" />
+        <button class="btn secondary" id="modalAddTag">Add</button></div></div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelBtn">Cancel</button>
+      <button class="btn" id="saveBtn">${link?"Save":"Add"}</button>
+    </div>
+  `);
+
+  $("#cancelBtn").onclick = closeModal;
+
+  const bindTagClicks = ()=>{
+    $$("#tagToggles .chip").forEach(chip=>{
+      chip.onclick = ()=>{
+        const id = chip.dataset.tagToggle;
+        if(selTags.has(id)) selTags.delete(id); else selTags.add(id);
+        chip.classList.toggle("active");
+      };
+    });
+  };
+  bindTagClicks();
+
+  const bindCatChecks = ()=>{
+    $$("#catChecks input[data-cat]").forEach(cb=>{
+      cb.onchange = ()=>{
+        if(cb.checked) selCats.add(cb.dataset.cat); else selCats.delete(cb.dataset.cat);
+      };
+    });
+  };
+  bindCatChecks();
+
+  $("#modalAddCat").onclick = async ()=>{
+    const n = $("#modalNewCat").value.trim();
+    if(!n) return;
+    const cat = { id: uid(), name: n, parentId: "" };
+    state.categories.push(cat);
+    selCats.add(cat.id);
+    await persist();
+    $("#catChecks").innerHTML = renderCatChecks(selCats);
+    bindCatChecks(); $("#modalNewCat").value = ""; toast("Category added");
+  };
+
+  $("#modalAddTag").onclick = async ()=>{
+    const n = $("#modalNewTag").value.trim();
+    if(!n) return;
+    if(state.tags.some(t=>t.name.toLowerCase()===n.toLowerCase())){ toast("Tag already exists"); return; }
+    const tag = { id: uid(), name: n };
+    state.tags.push(tag); selTags.add(tag.id);
+    await persist();
+    $("#tagToggles").innerHTML = state.tags.map(t=>
+      `<span class="chip ${selTags.has(t.id)?"active":""}" data-tag-toggle="${t.id}">${esc(t.name)}</span>`
+    ).join("");
+    bindTagClicks(); $("#modalNewTag").value = ""; toast("Tag added");
+  };
+
+  $("#saveBtn").onclick = async ()=>{
+    const title = $("#f_title").value.trim();
+    const description = $("#f_desc").value;
+    const url = $("#f_url").value.trim();
+    if(!title) return toast("Title required");
+    if(!/^https?:\/\//i.test(url)) return toast("Valid URL required (http/https)");
+    await saveLink({
+      id: link?.id, title, description, url,
+      categoryIds: Array.from(selCats),
+      tagIds: Array.from(selTags)
+    });
+    closeModal();
+  };
+}
+
+function renderCatChecks(selSet){
+  let html="";
+  const walk=(parentId,depth)=>{
+    state.categories
+      .filter(c=>(c.parentId||"")===(parentId||""))
+      .sort((a,b)=>a.name.localeCompare(b.name))
+      .forEach(c=>{
+        html += `<label style="display:block;padding:3px 0 3px ${depth*14}px;font-size:13px">
+          <input type="checkbox" data-cat="${c.id}" ${selSet.has(c.id)?"checked":""} style="margin-right:6px" />
+          ${esc(c.name)}</label>`;
+        walk(c.id, depth+1);
+      });
+  };
+  walk("",0);
+  return html || `<span style="font-size:12px;color:var(--muted)">No categories yet</span>`;
+}
+
+/* ============================================================
+   BARS open/close + swipe gestures
+   ============================================================ */
+function openBar(side){
+  closeBars();
+  const bar = side==="left"?$("#leftBar"):$("#rightBar");
+  bar.classList.add("open");
+  $("#barOverlay").classList.add("show");
+}
+function closeBars(){
+  $("#leftBar").classList.remove("open");
+  $("#rightBar").classList.remove("open");
+  $("#barOverlay").classList.remove("show");
+}
+
+let tx=0, ty=0, tt=0;
+document.addEventListener("touchstart", e=>{
+  const t=e.touches[0]; tx=t.clientX; ty=t.clientY; tt=Date.now();
+}, { passive: true });
+
+document.addEventListener("touchend", e=>{
+  const t=e.changedTouches[0];
+  const dx=t.clientX-tx, dy=t.clientY-ty, dt=Date.now()-tt;
+  if(dt>700) return;
+  if(!state.settings.swipeBars) return;
+
+  const leftOpen=$("#leftBar").classList.contains("open");
+  const rightOpen=$("#rightBar").classList.contains("open");
+  const contactOpen=$("#contactMenu").classList.contains("open");
+
+  // swipe up → contact
+  if(!leftOpen && !rightOpen && !contactOpen && Math.abs(dy)>80 && Math.abs(dy)>Math.abs(dx) && dy<0){
+    $("#contactMenu").classList.add("open"); return;
+  }
+  // swipe down → close contact
+  if(contactOpen && dy>60 && Math.abs(dy)>Math.abs(dx)){
+    $("#contactMenu").classList.remove("open"); return;
+  }
+  // horizontal
+  if(Math.abs(dx)>60 && Math.abs(dx)>Math.abs(dy)){
+    if(dx>0){
+      // swipe right: if right bar open, close it; else open left bar
+      if(rightOpen) closeBars();
+      else if(!leftOpen) openBar("left");
+    } else {
+      // swipe left: if left bar open, close it; else open right bar
+      if(leftOpen) closeBars();
+      else if(!rightOpen) openBar("right");
+    }
+  }
+}, { passive: true });
+
+document.addEventListener("click", e=>{
+  const contact=$("#contactMenu");
+  if(contact.classList.contains("open") && !contact.contains(e.target) && !e.target.closest("#addBtn")){
+    contact.classList.remove("open");
+  }
+});
+document.addEventListener("gesturestart", e=>e.preventDefault());
+document.addEventListener("touchmove", e=>{ if(e.touches.length>1) e.preventDefault(); }, { passive: false });
+
+/* ============================================================
+   TOP-LEVEL BINDINGS
+   ============================================================ */
+$("#openLeft").onclick = ()=>openBar("left");
+$("#openRight").onclick = ()=>openBar("right");
+$("#barOverlay").onclick = closeBars;
+$("#addBtn").onclick = ()=>openLinkModal();
+$("#searchInput").oninput = (e)=>{ state.search=e.target.value; renderLinks(); renderFilters(); };
+
+$("#aboutBtn").onclick = e=>{ e.preventDefault(); alert("Google Drive Link Manager\nCollection: "+COLLECTION); };
+$("#helpBtn").onclick = e=>{ e.preventDefault(); alert("Swipe right → left bar\nSwipe left → right bar\nSwipe up → contact\nTap ＋ to add link"); };
+
+$("#modalBackdrop").onclick = e=>{ if(e.target===$("#modalBackdrop")) closeModal(); };
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+async function boot(){
+  setConnection("connecting");
+  applyTheme();
+  await loadAll();
+  render();
+
+  // live sync
+  ROOT_DOC.onSnapshot(snap=>{
+    if(!snap.exists) return;
+    const d = snap.data();
+    if(state.editingLinkId) return;
+    state.links      = d.links      || state.links;
+    state.categories = d.categories || state.categories;
+    state.tags       = d.tags       || state.tags;
+    state.logs       = d.logs       || state.logs;
+    state.recycle    = d.recycle    || state.recycle;
+    state.settings   = Object.assign(state.settings, d.settings || {});
+    setConnection("connected");
+    updateTimer(d.updatedAt);
+    applyTheme();
+    render();
+  }, err=>{
+    console.error("snapshot error", err);
+    setConnection("disconnected");
+  });
+
+  // periodic timer refresh (last edit display)
+  setInterval(()=>updateTimer(state.logs[0]?.at), 1000);
+}
+boot();
+</script>
+</body>
+</html>
