@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#000000" />
+<title>Google Drive Link Manager</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+:root {
+  --bg-1: #eef4ff;
+  --bg-2: #e3ecff;
+  --bg-3: #f4f6fb;
+  --surface: #ffffff;
+  --surface-2: #eef1f7;
+  --border: #d9dee8;
+  --text: #1a1d23;
+  --muted: #667085;
+  --accent: #4f8cff;
+  --danger: #ef4444;
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --grey: #9ca3af;
+  --shadow: 0 2px 10px rgba(0,0,0,0.08);
+  --radius: 12px;
+  --bar-width: 290px;
+  --bar-bg: linear-gradient(180deg, #ffffff 0%, #f0f5ff 100%);
+  --tag-bg: rgba(0,0,0,0.04);
+  --tag-text: #9aa3b2;
+  --tag-border: rgba(0,0,0,0.06);
+  --modal-border: #d9dee8;
+}
+html[data-theme="night"] {
+  --bg-1: #000000;
+  --bg-2: #000000;
+  --bg-3: #000000;
+  --surface: #000000;
+  --surface-2: #0a0a0a;
+  --border: #1a1a1a;
+  --text: #e7ebf3;
+  --muted: #8b93a3;
+  --shadow: 0 2px 10px rgba(0,0,0,0.6);
+  --bar-bg: #000000;
+  --tag-bg: rgba(255,255,255,0.04);
+  --tag-text: #6e7684;
+  --tag-border: rgba(255,255,255,0.05);
+  --modal-border: #4a4a4a;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0;
+  background: linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 15px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+html[data-theme="night"] body { background: #000000; }
+input, textarea { user-select: text; -webkit-user-select: text; }
+
+/* HEADER */
+header.app-header {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+html[data-theme="day"] header.app-header {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+header.app-header .icon-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+header.app-header .icon-btn.hidden { display: none; }
+header.app-header .title {
+  flex: 1; text-align: center;
+  font-size: 15px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+header.app-header .timer {
+  font-size: 13px; font-weight: bold;
+  color: var(--text);
+  text-align: right; line-height: 1.1;
+  min-width: 70px;
+  cursor: pointer; user-select: none;
+}
+#addBtn { border: 1px solid var(--border); transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease; }
+#addBtn.status-green { background: var(--green); color: #fff; border-color: var(--green); animation: breatheGreen 2s ease-in-out infinite; }
+#addBtn.status-amber { background: var(--amber); color: #fff; border-color: var(--amber); animation: breatheAmber 1.2s ease-in-out infinite; }
+#addBtn.status-grey  { background: var(--grey);  color: #fff; border-color: var(--grey);  animation: none; }
+#addBtn[disabled] { cursor: not-allowed; }
+@keyframes breatheGreen { 0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); } 50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); } }
+@keyframes breatheAmber { 0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.7); } 50% { box-shadow: 0 0 0 6px rgba(245,158,11,0); } }
+
+/* MAIN */
+main { max-width: 900px; margin: 0 auto; padding: 12px; padding-bottom: 80px; }
+.toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.toolbar input[type="search"] {
+  flex: 1; min-width: 140px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px; border-radius: var(--radius);
+  font-size: 14px; outline: none;
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--accent); color: #fff;
+  border: none; padding: 10px 14px;
+  border-radius: var(--radius); font-size: 14px; font-weight: 500;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+.btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+.btn.danger { background: var(--danger); color: #fff; }
+.btn.ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+.btn.icon { padding: 6px 9px; font-size: 14px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.chip {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--muted); padding: 5px 10px;
+  border-radius: 999px; font-size: 12px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  touch-action: manipulation;
+  user-select: none;
+  white-space: nowrap;
+}
+.chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* TAG — very subtle */
+.tag {
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  border: 1px solid var(--tag-border);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+}
+
+/* CARD */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px;
+  margin-bottom: 10px; box-shadow: var(--shadow);
+  cursor: pointer; position: relative;
+  transition: border-color 0.15s ease;
+}
+.card.edit-mode { border-color: var(--accent); cursor: default; }
+.card .line-title { font-size: 15px; font-weight: 700; word-break: break-word; }
+.card .line-desc  { font-size: 13px; color: var(--muted); word-break: break-word; }
+.card .line-link  {
+  font-size: 11px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 100%; direction: ltr; display: block;
+}
+.card .line-tags  { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.card .line-cat   { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.card .edit-actions { display: none; position: absolute; top: 6px; right: 6px; gap: 4px; }
+.card.edit-mode .edit-actions { display: flex; }
+
+.empty { text-align: center; color: var(--muted); padding: 40px 12px; font-size: 14px; }
+
+/* SIDE BARS */
+.side-bar {
+  position: fixed; top: 0; bottom: 0;
+  width: var(--bar-width);
+  background: var(--bar-bg);
+  border-right: 1px solid var(--border);
+  z-index: 90;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  overflow-y: auto;
+  padding: 16px 12px 16px;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.25);
+  display: flex; flex-direction: column;
+  touch-action: pan-y;
+}
+.side-bar.right {
+  right: 0; left: auto;
+  border-right: none; border-left: 1px solid var(--border);
+  transform: translateX(100%);
+  box-shadow: -4px 0 20px rgba(0,0,0,0.25);
+}
+.side-bar.open { transform: translateX(0); }
+.side-bar h3 {
+  font-size: 12px; text-transform: uppercase;
+  letter-spacing: 0.8px; color: var(--muted);
+  margin: 14px 0 8px;
+}
+.side-bar .side-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px; border-radius: 8px;
+  font-size: 14px; cursor: pointer; color: var(--text);
+  touch-action: manipulation;
+  user-select: none;
+}
+.side-bar .side-item:hover,
+.side-bar .side-item.active { background: var(--surface-2); }
+.side-bar .side-item.disabled { opacity: 0.4; pointer-events: none; }
+.bar-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 80; display: none;
+}
+.bar-overlay.show { display: block; }
+
+/* Left bar bottom */
+.left-bottom {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.left-bottom .plain-link {
+  display: block;
+  padding: 14px 14px;
+  font-size: 15px;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  min-height: 48px;
+  touch-action: manipulation;
+  user-select: none;
+}
+.left-bottom .plain-link:last-child { border-bottom: none; }
+.left-bottom .plain-link:hover { background: var(--surface-2); }
+.left-bottom .plain-link:active { background: var(--surface-2); }
+
+/* MODAL */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 100; display: none;
+  align-items: flex-end; justify-content: center;
+  touch-action: manipulation;
+}
+.modal-backdrop.show { display: flex; }
+.modal {
+  background: var(--surface);
+  width: 100%; max-width: 600px;
+  max-height: 92vh; overflow-y: auto;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border: 1px solid var(--modal-border);
+  padding: 16px;
+  touch-action: manipulation;
+}
+.modal h2 { margin: 0 0 12px; font-size: 17px; }
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.field input, .field textarea, .field select {
+  width: 100%; background: var(--surface-2);
+  border: 1px solid var(--border); color: var(--text);
+  padding: 10px 12px; border-radius: 10px;
+  font-size: 14px; font-family: inherit; outline: none;
+}
+.field textarea { resize: vertical; min-height: 70px; }
+.field .hint { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+.inline-add { display: flex; gap: 6px; margin-top: 6px; }
+.inline-add input { flex: 1; }
+
+.manage-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 6px; border-bottom: 1px solid var(--border);
+}
+.manage-row .name { flex: 1; font-size: 14px; word-break: break-word; }
+.manage-row .btn { padding: 6px 10px; font-size: 12px; }
+
+.cat-list { display: flex; flex-direction: column; gap: 4px; }
+.cat-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 8px;
+  cursor: pointer; font-size: 13px;
+  border: 1px solid transparent;
+  touch-action: manipulation;
+  user-select: none;
+}
+.cat-row:hover { background: var(--surface-2); }
+.cat-row.selected { background: rgba(79,140,255,0.15); border-color: rgba(79,140,255,0.4); }
+.cat-row .checkbox {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 12px; color: transparent;
+}
+.cat-row.selected .checkbox { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cat-row .cat-name { flex: 1; }
+
+/* TOAST */
+.toast {
+  position: fixed; left: 50%; bottom: 30px;
+  transform: translateX(-50%);
+  background: var(--surface-2); color: var(--text);
+  border: 1px solid var(--border);
+  padding: 10px 16px; border-radius: 10px;
+  font-size: 13px; z-index: 200;
+  box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.toast.show { opacity: 1; }
+
+.tooltip {
+  position: fixed; top: 46px; right: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px; border-radius: 8px;
+  font-size: 12px; z-index: 300;
+  box-shadow: var(--shadow);
+  opacity: 0; transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+.tooltip.show { opacity: 1; }
+
+.log-item {
+  font-size: 12px; color: var(--muted);
+  padding: 6px 0; border-bottom: 1px dashed var(--border);
+}
+.log-item b { color: var(--text); font-weight: 500; }
+
+/* SETTINGS */
+.setting-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.setting-row .lock-btn {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--muted); width: 34px; height: 34px;
+  border-radius: 8px; font-size: 15px;
+  cursor: pointer; flex-shrink: 0;
+  touch-action: manipulation;
+}
+.setting-row .lock-btn.locked { color: var(--danger); border-color: var(--danger); }
+.setting-row .setting-label { flex: 1; font-size: 14px; }
+.setting-row .setting-control { display: flex; align-items: center; gap: 6px; }
+.setting-row.disabled { opacity: 0.55; }
+.setting-row.disabled .setting-control { pointer-events: none; }
+
+.lr-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); user-select: none; }
+.lr-toggle .track {
+  position: relative; width: 54px; height: 28px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 999px; cursor: pointer;
+  touch-action: manipulation;
+}
+.lr-toggle .thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); transition: left 0.18s ease;
+}
+.lr-toggle .track.right .thumb { left: 28px; }
+
+/* Bin name chips — single line, no wrap */
+.chips-line { display: flex; gap: 4px; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; max-width: 100%; }
+.chips-line::-webkit-scrollbar { display: none; }
+.chips-line .chip {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+  word-break: keep-all;
+}
+.lines-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* CONTACT MENU */
+.contact-menu {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  background: var(--surface);
+  border-top-left-radius: 18px; border-top-right-radius: 18px;
+  border-top: 1px solid var(--border);
+  padding: 16px; z-index: 150;
+  transform: translateY(100%); transition: transform 0.28s ease;
+  max-width: 600px; margin: 0 auto;
+  box-shadow: 0 -6px 30px rgba(0,0,0,0.35);
+}
+.contact-menu.open { transform: translateY(0); }
+.contact-menu .handle { width: 40px; height: 4px; background: var(--border); border-radius: 999px; margin: 0 auto 12px; }
+.contact-menu h3 { margin: 0 0 12px; font-size: 15px; }
+.contact-menu .contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.contact-menu .contact-item {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 6px; background: var(--surface-2);
+  border-radius: 10px; font-size: 12px;
+  color: var(--text); text-decoration: none;
+  cursor: pointer; border: 1px solid var(--border);
+  touch-action: manipulation;
+}
+.contact-menu .contact-item .ico { font-size: 20px; }
+
+/* Category tree */
+.cat-node { padding-left: 0; }
+.cat-node .cat-label {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 10px; border-radius: 8px;
+  font-size: 14px; cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+.cat-node .cat-label:hover { background: var(--surface-2); }
+.cat-node .cat-label .cat-name { flex: 1; }
+.cat-node .cat-label .toggle-icon {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  color: var(--muted); font-size: 14px; font-weight: 600;
+  user-select: none;
+}
+.cat-node .cat-label .toggle-icon:hover { background: var(--surface); }
+.cat-node .cat-children { display: none; padding-left: 16px; }
+.cat-node .cat-children.open { display: block; }
+
+/* Quick links */
+.quick-link {
+  padding: 8px 10px; border-radius: 8px;
+  cursor: pointer; position: relative;
+  border-bottom: 1px solid var(--border);
+  touch-action: manipulation;
+  user-select: none;
+}
+.quick-link .ql-main {
+  display: flex; align-items: center; gap: 8px;
+  justify-content: space-between;
+}
+.quick-link .ql-title { font-size: 14px; font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.quick-link .ql-tags { display: flex; gap: 3px; flex-shrink: 0; }
+.quick-link .ql-tags .tag { font-size: 9px; padding: 0px 4px; }
+.quick-link .ql-actions { display: none; position: absolute; top: 6px; right: 6px; gap: 3px; background: var(--surface); padding: 2px; border-radius: 6px; }
+.quick-link.edit-mode { background: var(--surface-2); }
+.quick-link.edit-mode .ql-actions { display: flex; }
+.quick-sep { display: flex; align-items: center; gap: 8px; padding: 6px 0; color: var(--muted); font-size: 11px; }
+.quick-sep .line { flex: 1; height: 1px; background: var(--border); }
+
+.picker-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 6px; border-bottom: 1px solid var(--border);
+}
+.picker-row .name { flex: 1; font-size: 13px; }
+.picker-row .picker-tags { font-size: 10px; color: var(--muted); }
+.picker-row .btn.icon { width: 32px; height: 32px; padding: 0; font-size: 18px; }
+
+.confirm-modal { padding: 20px 16px; }
+.confirm-modal .cm-msg { font-size: 14px; margin-bottom: 16px; }
+
+@media (min-width: 640px) {
+  .modal-backdrop { align-items: center; }
+  .modal { border-radius: 16px; }
+}
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <button class="icon-btn" id="openLeft" title="Menu">☰</button>
+  <button class="icon-btn" id="addBtn" title="Add link">＋</button>
+  <div class="title">Drive Link Manager</div>
+  <div class="timer" id="lastTimer">—</div>
+  <button class="icon-btn" id="openRight" title="Right bar">⋯</button>
+</header>
+<div class="tooltip" id="timeTooltip"></div>
+
+<aside class="side-bar" id="leftBar">
+  <h3>Menu</h3>
+  <div class="side-item active">🔗 All Links</div>
+  <div class="side-item" id="leftActivityBtn">🕒 Activity</div>
+  <h3>Categories</h3>
+  <div id="leftCatList"></div>
+  <h3>Tags</h3>
+  <div id="leftTagList"></div>
+  <div class="left-bottom">
+    <button class="plain-link" data-bottom-action="mngCat">Manage Categories</button>
+    <button class="plain-link" data-bottom-action="mngTag">Manage Tags</button>
+    <button class="plain-link" data-bottom-action="bin">Bin</button>
+    <button class="plain-link" data-bottom-action="settings">Settings</button>
+  </div>
+</aside>
+
+<aside class="side-bar right" id="rightBar">
+  <h3>Quick Links</h3>
+  <div id="quickLinksList"></div>
+  <button class="btn secondary" id="qlAddBtn" style="width:100%;margin-top:8px">+ Add Link</button>
+</aside>
+
+<div class="bar-overlay" id="barOverlay"></div>
+
+<div id="app">
+  <main>
+    <div class="toolbar">
+      <input type="search" id="searchInput" placeholder="Search title, description, tags, categories, URL…" />
+    </div>
+    <div class="chips" id="filterChips"></div>
+    <div id="linksList"></div>
+  </main>
+</div>
+
+<div class="contact-menu" id="contactMenu">
+  <div class="handle"></div>
+  <h3>Quick Contact</h3>
+  <div class="contact-grid">
+    <a class="contact-item" href="https://wa.me/" target="_blank" rel="noopener"><span class="ico">💬</span> WhatsApp</a>
+    <a class="contact-item" href="mailto:" target="_blank" rel="noopener"><span class="ico">✉️</span> Email</a>
+    <a class="contact-item" href="tel:" target="_blank" rel="noopener"><span class="ico">📞</span> Call</a>
+    <a class="contact-item" href="https://t.me/" target="_blank" rel="noopener"><span class="ico">📨</span> Telegram</a>
+    <a class="contact-item" href="#" id="aboutBtn"><span class="ico">ℹ️</span> About</a>
+    <a class="contact-item" href="#" id="helpBtn"><span class="ico">❓</span> Help</a>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="modalBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+  authDomain: "mywebapps-e3b63.firebaseapp.com",
+  projectId: "mywebapps-e3b63",
+  storageBucket: "mywebapps-e3b63.firebasestorage.app",
+  messagingSenderId: "46681415809",
+  appId: "1:46681415809:web:c4528b9da97abc310a2d80"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const COLLECTION = "Google Drive Link Manager";
+const ROOT_DOC   = db.collection(COLLECTION).doc("app");
+const RECYCLE_NAMES = ["Recycle Bin", "Trash", "Bin", "Discarded", "Deleted"];
+const LS_THEME_KEY = "dlm_theme";
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const state = {
+  links: [],
+  categories: [],
+  tags: [],
+  logs: [],
+  recycle: [],
+  quickLinks: [],
+  settings: {
+    theme: localStorage.getItem(LS_THEME_KEY) || "night",
+    recycleName: RECYCLE_NAMES[0],
+    showBarButtons: false,
+    visibleLines: { desc: true, link: true, tag: true, cat: true },
+    lock_theme: false,
+    lock_recycleName: false,
+    lock_showBarButtons: false,
+    lock_visibleLines: false
+  },
+  search: "",
+  filterCategoryId: "",
+  filterTagId: "",
+  editingLinkId: null,
+  editingCardId: null,
+  connection: "connecting",
+  expandedCats: {}
+};
+
+/* ============================================================
+   UTILITIES
+   ============================================================ */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+const now = () => Date.now();
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+function truncateMiddle(str, max = 48){
+  if(!str || str.length <= max) return str;
+  const half = Math.floor((max - 3)/2);
+  return str.slice(0, half) + "..." + str.slice(str.length - half);
+}
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 2000);
+}
+function findCat(id){ return state.categories.find(c=>c.id===id)||null; }
+function findTag(id){ return state.tags.find(t=>t.id===id)||null; }
+function findLink(id){ return state.links.find(l=>l.id===id)||null; }
+function catPath(id){
+  const parts=[]; let cur=findCat(id), g=0;
+  while(cur && g++<20){ parts.unshift(cur.name); cur = cur.parentId?findCat(cur.parentId):null; }
+  return parts.join(" > ");
+}
+function catDescendants(rootId){
+  const out=new Set([rootId]); let added=true;
+  while(added){ added=false;
+    for(const c of state.categories){
+      if(c.parentId && out.has(c.parentId) && !out.has(c.id)){ out.add(c.id); added=true; }
+    }
+  }
+  return out;
+}
+function fmtRelative(ts){
+  if(!ts) return "—";
+  const diff = Math.floor((Date.now() - ts)/1000);
+  if(diff < 60) return "Just now";
+  const units = [
+    { s: 31536000, suf: "yr" }, { s: 2592000, suf: "m" },
+    { s: 604800, suf: "w" }, { s: 86400, suf: "d" },
+    { s: 3600, suf: "hr" }, { s: 60, suf: "min" }
+  ];
+  let rem = diff; const parts = [];
+  for(const u of units){
+    const v = Math.floor(rem / u.s);
+    if(v > 0){ parts.push(v + u.suf); rem -= v * u.s; }
+  }
+  return parts.slice(0,3).join(", ");
+}
+function fmtExact(ts){
+  if(!ts) return "—";
+  return new Date(ts).toLocaleString(undefined, { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit", second:"2-digit" });
+}
+
+/* ============================================================
+   CONNECTION STATUS
+   ============================================================ */
+let lastConnectedAt = 0;
+function setConnection(c){
+  if(state.connection === c) return;
+  state.connection = c;
+  const btn = $("#addBtn");
+  if(!btn) return;
+  btn.classList.remove("status-green","status-amber","status-grey");
+  if(c==="connected"){ btn.classList.add("status-green"); btn.disabled=false; }
+  else if(c==="connecting"){ btn.classList.add("status-amber"); btn.disabled=true; }
+  else { btn.classList.add("status-grey"); btn.disabled=true; }
+  if(c==="connected") lastConnectedAt = Date.now();
+}
+function refreshConnection(){
+  if(!navigator.onLine){ setConnection("disconnected"); return; }
+  if(lastConnectedAt && (Date.now() - lastConnectedAt) > 30000) setConnection("connecting");
+}
+window.addEventListener("online", ()=>{ setConnection("connecting"); pingFirestore(); });
+window.addEventListener("offline", ()=>{ setConnection("disconnected"); });
+async function pingFirestore(){
+  if(!navigator.onLine){ setConnection("disconnected"); return; }
+  try {
+    setConnection("connecting");
+    await ROOT_DOC.get({ source: "server" });
+    setConnection("connected");
+  } catch(e){
+    setConnection("disconnected");
+  }
+}
+
+/* ============================================================
+   FIRESTORE
+   ============================================================ */
+async function loadAll(){
+  if(!navigator.onLine){ setConnection("disconnected"); return; }
+  try {
+    const snap = await ROOT_DOC.get();
+    const data = snap.exists ? snap.data() : {};
+    state.links      = data.links      || [];
+    state.categories = data.categories || [];
+    state.tags       = data.tags       || [];
+    state.logs       = data.logs       || [];
+    state.recycle    = data.recycle    || [];
+    state.quickLinks = data.quickLinks || [];
+    state.settings   = Object.assign(state.settings, data.settings || {});
+    if(!state.settings.visibleLines) state.settings.visibleLines = { desc:true, link:true, tag:true, cat:true };
+    localStorage.setItem(LS_THEME_KEY, state.settings.theme);
+    setConnection("connected");
+  } catch(e){
+    console.error("loadAll failed", e);
+    setConnection("disconnected");
+  }
+}
+async function persist(){
+  if(!navigator.onLine){ toast("Offline — will not save"); setConnection("disconnected"); return; }
+  try {
+    await ROOT_DOC.set({
+      links: state.links, categories: state.categories, tags: state.tags,
+      logs: state.logs.slice(0,300), recycle: state.recycle, quickLinks: state.quickLinks,
+      settings: state.settings, updatedAt: now()
+    }, { merge: true });
+    setConnection("connected");
+  } catch(e){
+    console.error("persist failed", e);
+    setConnection("disconnected");
+    toast("Firestore write failed");
+  }
+}
+async function logAction(type, detail){
+  state.logs.unshift({ id: uid(), type, detail, at: now() });
+  if(state.logs.length>300) state.logs.length=300;
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme", state.settings.theme);
+  localStorage.setItem(LS_THEME_KEY, state.settings.theme);
+  const meta=document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute("content", state.settings.theme==="night"?"#000000":"#eef4ff");
+}
+
+/* ============================================================
+   MODAL STACK
+   ============================================================ */
+const modalStack = [];
+let modalRenderPending = false;
+function pushModal(html, onMount){
+  modalStack.push({ html, onMount });
+  scheduleModalRender();
+}
+function popModal(){
+  modalStack.pop();
+  scheduleModalRender();
+  const top = modalStack[modalStack.length-1];
+  if(top && top.onMount) top.onMount();
+}
+function scheduleModalRender(){
+  if(modalRenderPending) return;
+  modalRenderPending = true;
+  requestAnimationFrame(()=>{
+    modalRenderPending = false;
+    renderTopModal();
+  });
+}
+function renderTopModal(){
+  const top = modalStack[modalStack.length-1];
+  if(!top){
+    $("#modalBackdrop").classList.remove("show");
+    $("#modalBody").innerHTML = "";
+    return;
+  }
+  $("#modalBody").innerHTML = top.html;
+  $("#modalBackdrop").classList.add("show");
+  if(top.onMount) top.onMount();
+}
+window.addEventListener("popstate", ()=>{
+  if(modalStack.length){
+    popModal();
+    history.pushState({ modal: true }, "");
+  }
+});
+function openModal(html, onMount){
+  pushModal(html, onMount);
+  history.pushState({ modal: true }, "");
+}
+function closeAllModals(){
+  while(modalStack.length) modalStack.pop();
+  renderTopModal();
+  while(history.state && history.state.modal) history.back();
+}
+
+/* Custom confirm / prompt / alert */
+function customConfirm(message){
+  return new Promise((resolve)=>{
+    openModal(`
+      <div class="confirm-modal">
+        <div class="cm-msg">${esc(message)}</div>
+        <div class="modal-actions">
+          <button class="btn ghost" id="cnfNo">Cancel</button>
+          <button class="btn danger" id="cnfYes">Confirm</button>
+        </div>
+      </div>
+    `, ()=>{
+      const no = $("#cnfNo"), yes = $("#cnfYes");
+      const close = (v)=>{ popModal(); resolve(v); };
+      no.onclick = ()=>close(false);
+      yes.onclick = ()=>close(true);
+    });
+  });
+}
+function customPrompt(message, defaultValue = ""){
+  return new Promise((resolve)=>{
+    openModal(`
+      <div class="confirm-modal">
+        <div class="cm-msg">${esc(message)}</div>
+        <div class="field" style="margin-bottom:0">
+          <input id="prmInput" value="${esc(defaultValue)}" />
+        </div>
+        <div class="modal-actions">
+          <button class="btn ghost" id="prmNo">Cancel</button>
+          <button class="btn" id="prmYes">OK</button>
+        </div>
+      </div>
+    `, ()=>{
+      const inp = $("#prmInput");
+      if(inp){ inp.focus(); inp.select(); }
+      const done = (v)=>{ popModal(); resolve(v); };
+      $("#prmNo").onclick = ()=>done(null);
+      $("#prmYes").onclick = ()=>done(inp.value);
+      if(inp) inp.onkeydown = (e)=>{ if(e.key === "Enter") done(inp.value); };
+    });
+  });
+}
+function customAlert(message){
+  return new Promise((resolve)=>{
+    openModal(`
+      <div class="confirm-modal">
+        <div class="cm-msg">${esc(message)}</div>
+        <div class="modal-actions"><button class="btn" id="alrOk">OK</button></div>
+      </div>
+    `, ()=>{ $("#alrOk").onclick = ()=>{ popModal(); resolve(true); }; });
+  });
+}
+
+/* ============================================================
+   LINK actions
+   ============================================================ */
+async function saveLink(payload){
+  if(state.connection !== "connected"){ toast("Firebase disconnected — cannot add"); return; }
+  const isEdit = !!payload.id;
+  const link = {
+    id: payload.id || uid(),
+    title: payload.title.trim(),
+    description: (payload.description||"").trim(),
+    url: payload.url.trim(),
+    categoryIds: payload.categoryIds||[],
+    tagIds: payload.tagIds||[],
+    createdAt: isEdit ? (findLink(payload.id)?.createdAt||now()) : now(),
+    updatedAt: now()
+  };
+  const i = state.links.findIndex(l=>l.id===link.id);
+  if(i>=0) state.links[i]=link; else state.links.unshift(link);
+  await logAction(isEdit?"edit":"add", `${link.title} — ${link.url}`);
+  await persist();
+  toast(isEdit?"Link updated":"Link added");
+  renderLinks();
+}
+async function removeLink(id){
+  const link = findLink(id); if(!link) return;
+  const ok = await customConfirm(`Move "${link.title}" to ${state.settings.recycleName}?`);
+  if(!ok) return;
+  state.links = state.links.filter(l=>l.id!==id);
+  link.deletedAt = now();
+  state.recycle.unshift(link);
+  if(state.recycle.length>200) state.recycle.length=200;
+  state.quickLinks = state.quickLinks.filter(q => q.linkId !== id);
+  await logAction("delete", link.title);
+  await persist();
+  toast("Moved to "+state.settings.recycleName);
+  renderLinks();
+}
+async function restoreFromRecycle(id){
+  const i = state.recycle.findIndex(l=>l.id===id);
+  if(i<0) return;
+  const [link] = state.recycle.splice(i,1);
+  delete link.deletedAt;
+  state.links.unshift(link);
+  await logAction("restore", link.title);
+  await persist();
+  toast("Restored");
+  renderLinks();
+  if($("#modalBody")?.querySelector(".bin-modal")) { popModal(); openBinModal(); }
+}
+async function purgeFromRecycle(id){
+  const ok = await customConfirm("Permanently delete this item?");
+  if(!ok) return;
+  const item = state.recycle.find(l=>l.id===id);
+  state.recycle = state.recycle.filter(l=>l.id!==id);
+  await logAction("purge", item?.title || "");
+  await persist();
+  if($("#modalBody")?.querySelector(".bin-modal")) { popModal(); openBinModal(); }
+}
+function openDrive(id){
+  const link = findLink(id); if(!link) return;
+  window.open(link.url, "_blank", "noopener,noreferrer");
+  logAction("open", link.title);
+  persist();
+}
+async function moveLink(id, dir){
+  const i = state.links.findIndex(l=>l.id===id);
+  if(i<0) return;
+  const j = dir === "up" ? i-1 : i+1;
+  if(j<0 || j>=state.links.length) return;
+  const tmp = state.links[i]; state.links[i] = state.links[j]; state.links[j] = tmp;
+  await persist(); renderLinks();
+}
+
+/* ============================================================
+   QUICK LINKS
+   ============================================================ */
+async function addQuickLink(linkId){
+  if(state.quickLinks.some(q => q.linkId === linkId)) return;
+  state.quickLinks.push({ id: uid(), type:"link", linkId });
+  await logAction("quick-add", findLink(linkId)?.title || "");
+  await persist(); renderQuickLinks();
+}
+async function removeQuickLink(linkId){
+  state.quickLinks = state.quickLinks.filter(q => !(q.type==="link" && q.linkId===linkId));
+  await logAction("quick-remove", findLink(linkId)?.title || "");
+  await persist(); renderQuickLinks();
+}
+async function addQuickSeparator(title){
+  state.quickLinks.push({ id: uid(), type:"sep", title: (title||"").trim() });
+  await persist(); renderQuickLinks();
+}
+async function removeQuickItem(id){
+  state.quickLinks = state.quickLinks.filter(q => q.id !== id);
+  await persist(); renderQuickLinks();
+}
+async function moveQuickItem(id, dir){
+  const i = state.quickLinks.findIndex(q => q.id === id);
+  if(i<0) return;
+  const j = dir === "up" ? i-1 : i+1;
+  if(j<0 || j>=state.quickLinks.length) return;
+  const tmp = state.quickLinks[i]; state.quickLinks[i] = state.quickLinks[j]; state.quickLinks[j] = tmp;
+  await persist(); renderQuickLinks();
+}
+
+/* ============================================================
+   CATEGORY / TAG
+   ============================================================ */
+async function addCategory(name, parentId){
+  name=(name||"").trim(); if(!name) return;
+  const cat={ id: uid(), name, parentId: parentId||"" };
+  state.categories.push(cat);
+  await logAction("add-category", catPath(cat.id));
+  await persist(); toast("Category added"); renderLeftBar();
+}
+async function removeCategory(id){
+  const cat=findCat(id); if(!cat) return;
+  const ok = await customConfirm(`Delete category "${cat.name}" and sub-categories?`);
+  if(!ok) return;
+  const del = catDescendants(id);
+  state.categories = state.categories.filter(c=>!del.has(c.id));
+  state.links.forEach(l=>{ l.categoryIds=(l.categoryIds||[]).filter(c=>!del.has(c)); });
+  await logAction("delete-category", cat.name);
+  await persist(); toast("Category deleted"); renderLeftBar();
+}
+async function editCategory(id){
+  const cat = findCat(id); if(!cat) return;
+  const newName = await customPrompt("Edit category name:", cat.name);
+  if(newName === null) return;
+  const trimmed = newName.trim(); if(!trimmed) return;
+  cat.name = trimmed;
+  await logAction("edit-category", trimmed);
+  await persist(); toast("Category updated"); renderLeftBar();
+}
+async function addTag(name){
+  name=(name||"").trim(); if(!name) return;
+  if(state.tags.some(t=>t.name.toLowerCase()===name.toLowerCase())){ toast("Tag already exists"); return; }
+  const tag={ id: uid(), name };
+  state.tags.push(tag);
+  await logAction("add-tag", name);
+  await persist(); toast("Tag added"); renderLeftBar();
+}
+async function removeTag(id){
+  const tag=findTag(id); if(!tag) return;
+  const ok = await customConfirm(`Delete tag "${tag.name}"?`);
+  if(!ok) return;
+  state.tags = state.tags.filter(t=>t.id!==id);
+  state.links.forEach(l=>{ l.tagIds=(l.tagIds||[]).filter(t=>t!==id); });
+  await logAction("delete-tag", tag.name);
+  await persist(); toast("Tag deleted"); renderLeftBar();
+}
+async function editTag(id){
+  const tag = findTag(id); if(!tag) return;
+  const newName = await customPrompt("Edit tag name:", tag.name);
+  if(newName === null) return;
+  const trimmed = newName.trim(); if(!trimmed) return;
+  tag.name = trimmed;
+  await logAction("edit-tag", trimmed);
+  await persist(); toast("Tag updated"); renderLeftBar();
+}
+
+/* ============================================================
+   FILTER + SEARCH
+   ============================================================ */
+function visibleLinks(){
+  const q=state.search.trim().toLowerCase();
+  let list=state.links.slice();
+  if(q){
+    list=list.filter(l=>{
+      if(l.title.toLowerCase().includes(q)) return true;
+      if((l.description||"").toLowerCase().includes(q)) return true;
+      if((l.url||"").toLowerCase().includes(q)) return true;
+      for(const tid of (l.tagIds||[])){
+        const tag = findTag(tid);
+        if(tag && tag.name.toLowerCase().includes(q)) return true;
+      }
+      for(const cid of (l.categoryIds||[])){
+        if(catPath(cid).toLowerCase().includes(q)) return true;
+      }
+      return false;
+    });
+  }
+  if(state.filterCategoryId){
+    const set=catDescendants(state.filterCategoryId);
+    list=list.filter(l=>(l.categoryIds||[]).some(c=>set.has(c)));
+  }
+  if(state.filterTagId) list=list.filter(l=>(l.tagIds||[]).includes(state.filterTagId));
+  return list;
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+let renderPending = false;
+function render(){
+  if(renderPending) return;
+  renderPending = true;
+  requestAnimationFrame(()=>{
+    renderPending = false;
+    applyTheme();
+    applyHeaderButtonVisibility();
+    renderLinks();
+    renderFilters();
+    renderLeftBar();
+    renderQuickLinks();
+    updateTimer();
+    setConnection(state.connection);
+  });
+}
+function applyHeaderButtonVisibility(){
+  const show = !!state.settings.showBarButtons;
+  const l = $("#openLeft"), r = $("#openRight");
+  if(l) l.classList.toggle("hidden", !show);
+  if(r) r.classList.toggle("hidden", !show);
+}
+function renderFilters(){
+  const bits=[];
+  if(state.search) bits.push(`search: "${esc(state.search)}"`);
+  if(state.filterCategoryId) bits.push(`📁 ${esc(catPath(state.filterCategoryId))}`);
+  if(state.filterTagId) bits.push(`🏷 ${esc(findTag(state.filterTagId)?.name||"")}`);
+  const el=$("#filterChips");
+  if(!el) return;
+  if(!bits.length){ el.innerHTML=""; return; }
+  el.innerHTML = bits.map(b=>`<span class="chip active">${b}</span>`).join("") +
+    `<span class="chip" id="clearFilters">Clear ×</span>`;
+  $("#clearFilters").onclick = ()=>{ state.search=""; state.filterCategoryId=""; state.filterTagId=""; $("#searchInput").value=""; renderLinks(); renderFilters(); };
+}
+function renderLinks(){
+  const list=visibleLinks();
+  const el=$("#linksList");
+  if(!el) return;
+  if(!list.length){
+    el.innerHTML = `<div class="empty">No saved links yet.<br>Tap ＋ in the header to add one.</div>`;
+    return;
+  }
+  const vl = state.settings.visibleLines || { desc:true, link:true, tag:true, cat:true };
+  el.innerHTML = list.map(link=>{
+    const cats=(link.categoryIds||[]).map(catPath).filter(Boolean).map(esc).join(" > ");
+    const tags=(link.tagIds||[]).map(findTag).filter(Boolean).map(t=>`<span class="tag">${esc(t.name)}</span>`).join("");
+    const edit = state.editingCardId === link.id;
+    return `
+      <div class="card ${edit?"edit-mode":""}" data-card="${link.id}">
+        <div class="edit-actions">
+          <button class="btn secondary icon" data-edit="${link.id}" title="Edit">✏️</button>
+          <button class="btn danger icon" data-del="${link.id}" title="Delete">🗑</button>
+          <button class="btn secondary icon" data-up="${link.id}" title="Move up">⬆️</button>
+          <button class="btn secondary icon" data-down="${link.id}" title="Move down">⬇️</button>
+        </div>
+        <div class="line-title">${esc(link.title)}</div>
+        ${vl.desc && link.description ? `<div class="line-desc">${esc(link.description)}</div>` : ""}
+        ${vl.link ? `<div class="line-link">${esc(truncateMiddle(link.url, 48))}</div>` : ""}
+        ${vl.tag && tags ? `<div class="line-tags">${tags}</div>` : ""}
+        ${vl.cat && cats ? `<div class="line-cat">📁 ${cats}</div>` : ""}
+      </div>
+    `;
+  }).join("");
+  el.querySelectorAll(".card").forEach(card=>{
+    const id = card.dataset.card;
+    let pressTimer = null, longPressed = false;
+    const start = ()=>{ longPressed = false; pressTimer = setTimeout(()=>{ longPressed = true; state.editingCardId = id; renderLinks(); }, 500); };
+    const cancel = ()=>{ clearTimeout(pressTimer); pressTimer = null; };
+    card.addEventListener("touchstart", start, { passive: true });
+    card.addEventListener("touchend", cancel);
+    card.addEventListener("touchcancel", cancel);
+    card.addEventListener("mousedown", (e)=>{ if(e.button === 0) start(); });
+    card.addEventListener("mouseup", cancel);
+    card.addEventListener("mouseleave", cancel);
+    card.addEventListener("contextmenu", (e)=>{ e.preventDefault(); state.editingCardId = id; renderLinks(); });
+    card.addEventListener("click", (e)=>{
+      if(state.editingCardId === id) return;
+      if(e.target.closest(".edit-actions")) return;
+      if(longPressed) return;
+      openDrive(id);
+    });
+  });
+  el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); state.editingCardId=null; openLinkModal(b.dataset.edit); });
+  el.querySelectorAll("[data-del]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); state.editingCardId=null; removeLink(b.dataset.del); });
+  el.querySelectorAll("[data-up]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); moveLink(b.dataset.up, "up"); });
+  el.querySelectorAll("[data-down]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); moveLink(b.dataset.down, "down"); });
+
+  document.removeEventListener("click", closeEditOnOutside, true);
+  document.addEventListener("click", closeEditOnOutside, true);
+}
+function closeEditOnOutside(e){
+  if(!state.editingCardId) return;
+  const card = e.target.closest(".card");
+  if(card && card.dataset.card === state.editingCardId) return;
+  if(e.target.closest(".edit-actions")) return;
+  state.editingCardId = null;
+  renderLinks();
+}
+function renderLeftBar(){
+  const catEl = $("#leftCatList");
+  const tagEl = $("#leftTagList");
+  if(!catEl || !tagEl) return;
+  catEl.innerHTML = state.categories
+    .filter(c=>!c.parentId)
+    .sort((a,b)=>a.name.localeCompare(b.name))
+    .map(c=>renderCatNode(c,0)).join("") ||
+    `<div style="font-size:12px;color:var(--muted);padding:4px">No categories yet</div>`;
+  tagEl.innerHTML = state.tags
+    .map(t=>`<div class="side-item" data-tag-filter="${t.id}">🏷 ${esc(t.name)}</div>`)
+    .join("") ||
+    `<div style="font-size:12px;color:var(--muted);padding:4px">No tags yet</div>`;
+
+  $$("#leftCatList .cat-name").forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.catId;
+      state.filterCategoryId = id; state.filterTagId = ""; closeBars(); renderLinks(); renderFilters();
+    };
+  });
+  $$("#leftCatList .toggle-icon").forEach(el=>{
+    el.onclick = (e)=>{
+      e.stopPropagation();
+      const id = el.dataset.toggleId;
+      state.expandedCats[id] = !state.expandedCats[id];
+      renderLeftBar();
+    };
+  });
+  $$("#leftTagList [data-tag-filter]").forEach(el=>{
+    el.onclick = ()=>{ state.filterTagId=el.dataset.tagFilter; state.filterCategoryId=""; closeBars(); renderLinks(); renderFilters(); };
+  });
+}
+function renderCatNode(cat, depth){
+  const children = state.categories.filter(c=>c.parentId===cat.id).sort((a,b)=>a.name.localeCompare(b.name));
+  const open = !!state.expandedCats[cat.id];
+  const hasChildren = children.length > 0;
+  const toggleLabel = open ? "−" : "+";
+  return `
+    <div class="cat-node">
+      <div class="cat-label" style="padding-left:${10+depth*12}px">
+        <span class="cat-name" data-cat-id="${cat.id}">📁 ${esc(cat.name)}</span>
+        ${hasChildren ? `<span class="toggle-icon" data-toggle-id="${cat.id}">${toggleLabel}</span>` : ""}
+      </div>
+      ${hasChildren?`<div class="cat-children ${open?"open":""}">${children.map(c=>renderCatNode(c,depth+1)).join("")}</div>`:""}
+    </div>
+  `;
+}
+function renderQuickLinks(){
+  const el = $("#quickLinksList");
+  if(!el) return;
+  if(!state.quickLinks.length){
+    el.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:6px 10px">No quick links yet</div>`;
+  } else {
+    el.innerHTML = state.quickLinks.map(q=>{
+      if(q.type === "sep"){
+        return `<div class="quick-sep" data-sep="${q.id}">
+          <span class="line"></span><span class="sep-title">${esc(q.title || "—")}</span><span class="line"></span>
+        </div>`;
+      }
+      const link = findLink(q.linkId);
+      if(!link) return "";
+      const tags = (link.tagIds||[]).map(findTag).filter(Boolean).map(t=>`<span class="tag">${esc(t.name)}</span>`).join("");
+      return `<div class="quick-link" data-ql="${q.id}" data-ql-link="${q.linkId}">
+        <div class="ql-actions">
+          <button class="btn danger icon" data-ql-remove="${q.id}" title="Remove">×</button>
+          <button class="btn secondary icon" data-ql-up="${q.id}" title="Up">⬆️</button>
+          <button class="btn secondary icon" data-ql-down="${q.id}" title="Down">⬇️</button>
+        </div>
+        <div class="ql-main">
+          <div class="ql-title">${esc(link.title)}</div>
+          ${tags?`<div class="ql-tags">${tags}</div>`:""}
+        </div>
+      </div>`;
+    }).join("");
+  }
+  el.querySelectorAll("[data-ql]").forEach(node=>{
+    const linkId = node.dataset.qlLink;
+    let pressTimer = null, longPressed = false;
+    const start = ()=>{ longPressed=false; pressTimer=setTimeout(()=>{ longPressed=true; node.classList.add("edit-mode"); }, 500); };
+    const cancel = ()=>{ clearTimeout(pressTimer); };
+    node.addEventListener("touchstart", start, { passive: true });
+    node.addEventListener("touchend", cancel);
+    node.addEventListener("touchcancel", cancel);
+    node.addEventListener("mousedown", (e)=>{ if(e.button === 0) start(); });
+    node.addEventListener("mouseup", cancel);
+    node.addEventListener("mouseleave", cancel);
+    node.addEventListener("contextmenu", (e)=>{ e.preventDefault(); node.classList.add("edit-mode"); });
+    node.addEventListener("click", (e)=>{
+      if(e.target.closest(".ql-actions")) return;
+      if(longPressed) return;
+      if(linkId) openDrive(linkId);
+    });
+  });
+  el.querySelectorAll("[data-ql-remove]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); removeQuickItem(b.dataset.qlRemove); });
+  el.querySelectorAll("[data-ql-up]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); moveQuickItem(b.dataset.qlUp, "up"); });
+  el.querySelectorAll("[data-ql-down]").forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); moveQuickItem(b.dataset.qlDown, "down"); });
+  el.querySelectorAll("[data-sep]").forEach(node=>{
+    const id = node.dataset.sep;
+    let pressTimer=null;
+    const removeSep = async ()=>{ const ok = await customConfirm("Remove separator?"); if(ok) removeQuickItem(id); };
+    node.addEventListener("touchstart", ()=>{ pressTimer=setTimeout(removeSep, 500); }, { passive:true });
+    node.addEventListener("touchend", ()=>clearTimeout(pressTimer));
+    node.addEventListener("touchcancel", ()=>clearTimeout(pressTimer));
+    node.addEventListener("mousedown", ()=>{ pressTimer=setTimeout(removeSep, 500); });
+    node.addEventListener("mouseup", ()=>clearTimeout(pressTimer));
+    node.addEventListener("mouseleave", ()=>clearTimeout(pressTimer));
+  });
+}
+
+/* ============================================================
+   MODALS — content
+   ============================================================ */
+function openActivityModal(){
+  openModal(`
+    <h2>Activity</h2>
+    <div style="max-height:60vh;overflow:auto">
+      ${state.logs.length ? state.logs.slice(0,100).map(l=>
+        `<div class="log-item"><b>${esc(l.type)}</b> — ${esc(l.detail)} <span style="float:right">${new Date(l.at).toLocaleString()}</span></div>`
+      ).join("") : `<div class="empty">No activity yet</div>`}
+    </div>
+    <div class="modal-actions"><button class="btn" id="closeAct">Close</button></div>
+  `, ()=>{ $("#closeAct").onclick = popModal; });
+}
+function openBinModal(){
+  openModal(`
+    <div class="bin-modal">
+      <h2>${esc(state.settings.recycleName)}</h2>
+      <div style="max-height:55vh;overflow:auto" id="binList">${renderBinList()}</div>
+      <div class="modal-actions"><button class="btn ghost" id="closeBin">Close</button></div>
+    </div>
+  `, ()=>{ bindBinList(); $("#closeBin").onclick = popModal; });
+}
+function renderBinList(){
+  if(!state.recycle.length) return `<div class="empty">No deleted items</div>`;
+  return state.recycle.map(item=>`
+    <div class="manage-row">
+      <div class="name">${esc(item.title)}</div>
+      <button class="btn secondary" data-bin-restore="${item.id}">Restore</button>
+      <button class="btn danger" data-bin-purge="${item.id}">Delete</button>
+    </div>
+  `).join("");
+}
+function bindBinList(){
+  $$("#binList [data-bin-restore]").forEach(b=>b.onclick=()=>restoreFromRecycle(b.dataset.binRestore));
+  $$("#binList [data-bin-purge]").forEach(b=>b.onclick=()=>purgeFromRecycle(b.dataset.binPurge));
+}
+
+function openSettingsModal(){
+  const s = state.settings;
+  const canLock = (k) => !!s["lock_"+k];
+  const vl = s.visibleLines || {};
+  openModal(`
+    <h2>Settings</h2>
+    <div class="setting-row ${canLock("theme")?"disabled":""}">
+      <button class="lock-btn ${canLock("theme")?"locked":""}" data-lock="theme">${canLock("theme")?"🔒":"🔓"}</button>
+      <div class="setting-label">Theme</div>
+      <div class="setting-control">
+        <div class="lr-toggle"><span>Day</span>
+          <div class="track ${s.theme==="night"?"right":""}" id="themeTrack"><div class="thumb"></div></div>
+          <span>Night</span>
+        </div>
+      </div>
+    </div>
+    <div class="setting-row ${canLock("recycleName")?"disabled":""}">
+      <button class="lock-btn ${canLock("recycleName")?"locked":""}" data-lock="recycleName">${canLock("recycleName")?"🔒":"🔓"}</button>
+      <div class="setting-label">Bin name</div>
+      <div class="setting-control" style="flex:1">
+        <div class="chips-line" id="binNameChips">
+          ${RECYCLE_NAMES.map(n=>`<span class="chip ${s.recycleName===n?"active":""}" data-bin-name="${esc(n)}">${esc(n)}</span>`).join("")}
+        </div>
+      </div>
+    </div>
+    <div class="setting-row ${canLock("visibleLines")?"disabled":""}">
+      <button class="lock-btn ${canLock("visibleLines")?"locked":""}" data-lock="visibleLines">${canLock("visibleLines")?"🔒":"🔓"}</button>
+      <div class="setting-label">Card lines</div>
+      <div class="setting-control">
+        <div class="lines-chips" id="linesChips">
+          ${["desc","link","tag","cat"].map(k=>`
+            <span class="chip ${vl[k]?"active":""}" data-line="${k}">${k==="desc"?"Desc":k==="link"?"Link":k==="tag"?"Tag":"Cat"}</span>
+          `).join("")}
+        </div>
+      </div>
+    </div>
+    <div class="setting-row ${canLock("showBarButtons")?"disabled":""}">
+      <button class="lock-btn ${canLock("showBarButtons")?"locked":""}" data-lock="showBarButtons">${canLock("showBarButtons")?"🔒":"🔓"}</button>
+      <div class="setting-label">Show side bar buttons</div>
+      <div class="setting-control">
+        <div class="lr-toggle"><span>Hide</span>
+          <div class="track ${s.showBarButtons?"right":""}" id="barTrack"><div class="thumb"></div></div>
+          <span>Show</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions"><button class="btn" id="closeSettings">Close</button></div>
+  `, ()=>{
+    $("#closeSettings").onclick = popModal;
+    $$(".lock-btn[data-lock]").forEach(btn=>{
+      btn.onclick = async ()=>{
+        const k = "lock_"+btn.dataset.lock;
+        state.settings[k] = !state.settings[k];
+        await persist(); popModal(); openSettingsModal();
+      };
+    });
+    const tt = $("#themeTrack");
+    if(tt) tt.onclick = async ()=>{
+      if(canLock("theme")) return;
+      state.settings.theme = state.settings.theme==="night" ? "day" : "night";
+      await persist(); applyTheme();
+      popModal(); openSettingsModal();
+    };
+    $$("#binNameChips .chip").forEach(chip=>{
+      chip.onclick = async ()=>{
+        if(canLock("recycleName")) return;
+        state.settings.recycleName = chip.dataset.binName;
+        await persist();
+        popModal(); openSettingsModal();
+      };
+    });
+    $$("#linesChips .chip").forEach(chip=>{
+      chip.onclick = async ()=>{
+        if(canLock("visibleLines")) return;
+        const k = chip.dataset.line;
+        state.settings.visibleLines[k] = !state.settings.visibleLines[k];
+        await persist(); renderLinks();
+        popModal(); openSettingsModal();
+      };
+    });
+    const bt = $("#barTrack");
+    if(bt) bt.onclick = async ()=>{
+      if(canLock("showBarButtons")) return;
+      state.settings.showBarButtons = !state.settings.showBarButtons;
+      await persist(); applyHeaderButtonVisibility();
+      popModal(); openSettingsModal();
+    };
+  });
+}
+function openManageCategoriesModal(){
+  openModal(`
+    <h2>Manage Categories</h2>
+    <div style="max-height:55vh;overflow:auto" id="mngCatList">${renderManageCats()}</div>
+    <div class="inline-add" style="margin-top:10px">
+      <input id="newTopCat" placeholder="New top-level category…" />
+      <button class="btn" id="addTopCatBtn">Add</button>
+    </div>
+    <div class="modal-actions"><button class="btn ghost" id="closeMngCat">Close</button></div>
+  `, ()=>{
+    bindManageCats();
+    $("#addTopCatBtn").onclick = async ()=>{
+      const v = $("#newTopCat").value.trim();
+      if(v) await addCategory(v,"");
+      popModal(); openManageCategoriesModal();
+    };
+    $("#closeMngCat").onclick = popModal;
+  });
+}
+function renderManageCats(){
+  if(!state.categories.length) return `<div class="empty">No categories yet</div>`;
+  let html="";
+  const walk = (parentId, depth)=>{
+    state.categories
+      .filter(c=>(c.parentId||"")===(parentId||""))
+      .sort((a,b)=>a.name.localeCompare(b.name))
+      .forEach(c=>{
+        html += `<div class="manage-row" style="padding-left:${6+depth*14}px">
+          <div class="name">📁 ${esc(c.name)}</div>
+          <button class="btn secondary" data-cat-add-sub="${c.id}">+</button>
+          <button class="btn secondary" data-cat-edit="${c.id}">Edit</button>
+          <button class="btn danger" data-cat-del="${c.id}">Remove</button>
+        </div>`;
+        walk(c.id, depth+1);
+      });
+  };
+  walk("",0);
+  return html;
+}
+function bindManageCats(){
+  $$("#mngCatList [data-cat-edit]").forEach(b=>b.onclick = async ()=>{ await editCategory(b.dataset.catEdit); popModal(); openManageCategoriesModal(); });
+  $$("#mngCatList [data-cat-del]").forEach(b=>b.onclick = async ()=>{ await removeCategory(b.dataset.catDel); popModal(); openManageCategoriesModal(); });
+  $$("#mngCatList [data-cat-add-sub]").forEach(b=>b.onclick = async ()=>{
+    const name = await customPrompt("Sub-category name:");
+    if(name) await addCategory(name, b.dataset.catAddSub);
+    popModal(); openManageCategoriesModal();
+  });
+}
+function openManageTagsModal(){
+  openModal(`
+    <h2>Manage Tags</h2>
+    <div style="max-height:55vh;overflow:auto" id="mngTagList">${renderManageTags()}</div>
+    <div class="inline-add" style="margin-top:10px">
+      <input id="newTag" placeholder="New tag…" />
+      <button class="btn" id="addTagBtn">Add</button>
+    </div>
+    <div class="modal-actions"><button class="btn ghost" id="closeMngTag">Close</button></div>
+  `, ()=>{
+    bindManageTags();
+    $("#addTagBtn").onclick = async ()=>{
+      const v = $("#newTag").value.trim();
+      if(v) await addTag(v);
+      popModal(); openManageTagsModal();
+    };
+    $("#closeMngTag").onclick = popModal;
+  });
+}
+function renderManageTags(){
+  if(!state.tags.length) return `<div class="empty">No tags yet</div>`;
+  return state.tags.slice().sort((a,b)=>a.name.localeCompare(b.name))
+    .map(t=>`<div class="manage-row">
+      <div class="name">🏷 ${esc(t.name)}</div>
+      <button class="btn secondary" data-tag-edit="${t.id}">Edit</button>
+      <button class="btn danger" data-tag-del="${t.id}">Remove</button>
+    </div>`).join("");
+}
+function bindManageTags(){
+  $$("#mngTagList [data-tag-edit]").forEach(b=>b.onclick = async ()=>{ await editTag(b.dataset.tagEdit); popModal(); openManageTagsModal(); });
+  $$("#mngTagList [data-tag-del]").forEach(b=>b.onclick = async ()=>{ await removeTag(b.dataset.tagDel); popModal(); openManageTagsModal(); });
+}
+function openLinkModal(linkId){
+  const link = linkId ? findLink(linkId) : null;
+  if(!link && state.connection !== "connected"){ toast("Firebase disconnected — cannot add"); return; }
+  state.editingLinkId = linkId || null;
+  const selCats = new Set(link?.categoryIds || []);
+  const selTags = new Set(link?.tagIds || []);
+  openModal(`
+    <h2>${link?"Edit link":"Add link"}</h2>
+    <div class="field"><label>Title</label>
+      <input id="f_title" value="${esc(link?.title||"")}" placeholder="e.g. March invoices" /></div>
+    <div class="field"><label>Description</label>
+      <textarea id="f_desc" placeholder="Short note…">${esc(link?.description||"")}</textarea></div>
+    <div class="field"><label>Google Drive folder URL</label>
+      <input id="f_url" value="${esc(link?.url||"")}" placeholder="https://drive.google.com/drive/folders/…" /></div>
+    <div class="field">
+      <label style="display:flex;justify-content:space-between;align-items:center">
+        <span>Categories</span>
+        <button class="btn secondary icon" id="mngCatFromLink" style="font-size:11px">⚙️</button>
+      </label>
+      <div id="catChecks" class="cat-list">${renderCatChecks(selCats)}</div>
+    </div>
+    <div class="field">
+      <label style="display:flex;justify-content:space-between;align-items:center">
+        <span>Tags</span>
+        <button class="btn secondary icon" id="mngTagFromLink" style="font-size:11px">⚙️</button>
+      </label>
+      <div id="tagToggles" class="chips">
+        ${state.tags.map(t=>`<span class="chip ${selTags.has(t.id)?"active":""}" data-tag-toggle="${t.id}">${esc(t.name)}</span>`).join("") || `<span style="font-size:12px;color:var(--muted)">No tags yet</span>`}
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelBtn">Cancel</button>
+      <button class="btn" id="saveBtn">${link?"Save":"Add"}</button>
+    </div>
+  `, ()=>{
+    $("#cancelBtn").onclick = ()=>{ state.editingLinkId = null; popModal(); };
+    const bindTagClicks = ()=>{
+      $$("#tagToggles .chip").forEach(chip=>{
+        chip.onclick = ()=>{
+          const id = chip.dataset.tagToggle;
+          if(selTags.has(id)) selTags.delete(id); else selTags.add(id);
+          chip.classList.toggle("active");
+        };
+      });
+    };
+    const bindCatChecks = ()=>{
+      $$("#catChecks .cat-row").forEach(row=>{
+        row.onclick = ()=>{
+          const id = row.dataset.cat;
+          if(selCats.has(id)) selCats.delete(id); else selCats.add(id);
+          row.classList.toggle("selected");
+          row.querySelector(".checkbox").textContent = selCats.has(id) ? "✓" : "";
+        };
+      });
+    };
+    bindTagClicks(); bindCatChecks();
+    $("#mngCatFromLink").onclick = (e)=>{ e.preventDefault(); openManageCategoriesModal(); };
+    $("#mngTagFromLink").onclick = (e)=>{ e.preventDefault(); openManageTagsModal(); };
+    $("#saveBtn").onclick = async ()=>{
+      const title = $("#f_title").value.trim();
+      const description = $("#f_desc").value;
+      const url = $("#f_url").value.trim();
+      if(!title) return toast("Title required");
+      if(!/^https?:\/\//i.test(url)) return toast("Valid URL required (http/https)");
+      await saveLink({
+        id: link?.id, title, description, url,
+        categoryIds: Array.from(selCats), tagIds: Array.from(selTags)
+      });
+      state.editingLinkId = null;
+      popModal();
+    };
+  });
+}
+function renderCatChecks(selSet){
+  let html="";
+  const walk=(parentId,depth)=>{
+    state.categories
+      .filter(c=>(c.parentId||"")===(parentId||""))
+      .sort((a,b)=>a.name.localeCompare(b.name))
+      .forEach(c=>{
+        const selected = selSet.has(c.id);
+        html += `<div class="cat-row ${selected?"selected":""}" data-cat="${c.id}" style="padding-left:${8+depth*14}px">
+          <span class="checkbox">${selected?"✓":""}</span>
+          <span class="cat-name">${esc(c.name)}</span>
+        </div>`;
+        walk(c.id, depth+1);
+      });
+  };
+  walk("",0);
+  return html || `<span style="font-size:12px;color:var(--muted)">No categories yet</span>`;
+}
+function openQuickLinksPicker(){
+  openModal(`
+    <h2>Add Quick Link</h2>
+    <div style="max-height:55vh;overflow:auto" id="pickerList">${renderQuickLinksPicker()}</div>
+    <div style="margin-top:10px;display:flex;gap:6px">
+      <input id="sepTitle" placeholder="Separator title (optional)" style="flex:1;background:var(--surface-2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;font-size:14px;outline:none" />
+      <button class="btn secondary" id="addSepBtn">Add separator</button>
+    </div>
+    <div class="modal-actions"><button class="btn" id="closePicker">Close</button></div>
+  `, ()=>{
+    bindQuickLinksPicker();
+    $("#addSepBtn").onclick = async ()=>{ await addQuickSeparator($("#sepTitle").value); popModal(); openQuickLinksPicker(); };
+    $("#closePicker").onclick = popModal;
+  });
+}
+function renderQuickLinksPicker(){
+  if(!state.links.length) return `<div class="empty">No links to add</div>`;
+  const added = new Set(state.quickLinks.filter(q=>q.type==="link").map(q=>q.linkId));
+  return state.links.map(l=>{
+    const isAdded = added.has(l.id);
+    const tags = (l.tagIds||[]).map(findTag).filter(Boolean).map(t=>esc(t.name)).join(", ");
+    return `<div class="picker-row">
+      <div style="flex:1">
+        <div class="name">${esc(l.title)}</div>
+        ${tags?`<div class="picker-tags">${tags}</div>`:""}
+      </div>
+      <button class="btn ${isAdded?"danger":"secondary"} icon" data-pick="${l.id}" data-added="${isAdded?1:0}">${isAdded ? "−" : "+"}</button>
+    </div>`;
+  }).join("");
+}
+function bindQuickLinksPicker(){
+  $$("#pickerList [data-pick]").forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.dataset.pick;
+      const isAdded = b.dataset.added === "1";
+      if(isAdded) await removeQuickLink(id); else await addQuickLink(id);
+      popModal(); openQuickLinksPicker();
+    };
+  });
+}
+
+/* ============================================================
+   BARS + swipe (works inside side-bar too)
+   ============================================================ */
+function openBar(side){
+  closeBars();
+  const bar = side==="left"?$("#leftBar"):$("#rightBar");
+  bar.classList.add("open");
+  $("#barOverlay").classList.add("show");
+}
+function closeBars(){
+  $("#leftBar").classList.remove("open");
+  $("#rightBar").classList.remove("open");
+  $("#barOverlay").classList.remove("show");
+}
+
+/* ============================================================
+   UNIFIED TOUCH / MOUSE GESTURE HANDLING
+   ============================================================ */
+let tx=0, ty=0, tt=0, gestureActive=false;
+
+function onStart(x, y){
+  tx = x; ty = y; tt = Date.now(); gestureActive = true;
+}
+function onEnd(x, y){
+  if(!gestureActive) return;
+  gestureActive = false;
+  const dx = x - tx, dy = y - ty, dt = Date.now() - tt;
+  if(dt > 800) return;
+
+  const leftOpen  = $("#leftBar").classList.contains("open");
+  const rightOpen = $("#rightBar").classList.contains("open");
+  const contactOpen = $("#contactMenu").classList.contains("open");
+  const modalOpen = $("#modalBackdrop").classList.contains("show");
+
+  if(modalOpen) return;
+
+  // Swipe up → contact menu
+  if(!leftOpen && !rightOpen && !contactOpen && Math.abs(dy)>80 && Math.abs(dy)>Math.abs(dx) && dy<0){
+    $("#contactMenu").classList.add("open"); return;
+  }
+  if(contactOpen && dy>60 && Math.abs(dy)>Math.abs(dx)){
+    $("#contactMenu").classList.remove("open"); return;
+  }
+
+  if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)){
+    if(leftOpen){
+      if(dx < 0) closeBars();
+      return;
+    }
+    if(rightOpen){
+      if(dx > 0) closeBars();
+      return;
+    }
+    if(dx > 0) openBar("left");
+    else openBar("right");
+  }
+}
+
+/* Touch */
+document.addEventListener("touchstart", (e)=>{
+  const t=e.touches[0];
+  onStart(t.clientX, t.clientY);
+}, { passive: true });
+document.addEventListener("touchend", (e)=>{
+  const t=e.changedTouches[0];
+  onEnd(t.clientX, t.clientY);
+}, { passive: true });
+
+/* Mouse drag (left button) */
+document.addEventListener("mousedown", (e)=>{
+  if(e.button !== 0) return;
+  if(e.target.closest("input, textarea, select")) return;
+  onStart(e.clientX, e.clientY);
+});
+document.addEventListener("mouseup", (e)=>{
+  if(e.button !== 0) return;
+  if(e.target.closest("input, textarea, select")) return;
+  onEnd(e.clientX, e.clientY);
+});
+
+/* Esc key closes modal / bars / contact */
+document.addEventListener("keydown", (e)=>{
+  if(e.key === "Escape"){
+    if($("#modalBackdrop").classList.contains("show")){ closeAllModals(); return; }
+    if($("#contactMenu").classList.contains("open")){ $("#contactMenu").classList.remove("open"); return; }
+    if($("#leftBar").classList.contains("open") || $("#rightBar").classList.contains("open")){ closeBars(); return; }
+  }
+});
+
+document.addEventListener("click", e=>{
+  const contact=$("#contactMenu");
+  if(contact.classList.contains("open") && !contact.contains(e.target) && !e.target.closest("#addBtn")){
+    contact.classList.remove("open");
+  }
+});
+document.addEventListener("gesturestart", e=>e.preventDefault());
+document.addEventListener("touchmove", e=>{ if(e.touches.length>1) e.preventDefault(); }, { passive: false });
+
+/* ============================================================
+   TOP-LEVEL BINDINGS
+   ============================================================ */
+$("#openLeft").onclick = ()=>closeBars();
+$("#openRight").onclick = ()=>closeBars();
+$("#barOverlay").onclick = closeBars;
+$("#addBtn").onclick = ()=>openLinkModal();
+$("#qlAddBtn").onclick = ()=>openQuickLinksPicker();
+$("#searchInput").oninput = (e)=>{ state.search=e.target.value; renderLinks(); renderFilters(); };
+
+/* Left bar bottom buttons — pointerdown + click for instant response */
+$$("[data-bottom-action]").forEach(btn=>{
+  let handled = false;
+  const handler = (e)=>{
+    if(handled) return;
+    handled = true;
+    setTimeout(()=>handled = false, 400);
+    e.preventDefault(); e.stopPropagation();
+    const action = btn.dataset.bottomAction;
+    closeBars();
+    setTimeout(()=>{
+      if(action === "mngCat") openManageCategoriesModal();
+      if(action === "mngTag") openManageTagsModal();
+      if(action === "bin") openBinModal();
+      if(action === "settings") openSettingsModal();
+    }, 60);
+  };
+  btn.addEventListener("pointerup", handler);
+});
+
+$("#leftActivityBtn").onclick = ()=>{ closeBars(); setTimeout(openActivityModal, 60); };
+
+$("#lastTimer").onclick = ()=>{
+  const tip = $("#timeTooltip");
+  tip.textContent = fmtExact(state.logs[0]?.at);
+  tip.classList.add("show");
+  clearTimeout(tip._t);
+  tip._t = setTimeout(()=>tip.classList.remove("show"), 3000);
+};
+$("#aboutBtn").onclick = e=>{ e.preventDefault(); customAlert("Google Drive Link Manager\nCollection: "+COLLECTION); };
+$("#helpBtn").onclick = e=>{ e.preventDefault(); customAlert("Swipe right → left bar\nSwipe left → right bar\nSwipe up → contact\nTap ＋ to add link\nLong-press / Right-click a card to edit\nEsc = close modal"); };
+$("#modalBackdrop").onclick = e=>{ if(e.target===$("#modalBackdrop")) closeAllModals(); };
+
+/* ============================================================
+   AUTH + BOOT
+   ============================================================ */
+async function ensureAuth(){
+  return new Promise((resolve)=>{
+    const unsub = auth.onAuthStateChanged(async (u)=>{
+      if(u){ unsub(); resolve(u); }
+      else {
+        try { await auth.signInAnonymously(); }
+        catch(e){ console.error("anon signin failed", e); unsub(); resolve(null); }
+      }
+    });
+  });
+}
+function updateTimer(){
+  const el = $("#lastTimer");
+  if(el) el.textContent = fmtRelative(state.logs[0]?.at);
+}
+async function boot(){
+  applyTheme();
+  setConnection("connecting");
+  await ensureAuth();
+  try {
+    const snap = await ROOT_DOC.get();
+    if(!snap.exists){
+      await ROOT_DOC.set({
+        links: [], categories: [], tags: [], logs: [], recycle: [], quickLinks: [],
+        settings: state.settings, updatedAt: now()
+      }, { merge: true });
+    }
+  } catch(e){ console.error("init failed", e); }
+  await loadAll();
+  render();
+  ROOT_DOC.onSnapshot(snap=>{
+    setConnection("connected");
+    if(!snap.exists) return;
+    const d = snap.data();
+    if(state.editingLinkId) return;
+    state.links      = d.links      || state.links;
+    state.categories = d.categories || state.categories;
+    state.tags       = d.tags       || state.tags;
+    state.logs       = d.logs       || state.logs;
+    state.recycle    = d.recycle    || state.recycle;
+    state.quickLinks = d.quickLinks || state.quickLinks;
+    state.settings   = Object.assign(state.settings, d.settings || {});
+    localStorage.setItem(LS_THEME_KEY, state.settings.theme);
+    applyTheme();
+    render();
+  }, err=>{
+    console.error("snapshot error", err);
+    setConnection("disconnected");
+  });
+  setInterval(()=>{ updateTimer(); refreshConnection(); }, 5000);
+}
+boot();
+</script>
+</body>
+</html>
