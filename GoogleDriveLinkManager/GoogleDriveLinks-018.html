@@ -1442,8 +1442,6 @@ function popModal(){
   if(!modalStack.length) return;
   modalStack.pop();
   scheduleModalRender(); syncBodyScrollLock();
-  const top = modalStack[modalStack.length-1];
-  if(top && top.onMount) top.onMount();
 }
 function closeAllModals(){
   if(!modalStack.length) return;
