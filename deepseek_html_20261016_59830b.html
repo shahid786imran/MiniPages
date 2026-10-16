@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Firebase + Google Drive Sample (Test1)</title>
+<title>Firebase + Google Drive Full Test (Test1)</title>
 
 <!-- ============================================================
-     CONFIGURATION SECTION (reusable for future pages)
+     CONFIGURATION SECTION
      ============================================================ -->
 <script>
-  /* ---------- FIREBASE ---------- */
   const FIREBASE_CONFIG = {
     apiKey:            "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
     authDomain:        "mywebapps-e3b63.firebaseapp.com",
@@ -19,169 +18,189 @@
     appId:             "1:46681415809:web:c4528b9da97abc310a2d80"
   };
 
-  /* ---------- FIRESTORE ---------- */
-  const FIRESTORE_COLLECTION_NAME = "Test1";       // user-provided
-  const FIRESTORE_GLOBAL_DOC_ID   = "global";      // shared doc (no per-user paths)
+  const FIRESTORE_COLLECTION_NAME = "Test1";
+  const FIRESTORE_GLOBAL_DOC_ID   = "global";
 
-  /* ---------- GOOGLE DRIVE ---------- */
   const DRIVE_CONFIG = {
-    oauthClientId: "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com",
-    apiKey:        "AIzaSyBSf3HKUR652Kja3l65D91VfCkQSoxgZDY",
-    parentFolderId: "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT", // MyWebApps Attachments
-    subFolderName:  "Test1",                              // user-provided
+    oauthClientId:  "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com",
+    apiKey:         "AIzaSyBSf3HKUR652Kja3l65D91VfCkQSoxgZDY",
+    parentFolderId: "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT",
+    subFolderName:  "Test1",
     scope:          "https://www.googleapis.com/auth/drive.file"
   };
+
+  window._gapiReady   = false;
+  window._accessToken = null;
+  window._tokenClient = null;
+  window._subFolderId = null;
 </script>
 
 <!-- Firebase SDK -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getAuth, signInAnonymously, onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import {
-    getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  /* ---------- INIT FIREBASE ---------- */
   const app  = initializeApp(FIREBASE_CONFIG);
   const auth = getAuth(app);
   const db   = getFirestore(app);
 
-  /* ---------- SHARED DOC REF (NO per-user path) ---------- */
   const sharedDocRef = doc(db, FIRESTORE_COLLECTION_NAME, FIRESTORE_GLOBAL_DOC_ID);
+  window._fsSetDoc      = setDoc;
+  window._fsGetDoc      = getDoc;
+  window._fsUpdateDoc   = updateDoc;
+  window._fsDeleteDoc   = deleteDoc;
+  window._fsServerTime  = serverTimestamp;
+  window._firestoreRef  = sharedDocRef;
 
-  /* ---------- ANONYMOUS AUTH ---------- */
-  signInAnonymously(auth).catch(err => console.error("Auth error:", err));
-  onAuthStateChanged(auth, user => {
+  signInAnonymously(auth).catch(e => console.error("Auth:", e));
+  onAuthStateChanged(auth, u => {
     const el = document.getElementById("authStatus");
-    if (el) el.textContent = user ? "Signed in (anonymous)" : "Not signed in";
+    if (el) el.textContent = u ? "Signed in (anonymous)" : "Not signed in";
   });
 
-  /* ============================================================
-     FIRESTORE CRUD (all on shared "global" doc)
-     ============================================================ */
   window.fsSave = async function () {
     const name = document.getElementById("nameInput").value.trim();
     const note = document.getElementById("noteInput").value.trim();
     if (!name) return alert("Name required");
-    await setDoc(sharedDocRef, {
-      name, note,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
+    await setDoc(sharedDocRef, { name, note, updatedAt: serverTimestamp() }, { merge: true });
     alert("Saved to Firestore (Test1/global)");
     window.fsLoad();
   };
-
   window.fsLoad = async function () {
     const snap = await getDoc(sharedDocRef);
     const out  = document.getElementById("fsOutput");
     if (snap.exists()) {
       const d = snap.data();
-      out.textContent =
-        "Name: " + (d.name || "") +
-        "\nNote: " + (d.note || "") +
+      out.textContent = "Name: " + (d.name||"") +
+        "\nNote: " + (d.note||"") +
         "\nUpdated: " + (d.updatedAt ? d.updatedAt.toDate().toLocaleString() : "-");
-    } else {
-      out.textContent = "No document yet.";
-    }
+    } else out.textContent = "No document yet.";
   };
-
   window.fsUpdate = async function () {
     const note = document.getElementById("noteInput").value.trim();
     await updateDoc(sharedDocRef, { note, updatedAt: serverTimestamp() });
-    alert("Updated.");
-    window.fsLoad();
+    alert("Updated."); window.fsLoad();
   };
-
   window.fsDelete = async function () {
-    if (!confirm("Delete the shared Test1/global document?")) return;
-    await deleteDoc(sharedDocRef);
-    alert("Deleted.");
-    window.fsLoad();
+    if (!confirm("Delete Test1/global document?")) return;
+    await deleteDoc(sharedDocRef); alert("Deleted."); window.fsLoad();
   };
 </script>
+
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body style="font-family:Arial;max-width:720px;margin:20px auto;padding:0 12px;">
 
-  <h2>Firebase + Google Drive Sample — Collection: <code>Test1</code></h2>
-
+<body style="font-family:Arial;max-width:820px;margin:20px auto;padding:0 12px;">
+  <h2>Firebase + Google Drive Full Test — Collection: <code>Test1</code></h2>
   <p><b>Auth status:</b> <span id="authStatus">…</span></p>
 
-  <!-- ================= FIRESTORE ================= -->
+  <!-- FIRESTORE -->
   <fieldset style="margin-bottom:16px;">
     <legend><b>Firestore (Test1 / global)</b></legend>
     <input id="nameInput" placeholder="Name" style="width:100%;padding:6px;margin-bottom:6px;">
-    <textarea id="noteInput" placeholder="Note" style="width:100%;padding:6px;height:60px;"></textarea>
+    <textarea id="noteInput" placeholder="Note" style="width:100%;padding:6px;height:50px;"></textarea>
     <div style="margin-top:8px;">
       <button onclick="fsSave()">Save</button>
       <button onclick="fsLoad()">Load</button>
-      <button onclick="fsUpdate()">Update Note</button>
+      <button onclick="fsUpdate()">Update</button>
       <button onclick="fsDelete()">Delete</button>
     </div>
     <pre id="fsOutput" style="background:#f4f4f4;padding:8px;margin-top:8px;">-</pre>
   </fieldset>
 
-  <!-- ================= GOOGLE DRIVE ================= -->
+  <!-- GOOGLE DRIVE -->
   <fieldset>
-    <legend><b>Google Drive (folder: MyWebApps Attachments / Test1)</b></legend>
-    <input type="file" id="fileInput" />
-    <button onclick="driveUpload()">Upload to Drive</button>
-    <pre id="driveOutput" style="background:#f4f4f4;padding:8px;margin-top:8px;">-</pre>
+    <legend><b>Google Drive — Folder: MyWebApps Attachments / Test1</b></legend>
+
+    <div style="margin-bottom:10px;">
+      <button onclick="driveRefresh()">🔄 Refresh List</button>
+      <button onclick="driveCreateNew()">➕ Create New File</button>
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <input type="file" id="fileInput" />
+      <button onclick="driveUpload()">⬆ Upload</button>
+    </div>
+
+    <div id="fileList" style="border:1px solid #ccc;padding:8px;min-height:80px;background:#fafafa;">
+      <i>No files loaded. Press Refresh.</i>
+    </div>
+
+    <hr style="margin:16px 0;">
+
+    <div id="editorBox" style="display:none;">
+      <b>Editing:</b> <span id="editFileName">—</span><br>
+      <input id="editNameInput" placeholder="New file name" style="width:60%;padding:4px;margin:6px 0;">
+      <button onclick="driveRename()">✏ Rename</button>
+      <br>
+      <textarea id="editContent" style="width:100%;height:180px;padding:6px;font-family:monospace;"></textarea>
+      <div style="margin-top:6px;">
+        <button onclick="driveSaveContent()">💾 Save Content</button>
+        <button onclick="driveDelete()" style="color:#b00;">🗑 Delete (to Trash)</button>
+      </div>
+    </div>
+
+    <hr style="margin:16px 0;">
+    <div>
+      <b>Trash (restore):</b>
+      <button onclick="driveListTrash()">📂 List Trashed</button>
+      <div id="trashList" style="border:1px solid #ccc;padding:8px;min-height:60px;background:#fff5f5;margin-top:6px;">
+        <i>No trashed files loaded.</i>
+      </div>
+    </div>
+
+    <pre id="driveOutput" style="background:#eef;padding:8px;margin-top:10px;">-</pre>
   </fieldset>
 
-<!-- Google API loader -->
-<script src="https://apis.google.com/js/api.js"></script>
 <script>
   /* ============================================================
-     GOOGLE DRIVE UPLOAD
-     - Uploads only into: MyWebApps Attachments / Test1
-     - Only files created/uploaded by this app
+     GOOGLE DRIVE HELPERS
      ============================================================ */
-  let gapiReady = false, tokenClient = null, accessToken = null;
-
   function initGapi() {
     gapi.load("client", async () => {
       await gapi.client.init({
         apiKey: DRIVE_CONFIG.apiKey,
         discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
       });
-      gapiReady = true;
+      window._gapiReady = true;
     });
   }
   initGapi();
 
-  window.onload = () => {
-    tokenClient = google.accounts.oauth2.initTokenClient({
+  window.addEventListener("load", () => {
+    window._tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: DRIVE_CONFIG.oauthClientId,
-      scope: DRIVE_CONFIG.scope,
-      callback: (resp) => {
-        if (resp.access_token) {
-          accessToken = resp.access_token;
-          gapi.client.setToken({ access_token: accessToken });
+      scope:     DRIVE_CONFIG.scope,
+      callback: (r) => {
+        if (r.access_token) {
+          window._accessToken = r.access_token;
+          gapi.client.setToken({ access_token: r.access_token });
         }
       }
     });
-  };
+  });
 
-  async function ensureToken() {
-    if (!accessToken) {
-      await new Promise(res => {
-        const oldCb = tokenClient.callback;
-        tokenClient.callback = (r) => { oldCb(r); res(); };
-        tokenClient.requestAccessToken({ prompt: "consent" });
-      });
-    }
-    if (!gapiReady) await new Promise(r => setTimeout(r, 500));
-    return accessToken;
+  function ensureToken() {
+    return new Promise((resolve) => {
+      if (window._accessToken) return resolve();
+      const old = window._tokenClient.callback;
+      window._tokenClient.callback = (r) => { old(r); resolve(); };
+      window._tokenClient.requestAccessToken({ prompt: "consent" });
+    });
   }
 
   async function getOrCreateSubFolder() {
-    // search inside parent
+    if (window._subFolderId) return window._subFolderId;
     const q = `'${DRIVE_CONFIG.parentFolderId}' in parents and name='${DRIVE_CONFIG.subFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
     const list = await gapi.client.drive.files.list({ q, fields: "files(id,name)" });
-    if (list.result.files && list.result.files.length) return list.result.files[0].id;
-
+    if (list.result.files && list.result.files.length) {
+      window._subFolderId = list.result.files[0].id;
+      return window._subFolderId;
+    }
     const created = await gapi.client.drive.files.create({
       resource: {
         name: DRIVE_CONFIG.subFolderName,
@@ -190,48 +209,229 @@
       },
       fields: "id"
     });
-    return created.result.id;
+    window._subFolderId = created.result.id;
+    return window._subFolderId;
   }
 
-  window.driveUpload = async function () {
-    const out = document.getElementById("driveOutput");
-    const fileInput = document.getElementById("fileInput");
-    if (!fileInput.files.length) return alert("Choose a file first.");
+  function log(msg) {
+    document.getElementById("driveOutput").textContent =
+      typeof msg === "string" ? msg : JSON.stringify(msg, null, 2);
+  }
 
+  /* ---------- LIST FILES ---------- */
+  window.driveRefresh = async function () {
+    try {
+      await ensureToken();
+      if (!window._gapiReady) await new Promise(r => setTimeout(r, 500));
+      const subId = await getOrCreateSubFolder();
+      const q = `'${subId}' in parents and trashed=false`;
+      const res = await gapi.client.drive.files.list({
+        q,
+        fields: "files(id,name,mimeType,modifiedTime,size,webViewLink)",
+        orderBy: "modifiedTime desc"
+      });
+      const files = res.result.files || [];
+      const box = document.getElementById("fileList");
+      if (!files.length) { box.innerHTML = "<i>Folder is empty.</i>"; return; }
+      box.innerHTML = files.map(f => `
+        <div style="padding:6px;border-bottom:1px solid #eee;">
+          <b>${escapeHtml(f.name)}</b>
+          <span style="color:#666;font-size:12px;"> (${f.mimeType.split('.').pop()})</span><br>
+          <small>ID: ${f.id}</small><br>
+          <button onclick="driveOpen('${f.id}','${escapeAttr(f.name)}','${f.mimeType}')">Open / Edit</button>
+          <a href="${f.webViewLink}" target="_blank" style="margin-left:6px;">View in Drive</a>
+        </div>
+      `).join("");
+      log("Loaded " + files.length + " file(s).");
+    } catch (e) { log("Error: " + e.message); }
+  };
+
+  /* ---------- UPLOAD ---------- */
+  window.driveUpload = async function () {
+    const fi = document.getElementById("fileInput");
+    if (!fi || !fi.files || !fi.files.length) return alert("Choose a file first.");
+    try {
+      await ensureToken();
+      if (!window._gapiReady) await new Promise(r => setTimeout(r, 500));
+      const subId = await getOrCreateSubFolder();
+      const file = fi.files[0];
+      const form = new FormData();
+      form.append("metadata", new Blob([JSON.stringify({ name: file.name, parents: [subId] })], { type: "application/json" }));
+      form.append("file", file);
+      const res = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
+        { method: "POST", headers: { Authorization: "Bearer " + window._accessToken }, body: form }
+      );
+      const data = await res.json();
+      if (data.error) return log("Error: " + JSON.stringify(data.error));
+      log("Uploaded: " + data.name + " (ID: " + data.id + ")");
+      fi.value = "";
+      driveRefresh();
+    } catch (e) { log("Error: " + e.message); }
+  };
+
+  /* ---------- CREATE NEW FILE ---------- */
+  window.driveCreateNew = async function () {
+    const name = prompt("New file name:", "NewFile_" + Date.now() + ".txt");
+    if (!name) return;
+    try {
+      await ensureToken();
+      if (!window._gapiReady) await new Promise(r => setTimeout(r, 500));
+      const subId = await getOrCreateSubFolder();
+      const form = new FormData();
+      form.append("metadata", new Blob([JSON.stringify({ name, parents: [subId], mimeType: "text/plain" })], { type: "application/json" }));
+      form.append("file", new Blob([""], { type: "text/plain" }));
+      const res = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
+        { method: "POST", headers: { Authorization: "Bearer " + window._accessToken }, body: form }
+      );
+      const data = await res.json();
+      if (data.error) return log("Error: " + JSON.stringify(data.error));
+      log("Created: " + data.name + " (ID: " + data.id + ")");
+      driveRefresh();
+    } catch (e) { log("Error: " + e.message); }
+  };
+
+  /* ---------- OPEN & EDIT ---------- */
+  let currentFileId = null, currentMime = null;
+
+  window.driveOpen = async function (id, name, mime) {
+    currentFileId = id; currentMime = mime;
+    document.getElementById("editorBox").style.display = "block";
+    document.getElementById("editFileName").textContent = name;
+    document.getElementById("editNameInput").value = name;
+    document.getElementById("editContent").value = "(loading…)";
+    try {
+      await ensureToken();
+      const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
+        { headers: { Authorization: "Bearer " + window._accessToken } }
+      );
+      const text = await res.text();
+      document.getElementById("editContent").value = text;
+      log("Loaded content of: " + name);
+    } catch (e) {
+      document.getElementById("editContent").value = "";
+      log("Load error: " + e.message);
+    }
+  };
+
+  /* ---------- SAVE CONTENT ---------- */
+  window.driveSaveContent = async function () {
+    if (!currentFileId) return;
+    const content = document.getElementById("editContent").value;
+    try {
+      await ensureToken();
+      const res = await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${currentFileId}?uploadType=media`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: "Bearer " + window._accessToken,
+            "Content-Type": currentMime || "text/plain"
+          },
+          body: content
+        }
+      );
+      const data = await res.json();
+      if (data.error) return log("Error: " + JSON.stringify(data.error));
+      log("Content saved for file ID: " + currentFileId);
+      driveRefresh();
+    } catch (e) { log("Error: " + e.message); }
+  };
+
+  /* ---------- RENAME ---------- */
+  window.driveRename = async function () {
+    if (!currentFileId) return;
+    const newName = document.getElementById("editNameInput").value.trim();
+    if (!newName) return alert("Enter new name.");
+    try {
+      await ensureToken();
+      const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files/${currentFileId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: "Bearer " + window._accessToken,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ name: newName })
+        }
+      );
+      const data = await res.json();
+      if (data.error) return log("Error: " + JSON.stringify(data.error));
+      log("Renamed to: " + data.name);
+      document.getElementById("editFileName").textContent = newName;
+      driveRefresh();
+    } catch (e) { log("Error: " + e.message); }
+  };
+
+  /* ---------- DELETE (to trash) ---------- */
+  window.driveDelete = async function () {
+    if (!currentFileId) return;
+    if (!confirm("Move file to Trash?")) return;
+    try {
+      await ensureToken();
+      await fetch(
+        `https://www.googleapis.com/drive/v3/files/${currentFileId}`,
+        { method: "DELETE", headers: { Authorization: "Bearer " + window._accessToken } }
+      );
+      log("Moved to Trash: " + currentFileId);
+      document.getElementById("editorBox").style.display = "none";
+      currentFileId = null;
+      driveRefresh();
+    } catch (e) { log("Error: " + e.message); }
+  };
+
+  /* ---------- LIST TRASH ---------- */
+  window.driveListTrash = async function () {
     try {
       await ensureToken();
       const subId = await getOrCreateSubFolder();
-      const file  = fileInput.files[0];
+      const q = `'${subId}' in parents and trashed=true`;
+      const res = await gapi.client.drive.files.list({
+        q, fields: "files(id,name,modifiedTime)"
+      });
+      const files = res.result.files || [];
+      const box = document.getElementById("trashList");
+      if (!files.length) { box.innerHTML = "<i>Trash is empty.</i>"; return; }
+      box.innerHTML = files.map(f => `
+        <div style="padding:4px;border-bottom:1px solid #f0c0c0;">
+          <b>${escapeHtml(f.name)}</b> <small>(${f.id})</small>
+          <button onclick="driveRestore('${f.id}')">♻ Restore</button>
+        </div>
+      `).join("");
+      log("Trash: " + files.length + " file(s).");
+    } catch (e) { log("Error: " + e.message); }
+  };
 
-      const metadata = { name: file.name, parents: [subId] };
-      const form = new FormData();
-      form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
-      form.append("file", file);
-
+  /* ---------- RESTORE ---------- */
+  window.driveRestore = async function (id) {
+    try {
+      await ensureToken();
       const res = await fetch(
-        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
-        { method: "POST", headers: { Authorization: "Bearer " + accessToken }, body: form }
+        `https://www.googleapis.com/drive/v3/files/${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: "Bearer " + window._accessToken,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ trashed: false })
+        }
       );
       const data = await res.json();
-
-      if (data.error) {
-        out.textContent = "Error: " + JSON.stringify(data.error, null, 2);
-        return;
-      }
-      out.textContent = "Uploaded:\nFile ID: " + data.id + "\nName: " + data.name +
-                        "\nFolder: MyWebApps Attachments / " + DRIVE_CONFIG.subFolderName;
-
-      // OPTIONAL: save file ID into Firestore (comment in if you want)
-      // await setDoc(sharedDocRef, { lastFileId: data.id, lastFileName: data.name }, { merge: true });
-
-    } catch (err) {
-      out.textContent = "Error: " + err.message;
-    }
+      if (data.error) return log("Error: " + JSON.stringify(data.error));
+      log("Restored file ID: " + id);
+      driveListTrash();
+      driveRefresh();
+    } catch (e) { log("Error: " + e.message); }
   };
-</script>
 
-<!-- Google Identity Services (OAuth token) -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+  /* ---------- UTIL ---------- */
+  function escapeHtml(s){return (s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));}
+  function escapeAttr(s){return escapeHtml(s).replace(/'/g,"\\'");}
+</script>
 
 </body>
 </html>
