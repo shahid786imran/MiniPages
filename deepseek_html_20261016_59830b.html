@@ -1,419 +1,361 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Firebase Full Test — Auth + Firestore</title>
-
-<script>
-  const FIREBASE_CONFIG = {
-    apiKey:            "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
-    authDomain:        "mywebapps-e3b63.firebaseapp.com",
-    projectId:         "mywebapps-e3b63",
-    storageBucket:     "mywebapps-e3b63.firebasestorage.app",
-    messagingSenderId: "46681415809",
-    appId:             "1:46681415809:web:c4528b9da97abc310a2d80"
-  };
-</script>
-
-<style>
-  body { font-family: Arial; max-width: 980px; margin: 20px auto; padding: 0 12px; color:#222; }
-  fieldset { margin-bottom:16px; padding:12px; border:1px solid #ccc; border-radius:6px; }
-  legend { font-weight:bold; padding:0 6px; }
-  label { display:block; margin-top:6px; font-size:13px; color:#444; }
-  input[type=text], input[type=email], input[type=password], textarea, select {
-    padding:6px; margin:3px 0; width:100%; box-sizing:border-box;
-  }
-  textarea { font-family: monospace; }
-  button { padding:6px 12px; margin:4px 2px; cursor:pointer; }
-  pre { background:#f4f4f4; padding:8px; border:1px solid #ddd; white-space:pre-wrap;
-        font-size:13px; max-height:320px; overflow:auto; }
-  .ok { color:green; font-weight:bold; }
-  .fail { color:red; font-weight:bold; }
-  .warn { color:#d97706; font-weight:bold; }
-  table { width:100%; border-collapse:collapse; margin-top:6px; }
-  th,td { border:1px solid #ccc; padding:6px 8px; text-align:left; font-size:14px; }
-  th { background:#eee; }
-  .row { display:flex; gap:8px; flex-wrap:wrap; }
-  .row > div { flex:1; min-width:180px; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebase + Drive API Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 16px; }
+    button { padding: 10px 18px; margin: 4px; cursor: pointer; border-radius: 6px; border: 1px solid #ccc; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #status { font-weight: bold; color: #333; }
+    pre { background: #f4f4f4; padding: 12px; border-radius: 6px; max-height: 420px; overflow: auto; }
+    .section { border: 1px solid #ddd; padding: 14px; border-radius: 8px; margin-top: 16px; }
+    input[type="file"] { margin: 8px 0; }
+    .ok { color: green; }
+    .err { color: red; }
+  </style>
 </head>
-
 <body>
 
-<h2>Firebase Full Test — Auth + Firestore</h2>
-<p>Sirf Firebase. Koi Drive nahi. Har section alag se test karein.</p>
+  <h1>Firebase + Google Drive API Test</h1>
+  <p>Status: <span id="status">Loading...</span></p>
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>1. Live Status</legend>
-  <table>
-    <tr><th>Check</th><th>Status</th></tr>
-    <tr><td>Firebase SDK</td><td id="stSdk">…</td></tr>
-    <tr><td>App initialized</td><td id="stApp">…</td></tr>
-    <tr><td>Auth signed in</td><td id="stAuth">…</td></tr>
-    <tr><td>Current UID</td><td id="stUid">…</td></tr>
-    <tr><td>Email</td><td id="stEmail">…</td></tr>
-    <tr><td>Firestore</td><td id="stDb">…</td></tr>
-  </table>
-  <button id="checkStatusBtn">🔄 Refresh Status</button>
-</fieldset>
+  <button id="loginBtn">Sign in with Google</button>
+  <button id="logoutBtn" disabled>Sign out</button>
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>2. Auth — Anonymous</legend>
-  <button id="anonBtn">👤 Sign in anonymously</button>
-  <pre id="authOut">-</pre>
-</fieldset>
-
-<!-- ===================================================== -->
-<fieldset>
-  <legend>3. Auth — Email / Password</legend>
-  <div class="row">
-    <div>
-      <label>Email</label>
-      <input type="email" id="authEmail" placeholder="you@example.com">
-    </div>
-    <div>
-      <label>Password</label>
-      <input type="password" id="authPass" placeholder="min 6 chars">
-    </div>
+  <!-- ================= Firebase Test Section ================= -->
+  <div class="section">
+    <h3>1. Firebase Firestore Test (Collection: <code>Test1</code>)</h3>
+    <button id="fbWriteBtn" disabled>Write Test Doc</button>
+    <button id="fbReadBtn" disabled>Read Test Docs</button>
+    <pre id="fbOutput">—</pre>
   </div>
-  <button id="signupBtn">📝 Sign Up</button>
-  <button id="loginBtn">🔑 Login</button>
-  <button id="logoutBtn">🚪 Logout</button>
-  <pre id="emailAuthOut">-</pre>
-</fieldset>
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>4. Firestore — Collection / Document</legend>
-  <div class="row">
-    <div>
-      <label>Collection Name</label>
-      <input type="text" id="colName" value="Test1">
-    </div>
-    <div>
-      <label>Document ID</label>
-      <input type="text" id="docId" value="global">
-    </div>
+  <!-- ================= Drive Test Section ================= -->
+  <div class="section">
+    <h3>2. Google Drive Test (Sub Folder: <code>Test1</code>)</h3>
+    <button id="driveListBtn" disabled>List Files in Sub Folder</button>
+    <input type="file" id="driveUploadInput" disabled />
+    <button id="driveUploadBtn" disabled>Upload Selected File</button>
+    <pre id="driveOutput">—</pre>
   </div>
-  <button id="applyRefBtn">✅ Apply</button>
-  <span id="refStatus"></span>
-</fieldset>
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>5. Set / Merge</legend>
-  <label>Name</label>
-  <input type="text" id="setName">
-  <label>Note</label>
-  <textarea id="setNote" style="height:60px;"></textarea>
-  <label><input type="checkbox" id="setMerge" checked> Use merge</label>
-  <button id="setBtn">💾 Save</button>
-  <pre id="setOut">-</pre>
-</fieldset>
+  <script type="module">
+    // ============================================================
+    // CONFIGURATION SECTION — EDIT HERE ONLY
+    // ============================================================
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>6. Get Document</legend>
-  <button id="getBtn">📄 Load</button>
-  <pre id="getOut">-</pre>
-</fieldset>
+    // --- Firebase Config ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+      authDomain: "mywebapps-e3b63.firebaseapp.com",
+      projectId: "mywebapps-e3b63",
+      storageBucket: "mywebapps-e3b63.firebasestorage.app",
+      messagingSenderId: "46681415809",
+      appId: "1:46681415809:web:c4528b9da97abc310a2d80"
+    };
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>7. Update Field</legend>
-  <label>Field Name</label>
-  <input type="text" id="updField" value="note">
-  <label>New Value</label>
-  <input type="text" id="updValue">
-  <button id="updBtn">✏ Update</button>
-  <pre id="updOut">-</pre>
-</fieldset>
+    // --- Firestore ---
+    const FIRESTORE_COLLECTION = "Test1";   // <-- fixed as you said
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>8. Delete Document</legend>
-  <button id="delBtn" style="color:#b00;">🗑 Delete</button>
-  <pre id="delOut">-</pre>
-</fieldset>
+    // --- Google Drive ---
+    const DRIVE_PARENT_FOLDER_ID = "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT";
+    const DRIVE_SUB_FOLDER_NAME  = "Test1"; // <-- fixed as you said
+    const DRIVE_SCOPE            = "https://www.googleapis.com/auth/drive.file";
+    const DRIVE_API_KEY          = "AIzaSyBSf3HKUR652Kja3l65D91VfCkQSoxgZDY";
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>9. Subcollection — Add & List</legend>
-  <label>Subcollection Name</label>
-  <input type="text" id="subCol" value="records">
-  <label>Text</label>
-  <input type="text" id="subText">
-  <button id="addSubBtn">➕ Add</button>
-  <button id="listSubBtn">📋 List</button>
-  <pre id="subOut">-</pre>
-</fieldset>
+    // ============================================================
+    // IMPORTS
+    // ============================================================
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import {
+      getAuth,
+      signInWithPopup,
+      GoogleAuthProvider,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>10. Query Collection</legend>
-  <label>Collection</label>
-  <input type="text" id="queryCol" value="Test1">
-  <label>Limit</label>
-  <input type="text" id="queryLimit" value="20">
-  <button id="queryBtn">🔍 Query</button>
-  <pre id="queryOut">-</pre>
-</fieldset>
+    // ============================================================
+    // INIT
+    // ============================================================
+    const app  = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>11. Real-time Listener (Test1/global)</legend>
-  <button id="listenStart">▶ Start Listener</button>
-  <button id="listenStop">⏹ Stop Listener</button>
-  <pre id="listenOut">-</pre>
-</fieldset>
+    const provider = new GoogleAuthProvider();
+    provider.addScope(DRIVE_SCOPE);
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>12. Batch Write</legend>
-  <button id="batchBtn">📦 Run Batch (3 docs)</button>
-  <pre id="batchOut">-</pre>
-</fieldset>
+    // ============================================================
+    // STATE
+    // ============================================================
+    let accessToken = null;
+    let currentUser = null;
+    let cachedSubFolderId = null;
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>13. Firestore Rules Check (Permission Test)</legend>
-  <label>Try to read a collection you don't have access to</label>
-  <input type="text" id="rulesCol" value="PrivateData">
-  <button id="rulesBtn">🔒 Test Read</button>
-  <pre id="rulesOut">-</pre>
-</fieldset>
+    // ============================================================
+    // DOM
+    // ============================================================
+    const statusEl       = document.getElementById("status");
+    const loginBtn       = document.getElementById("loginBtn");
+    const logoutBtn      = document.getElementById("logoutBtn");
+    const fbWriteBtn     = document.getElementById("fbWriteBtn");
+    const fbReadBtn      = document.getElementById("fbReadBtn");
+    const fbOutput       = document.getElementById("fbOutput");
+    const driveListBtn   = document.getElementById("driveListBtn");
+    const driveUploadInput = document.getElementById("driveUploadInput");
+    const driveUploadBtn = document.getElementById("driveUploadBtn");
+    const driveOutput    = document.getElementById("driveOutput");
 
-<!-- ===================================================== -->
-<fieldset>
-  <legend>14. Full Diagnostics</legend>
-  <button id="diagBtn">▶ Run All Diagnostics</button>
-  <pre id="diagOut">== Diagnostics ==</pre>
-</fieldset>
-
-<!-- ===================================================== -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import {
-    getAuth, signInAnonymously, onAuthStateChanged,
-    createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    signOut
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import {
-    getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc,
-    collection, addDoc, getDocs, query, limit, serverTimestamp,
-    onSnapshot, writeBatch
-  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  /* ---------- INIT ---------- */
-  const app  = initializeApp(FIREBASE_CONFIG);
-  const auth = getAuth(app);
-  const db   = getFirestore(app);
-
-  const $ = id => document.getElementById(id);
-  const out = (id, m) => $(id).textContent = (typeof m === "string") ? m : JSON.stringify(m, null, 2);
-  const st = (id, ok, t) => $(id).innerHTML = ok === true
-    ? '<span class="ok">✔ ' + t + '</span>'
-    : ok === false ? '<span class="fail">✘ ' + t + '</span>'
-    : '<span class="warn">⚠ ' + t + '</span>';
-
-  /* ---------- AUTH STATE ---------- */
-  onAuthStateChanged(auth, u => {
-    if (u) {
-      st("stAuth", true, "signed in");
-      st("stUid", true, u.uid);
-      st("stEmail", u.email ? true : null, u.email || "(anonymous)");
-    } else {
-      st("stAuth", false, "not signed in");
-      st("stUid", false, "—");
-      st("stEmail", false, "—");
+    // ============================================================
+    // HELPERS
+    // ============================================================
+    function enableAppButtons(enabled) {
+      fbWriteBtn.disabled      = !enabled;
+      fbReadBtn.disabled       = !enabled;
+      driveListBtn.disabled    = !enabled;
+      driveUploadInput.disabled = !enabled;
+      driveUploadBtn.disabled  = !enabled || !driveUploadInput.files.length;
     }
-  });
 
-  /* ---------- STATUS ---------- */
-  function checkStatus() {
-    st("stSdk", true, "loaded");
-    st("stApp", true, FIREBASE_CONFIG.projectId);
-    st("stDb",  true, "Firestore ready");
-  }
+    function log(el, msg, isError = false) {
+      el.textContent = msg;
+      el.className = isError ? "err" : "ok";
+    }
 
-  /* ---------- CURRENT REF ---------- */
-  function currentRef() {
-    const c = $("colName").value.trim();
-    const d = $("docId").value.trim();
-    if (!c || !d) throw new Error("Collection and Document ID required");
-    return doc(db, c, d);
-  }
-
-  /* ---------- BIND ---------- */
-  document.addEventListener("DOMContentLoaded", () => {
-    checkStatus();
-
-    /* 1 */ $("checkStatusBtn").onclick = checkStatus;
-
-    /* 2 */ $("anonBtn").onclick = async () => {
-      try { const r = await signInAnonymously(auth); out("authOut", "OK UID: " + r.user.uid); }
-      catch (e) { out("authOut", "Error: " + e.message); }
-    };
-
-    /* 3 */ $("signupBtn").onclick = async () => {
+    // ============================================================
+    // AUTH
+    // ============================================================
+    loginBtn.onclick = async () => {
       try {
-        const r = await createUserWithEmailAndPassword(auth, $("authEmail").value, $("authPass").value);
-        out("emailAuthOut", "Signed up: " + r.user.email);
-      } catch (e) { out("emailAuthOut", "Error: " + e.message); }
-    };
-    $("loginBtn").onclick = async () => {
-      try {
-        const r = await signInWithEmailAndPassword(auth, $("authEmail").value, $("authPass").value);
-        out("emailAuthOut", "Logged in: " + r.user.email);
-      } catch (e) { out("emailAuthOut", "Error: " + e.message); }
-    };
-    $("logoutBtn").onclick = async () => {
-      try { await signOut(auth); out("emailAuthOut", "Logged out"); }
-      catch (e) { out("emailAuthOut", "Error: " + e.message); }
+        statusEl.textContent = "Signing in...";
+        const result = await signInWithPopup(auth, provider);
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        accessToken = credential.accessToken;
+        currentUser = result.user;
+        statusEl.textContent = `Signed in: ${currentUser.displayName} (${currentUser.email})`;
+      } catch (err) {
+        statusEl.textContent = "Sign-in failed: " + err.message;
+        console.error(err);
+      }
     };
 
-    /* 4 */ $("applyRefBtn").onclick = () => {
-      $("refStatus").innerHTML = '<span class="ok">✔ ' + $("colName").value + " / " + $("docId").value + '</span>';
+    logoutBtn.onclick = async () => {
+      await signOut(auth);
+      accessToken = null;
+      currentUser = null;
+      cachedSubFolderId = null;
+      fbOutput.textContent = "—";
+      driveOutput.textContent = "—";
     };
 
-    /* 5 */ $("setBtn").onclick = async () => {
-      try {
-        const ref = currentRef();
-        await setDoc(ref, {
-          name: $("setName").value.trim(),
-          note: $("setNote").value.trim(),
-          updatedAt: serverTimestamp()
-        }, { merge: $("setMerge").checked });
-        out("setOut", "Saved");
-      } catch (e) { out("setOut", "Error: " + e.message); }
-    };
-
-    /* 6 */ $("getBtn").onclick = async () => {
-      try {
-        const ref = currentRef();
-        const s = await getDoc(ref);
-        out("getOut", s.exists() ? JSON.stringify(s.data(), null, 2) : "Document does not exist");
-      } catch (e) { out("getOut", "Error: " + e.message); }
-    };
-
-    /* 7 */ $("updBtn").onclick = async () => {
-      try {
-        const ref = currentRef();
-        const f = $("updField").value.trim();
-        const u = {}; u[f] = $("updValue").value; u.updatedAt = serverTimestamp();
-        await updateDoc(ref, u);
-        out("updOut", "Updated field: " + f);
-      } catch (e) { out("updOut", "Error: " + e.message); }
-    };
-
-    /* 8 */ $("delBtn").onclick = async () => {
-      if (!confirm("Delete document?")) return;
-      try {
-        await deleteDoc(currentRef());
-        out("delOut", "Deleted");
-      } catch (e) { out("delOut", "Error: " + e.message); }
-    };
-
-    /* 9 */ $("addSubBtn").onclick = async () => {
-      try {
-        const parent = currentRef();
-        const sub = $("subCol").value.trim();
-        await addDoc(collection(parent, sub), {
-          text: $("subText").value.trim(),
-          createdAt: serverTimestamp()
-        });
-        out("subOut", "Added to " + sub);
-      } catch (e) { out("subOut", "Error: " + e.message); }
-    };
-    $("listSubBtn").onclick = async () => {
-      try {
-        const parent = currentRef();
-        const sub = $("subCol").value.trim();
-        const s = await getDocs(collection(parent, sub));
-        const arr = []; s.forEach(d => arr.push({ id: d.id, ...d.data() }));
-        out("subOut", JSON.stringify(arr, null, 2));
-      } catch (e) { out("subOut", "Error: " + e.message); }
-    };
-
-    /* 10 */ $("queryBtn").onclick = async () => {
-      try {
-        const c = $("queryCol").value.trim();
-        const lim = parseInt($("queryLimit").value) || 20;
-        const s = await getDocs(query(collection(db, c), limit(lim)));
-        const arr = []; s.forEach(d => arr.push({ id: d.id, ...d.data() }));
-        out("queryOut", JSON.stringify(arr, null, 2));
-      } catch (e) { out("queryOut", "Error: " + e.message); }
-    };
-
-    /* 11 */ let unsub = null;
-    $("listenStart").onclick = () => {
-      if (unsub) return out("listenOut", "Already listening.");
-      const ref = currentRef();
-      unsub = onSnapshot(ref,
-        s => out("listenOut", s.exists() ? JSON.stringify(s.data(), null, 2) : "Document gone"),
-        e => out("listenOut", "Error: " + e.message));
-      out("listenOut", "Listening…");
-    };
-    $("listenStop").onclick = () => {
-      if (unsub) { unsub(); unsub = null; out("listenOut", "Stopped."); }
-    };
-
-    /* 12 */ $("batchBtn").onclick = async () => {
-      try {
-        const b = writeBatch(db);
-        const base = "Batch_" + Date.now();
-        for (let i = 1; i <= 3; i++) {
-          const r = doc(db, "Test1", base + "_" + i);
-          b.set(r, { name: "Batch " + i, createdAt: serverTimestamp() });
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        loginBtn.disabled  = true;
+        logoutBtn.disabled = false;
+        if (!statusEl.textContent.startsWith("Signed in")) {
+          statusEl.textContent = `Signed in: ${user.displayName || user.email}`;
         }
-        await b.commit();
-        out("batchOut", "Batch written: " + base + "_1..3");
-      } catch (e) { out("batchOut", "Error: " + e.message); }
-    };
+        enableAppButtons(true);
+      } else {
+        loginBtn.disabled  = false;
+        logoutBtn.disabled = true;
+        statusEl.textContent = "Not signed in";
+        enableAppButtons(false);
+      }
+    });
 
-    /* 13 */ $("rulesBtn").onclick = async () => {
+    // ============================================================
+    // FIRESTORE TEST  (no per-user paths — single shared collection)
+    // ============================================================
+    fbWriteBtn.onclick = async () => {
       try {
-        const s = await getDocs(collection(db, $("rulesCol").value.trim()));
-        const arr = []; s.forEach(d => arr.push(d.id));
-        out("rulesOut", "Read OK. Documents: " + arr.length);
-      } catch (e) {
-        out("rulesOut", "Blocked by rules or error: " + e.message);
+        fbOutput.textContent = "Writing...";
+        const docRef = await addDoc(collection(db, FIRESTORE_COLLECTION), {
+          message: "Test entry from HTML page",
+          createdAt: serverTimestamp(),
+          testNumber: Math.floor(Math.random() * 10000)
+        });
+        log(fbOutput, `✅ Document written with ID: ${docRef.id}`);
+      } catch (err) {
+        log(fbOutput, "❌ Write failed: " + err.message, true);
+        console.error(err);
       }
     };
 
-    /* 14 */ $("diagBtn").onclick = async () => {
-      const L = [];
-      const p = m => L.push(m);
-      p("Time: " + new Date().toLocaleString());
-      p("URL:  " + location.href);
-      p("");
-      p("--- Firebase ---");
-      p("Project ID ....... " + app.options.projectId);
-      p("Auth domain ...... " + app.options.authDomain);
-      p("");
-      p("--- Auth ---");
-      const u = auth.currentUser;
-      p("Signed in ........ " + (u ? "yes" : "no"));
-      p("UID .............. " + (u ? u.uid : "—"));
-      p("Email ............ " + (u && u.email ? u.email : "(anonymous)"));
-      p("");
-      p("--- Firestore ---");
-      p("db ............... " + (db ? "ready" : "missing"));
-      p("Test doc path .... " + $("colName").value + "/" + $("docId").value);
+    fbReadBtn.onclick = async () => {
       try {
-        const s = await getDoc(currentRef());
-        p("Test doc exists .. " + s.exists());
-        if (s.exists()) p("Test doc data .... " + JSON.stringify(s.data()));
-      } catch (e) {
-        p("Test doc error ... " + e.message);
+        fbOutput.textContent = "Reading...";
+        const snap = await getDocs(collection(db, FIRESTORE_COLLECTION));
+        const rows = [];
+        snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+        log(fbOutput, `✅ Read ${rows.length} document(s):\n\n` + JSON.stringify(rows, null, 2));
+      } catch (err) {
+        log(fbOutput, "❌ Read failed: " + err.message, true);
+        console.error(err);
       }
-      $("diagOut").textContent = L.join("\n");
     };
-  });
-</script>
 
+    // ============================================================
+    // GOOGLE DRIVE TEST
+    // ============================================================
+    async function driveFetch(url, options = {}) {
+      if (!accessToken) throw new Error("No access token. Please sign in again.");
+      const headers = Object.assign(
+        { "Authorization": "Bearer " + accessToken },
+        options.headers || {}
+      );
+      const res = await fetch(url, { ...options, headers });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Drive API ${res.status}: ${text}`);
+      }
+      return res.json();
+    }
+
+    // Find (or create) the Test1 subfolder under the parent folder
+    async function getOrCreateSubFolder() {
+      if (cachedSubFolderId) return cachedSubFolderId;
+
+      // 1. Search for existing subfolder
+      const q = encodeURIComponent(
+        `'${DRIVE_PARENT_FOLDER_ID}' in parents ` +
+        `and name='${DRIVE_SUB_FOLDER_NAME}' ` +
+        `and mimeType='application/vnd.google-apps.folder' ` +
+        `and trashed=false`
+      );
+      const search = await driveFetch(
+        `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&key=${DRIVE_API_KEY}`
+      );
+
+      if (search.files && search.files.length > 0) {
+        cachedSubFolderId = search.files[0].id;
+        return cachedSubFolderId;
+      }
+
+      // 2. Create it if not found
+      const created = await driveFetch(
+        `https://www.googleapis.com/drive/v3/files?fields=id,name&key=${DRIVE_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: DRIVE_SUB_FOLDER_NAME,
+            mimeType: "application/vnd.google-apps.folder",
+            parents: [DRIVE_PARENT_FOLDER_ID]
+          })
+        }
+      );
+      cachedSubFolderId = created.id;
+      return cachedSubFolderId;
+    }
+
+    driveListBtn.onclick = async () => {
+      try {
+        driveOutput.textContent = "Locating sub folder...";
+        const folderId = await getOrCreateSubFolder();
+
+        driveOutput.textContent = "Listing files...";
+        const q = encodeURIComponent(`'${folderId}' in parents and trashed=false`);
+        const data = await driveFetch(
+          `https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name,mimeType,size,createdTime)&key=${DRIVE_API_KEY}`
+        );
+
+        log(
+          driveOutput,
+          `✅ Sub Folder ID: ${folderId}\n` +
+          `✅ Files found: ${(data.files || []).length}\n\n` +
+          JSON.stringify(data.files || [], null, 2)
+        );
+      } catch (err) {
+        log(driveOutput, "❌ List failed: " + err.message, true);
+        console.error(err);
+      }
+    };
+
+    driveUploadInput.onchange = () => {
+      driveUploadBtn.disabled = !driveUploadInput.files.length;
+    };
+
+    driveUploadBtn.onclick = async () => {
+      const file = driveUploadInput.files[0];
+      if (!file) return;
+
+      try {
+        driveOutput.textContent = "Preparing upload...";
+        const folderId = await getOrCreateSubFolder();
+
+        // Multipart upload (metadata + file)
+        const metadata = {
+          name: file.name,
+          parents: [folderId]
+        };
+
+        const boundary = "-------314159265358979323846";
+        const delimiter = "\r\n--" + boundary + "\r\n";
+        const closeDelim = "\r\n--" + boundary + "--";
+
+        const reader = new FileReader();
+        const fileBytes = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(new Uint8Array(reader.result));
+          reader.onerror = reject;
+          reader.readAsArrayBuffer(file);
+        });
+
+        const body =
+          delimiter +
+          "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+          JSON.stringify(metadata) +
+          delimiter +
+          "Content-Type: " + (file.type || "application/octet-stream") + "\r\n\r\n";
+
+        // Build Blob parts (text + binary)
+        const parts = [
+          new Blob([body], { type: "text/plain" }),
+          new Blob([fileBytes], { type: file.type || "application/octet-stream" }),
+          new Blob([closeDelim], { type: "text/plain" })
+        ];
+        const blob = new Blob(parts);
+
+        driveOutput.textContent = "Uploading...";
+        const res = await fetch(
+          `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,size&key=${DRIVE_API_KEY}`,
+          {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer " + accessToken,
+              "Content-Type": "multipart/related; boundary=" + boundary
+            },
+            body: blob
+          }
+        );
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`Upload ${res.status}: ${text}`);
+        }
+
+        const data = await res.json();
+        log(
+          driveOutput,
+          `✅ Uploaded to sub folder "${DRIVE_SUB_FOLDER_NAME}"\n` +
+          `Folder ID: ${folderId}\n\n` +
+          JSON.stringify(data, null, 2)
+        );
+      } catch (err) {
+        log(driveOutput, "❌ Upload failed: " + err.message, true);
+        console.error(err);
+      }
+    };
+  </script>
 </body>
 </html>
