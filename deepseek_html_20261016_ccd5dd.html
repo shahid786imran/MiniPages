@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Firebase + Drive Diagnostic Test</title>
+<title>Firebase + Drive + Picker Diagnostic v3</title>
 <style>
   :root {
     --bg:#f4f6fb; --card:#fff; --border:#e2e6ef; --text:#1c2333;
@@ -17,7 +17,6 @@
     font-size:14px; line-height:1.5;
   }
   .wrap { max-width:1100px; margin:0 auto; padding:0 18px; }
-
   header.top {
     background:#fff; border-bottom:1px solid var(--border); padding:18px 0;
     margin-bottom:22px; position:sticky; top:0; z-index:10;
@@ -26,7 +25,6 @@
   header.top .wrap { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }
   h1 { font-size:19px; margin:0; }
   h1 small { display:block; font-size:12px; font-weight:400; color:var(--muted); margin-top:3px; }
-
   .summary-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .badge {
     font-size:12px; padding:6px 12px; border-radius:999px; font-weight:600;
@@ -35,19 +33,16 @@
   .badge.ok { background:#e7f7ef; color:var(--ok); border-color:#c6ecda; }
   .badge.err { background:#fdeceb; color:var(--err); border-color:#f7cfcd; }
   .badge.warn { background:#fef4e6; color:var(--warn); border-color:#f8dfb5; }
-
   .btn-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
   button {
     font:inherit; font-weight:600; padding:9px 18px; border-radius:8px;
     border:1px solid var(--border); background:#fff; color:var(--text);
-    cursor:pointer; transition: background .15s, opacity .15s;
+    cursor:pointer;
   }
   button:hover:not(:disabled) { background:#f3f5fa; }
   button:disabled { opacity:.55; cursor:not-allowed; }
   button.primary { background:var(--primary); border-color:var(--primary); color:#fff; }
-  button.primary:hover:not(:disabled) { background:#1f57d0; }
   button.danger { background:#fff; color:var(--err); border-color:#f0cfcd; }
-
   .section {
     background:var(--card); border:1px solid var(--border); border-radius:12px;
     padding:18px 20px; margin-bottom:18px; box-shadow:0 2px 10px rgba(20,30,60,.05);
@@ -61,7 +56,6 @@
     background:#eef4ff; color:var(--primary); align-items:center; justify-content:center;
     font-size:12px;
   }
-
   .test-row {
     display:flex; align-items:flex-start; gap:12px; padding:10px 0;
     border-bottom:1px dashed var(--border);
@@ -70,36 +64,30 @@
   .test-row .icon {
     flex:0 0 22px; width:22px; height:22px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
-    font-size:12px; font-weight:700; color:#fff; background:#cbd5e1;
+    font-size:11px; font-weight:700; color:#fff; background:#cbd5e1;
     margin-top:1px;
   }
   .test-row .icon.ok { background:var(--ok); }
   .test-row .icon.err { background:var(--err); }
   .test-row .icon.warn { background:var(--warn); }
-  .test-row .icon.run { background:var(--primary); animation:pulse 1s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:.5;} }
-
+  .test-row .icon.run { background:var(--primary); }
   .test-row .body { flex:1; min-width:0; }
   .test-row .title { font-weight:600; font-size:13.5px; }
   .test-row .detail {
     font-size:12.5px; color:var(--muted); margin-top:3px;
-    font-family: ui-monospace, Menlo, Consolas, monospace;
-    word-break: break-word; white-space:pre-wrap;
+    font-family: monospace; word-break: break-word; white-space:pre-wrap;
   }
   .test-row .detail.err { color:var(--err); font-weight:600; }
   .test-row .detail.ok { color:var(--ok); }
-
   .result-box {
     margin-top:8px; padding:10px 12px; border-radius:8px;
     background:#0f172a; color:#e2e8f0; font-size:12px;
-    font-family: ui-monospace, Menlo, Consolas, monospace;
-    max-height:180px; overflow:auto; white-space:pre-wrap; word-break:break-word;
-    display:none;
+    font-family: monospace; max-height:200px; overflow:auto;
+    white-space:pre-wrap; word-break:break-word; display:none;
   }
   .result-box.show { display:block; }
   .result-box.ok { background:#064e3b; color:#a7f3d0; }
   .result-box.err { background:#7f1d1d; color:#fecaca; }
-
   .env-table { width:100%; border-collapse:collapse; font-size:12.5px; }
   .env-table td { padding:6px 10px; border-bottom:1px solid var(--border); vertical-align:top; }
   .env-table td:first-child { width:200px; font-weight:600; color:#37405a; }
@@ -107,12 +95,7 @@
     background:#eef1f7; padding:2px 6px; border-radius:4px;
     font-size:11.5px; word-break:break-all;
   }
-
   .footer { text-align:center; color:var(--muted); font-size:12px; margin-top:30px; }
-  .warn-box {
-    background:#fef4e6; border:1px solid #f8dfb5; color:#92400e;
-    padding:10px 14px; border-radius:9px; font-size:12.5px; margin-top:12px;
-  }
 </style>
 </head>
 <body>
@@ -120,13 +103,13 @@
 <header class="top">
   <div class="wrap">
     <h1>
-      Firebase + Drive Diagnostic Test
-      <small>Har feature ka live status — kya kaam kar raha hai, kya nahi</small>
+      Firebase + Drive + Picker Diagnostic v3
+      <small>Firebase, Drive CRUD, Trash, Restore, Delete, Picker - sab live test</small>
     </h1>
     <div class="summary-bar">
-      <span id="passBadge" class="badge">✅ Pass: 0</span>
-      <span id="failBadge" class="badge">❌ Fail: 0</span>
-      <span id="warnBadge" class="badge">⚠️ Warn: 0</span>
+      <span id="passBadge" class="badge">Pass: 0</span>
+      <span id="failBadge" class="badge">Fail: 0</span>
+      <span id="warnBadge" class="badge">Warn: 0</span>
     </div>
   </div>
 </header>
@@ -134,59 +117,50 @@
 <div class="wrap">
 
   <div class="btn-row">
-    <button id="runAllBtn" class="primary">▶ Run All Tests</button>
-    <button id="runFirebaseBtn">🔥 Firebase Only</button>
-    <button id="runDriveBtn">📁 Drive Only</button>
+    <button id="runAllBtn" class="primary">Run All Tests</button>
+    <button id="runFirebaseBtn">Firebase Only</button>
+    <button id="runDriveBtn">Drive Only</button>
+    <button id="runPickerBtn">Picker Only</button>
     <button id="clearBtn" class="danger">Clear Logs</button>
   </div>
 
-  <!-- ENV INFO -->
   <div class="section">
     <h2><span class="num">i</span> Environment Info</h2>
     <table class="env-table">
-      <tr><td>Page URL</td><td><code id="envUrl">—</code></td></tr>
-      <tr><td>Protocol</td><td><code id="envProtocol">—</code></td></tr>
-      <tr><td>Origin</td><td><code id="envOrigin">—</code></td></tr>
-      <tr><td>Firebase Project</td><td><code id="envProject">—</code></td></tr>
-      <tr><td>Firestore Collection</td><td><code id="envCollection">—</code></td></tr>
-      <tr><td>Drive Folder ID</td><td><code id="envFolder">—</code></td></tr>
-      <tr><td>OAuth Client ID</td><td><code id="envClient">—</code></td></tr>
-      <tr><td>Project Number (Picker)</td><td><code id="envAppId">—</code></td></tr>
+      <tr><td>Page URL</td><td><code id="envUrl">loading...</code></td></tr>
+      <tr><td>Protocol</td><td><code id="envProtocol">loading...</code></td></tr>
+      <tr><td>Origin</td><td><code id="envOrigin">loading...</code></td></tr>
+      <tr><td>Firebase Project</td><td><code id="envProject">loading...</code></td></tr>
+      <tr><td>Firestore Collection</td><td><code id="envCollection">loading...</code></td></tr>
+      <tr><td>Drive Folder ID</td><td><code id="envFolder">loading...</code></td></tr>
+      <tr><td>OAuth Client ID</td><td><code id="envClient">loading...</code></td></tr>
+      <tr><td>Project Number (Picker)</td><td><code id="envAppId">loading...</code></td></tr>
     </table>
-    <div id="protocolWarning" class="warn-box" hidden>
-      ⚠️ Aap <code>file://</code> se khol rahe hain — Google OAuth aur Picker <strong>kaam nahi karenge</strong>.
-      Local server chalayein: <code>python -m http.server 5500</code> ya VS Code Live Server.
-    </div>
   </div>
 
-  <!-- FIREBASE -->
   <div class="section">
     <h2><span class="num">1</span> Firebase Tests</h2>
-    <div id="firebaseTests">
-      <p style="color:#6b7488;font-style:italic;margin:0;">"Run All Tests" dabayein…</p>
-    </div>
+    <div id="firebaseTests"><p style="color:#6b7488;font-style:italic;margin:0;">Run All Tests dabayein...</p></div>
   </div>
 
-  <!-- DRIVE -->
   <div class="section">
     <h2><span class="num">2</span> Google Drive Tests</h2>
-    <div id="driveTests">
-      <p style="color:#6b7488;font-style:italic;margin:0;">"Run All Tests" dabayein…</p>
-    </div>
+    <div id="driveTests"><p style="color:#6b7488;font-style:italic;margin:0;">Run All Tests dabayein...</p></div>
   </div>
 
-  <!-- PICKER -->
   <div class="section">
-    <h2><span class="num">3</span> Google Picker Tests</h2>
-    <div id="pickerTests">
-      <p style="color:#6b7488;font-style:italic;margin:0;">"Run All Tests" dabayein…</p>
-    </div>
+    <h2><span class="num">3</span> Google Drive Trash / Restore Tests</h2>
+    <div id="trashTests"><p style="color:#6b7488;font-style:italic;margin:0;">Run All Tests dabayein...</p></div>
   </div>
 
-  <p class="footer">Yeh page sirf testing/diagnostic ke liye hai — credentials browser mein expose hote hain.</p>
+  <div class="section">
+    <h2><span class="num">4</span> Google Picker Tests</h2>
+    <div id="pickerTests"><p style="color:#6b7488;font-style:italic;margin:0;">Run All Tests dabayein...</p></div>
+  </div>
+
+  <p class="footer">Yeh page sirf testing/diagnostic ke liye hai - credentials browser mein expose hote hain.</p>
 </div>
 
-<!-- ============ CONFIG ============ -->
 <script>
 window.__CONFIG__ = {
   FIREBASE: {
@@ -209,12 +183,11 @@ window.__CONFIG__ = {
 };
 </script>
 
-<!-- Google libraries -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="https://apis.google.com/js/api.js" async defer></script>
 
-<!-- Main app -->
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getAuth, signInAnonymously, onAuthStateChanged
@@ -224,49 +197,51 @@ import {
   getDocs, query, limit, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const CFG = window.__CONFIG__;
+var CFG = window.__CONFIG__;
 
-/* ------- UI helpers ------- */
-const firebaseTestsEl = document.getElementById('firebaseTests');
-const driveTestsEl    = document.getElementById('driveTests');
-const pickerTestsEl   = document.getElementById('pickerTests');
+var firebaseTestsEl = document.getElementById('firebaseTests');
+var driveTestsEl    = document.getElementById('driveTests');
+var trashTestsEl    = document.getElementById('trashTests');
+var pickerTestsEl   = document.getElementById('pickerTests');
 
-let passCount = 0, failCount = 0, warnCount = 0;
+var passCount = 0, failCount = 0, warnCount = 0;
+
 function refreshBadges() {
-  document.getElementById('passBadge').textContent = '✅ Pass: ' + passCount;
-  document.getElementById('failBadge').textContent = '❌ Fail: ' + failCount;
-  document.getElementById('warnBadge').textContent = '⚠️ Warn: ' + warnCount;
+  document.getElementById('passBadge').textContent = 'Pass: ' + passCount;
+  document.getElementById('failBadge').textContent = 'Fail: ' + failCount;
+  document.getElementById('warnBadge').textContent = 'Warn: ' + warnCount;
 }
 
 function makeRow(container, id, title) {
-  let row = document.getElementById('test-' + id);
-  if (row) return row;
-  row = document.createElement('div');
+  var existing = document.getElementById('test-' + id);
+  if (existing) return existing;
+  var row = document.createElement('div');
   row.className = 'test-row';
   row.id = 'test-' + id;
-  row.innerHTML = `
-    <div class="icon" data-icon>?</div>
-    <div class="body">
-      <div class="title">${title}</div>
-      <div class="detail" data-detail>waiting…</div>
-      <div class="result-box" data-box></div>
-    </div>`;
+  row.innerHTML =
+    '<div class="icon" data-icon>?</div>' +
+    '<div class="body">' +
+      '<div class="title">' + title + '</div>' +
+      '<div class="detail" data-detail>waiting...</div>' +
+      '<div class="result-box" data-box></div>' +
+    '</div>';
   container.appendChild(row);
   return row;
 }
 
 function setRow(row, status, detail, extra) {
-  const icon     = row.querySelector('[data-icon]');
-  const detailEl = row.querySelector('[data-detail]');
-  const box      = row.querySelector('[data-box]');
-
+  var icon     = row.querySelector('[data-icon]');
+  var detailEl = row.querySelector('[data-detail]');
+  var box      = row.querySelector('[data-box]');
   icon.className = 'icon ' + status;
-  icon.textContent = status === 'ok' ? '✓' : status === 'err' ? '✗'
-                   : status === 'warn' ? '!' : status === 'run' ? '…' : '?';
-
+  var glyph = '?';
+  if (status === 'ok') glyph = 'OK';
+  else if (status === 'err') glyph = 'X';
+  else if (status === 'warn') glyph = '!';
+  else if (status === 'run') glyph = '...';
+  icon.textContent = glyph;
   detailEl.className = 'detail' + (status === 'ok' ? ' ok' : status === 'err' ? ' err' : '');
   detailEl.textContent = detail || '';
-
   if (extra) {
     box.className = 'result-box show ' + (status === 'ok' ? 'ok' : status === 'err' ? 'err' : '');
     box.textContent = typeof extra === 'string' ? extra : JSON.stringify(extra, null, 2);
@@ -282,9 +257,9 @@ function tally(status) {
   else if (status === 'warn') warnCount++;
   refreshBadges();
 }
+
 function resetCounts() { passCount = 0; failCount = 0; warnCount = 0; refreshBadges(); }
 
-/* ------- Env info ------- */
 document.getElementById('envUrl').textContent        = location.href;
 document.getElementById('envProtocol').textContent   = location.protocol;
 document.getElementById('envOrigin').textContent     = location.origin;
@@ -293,12 +268,8 @@ document.getElementById('envCollection').textContent = CFG.FIRESTORE_COLLECTION;
 document.getElementById('envFolder').textContent     = CFG.DRIVE.folderId;
 document.getElementById('envClient').textContent     = CFG.DRIVE.oauthClientId;
 document.getElementById('envAppId').textContent      = CFG.GOOGLE_APP_ID;
-if (location.protocol === 'file:') {
-  document.getElementById('protocolWarning').hidden = false;
-}
 
-/* ------- Firebase init ------- */
-let fbApp, auth, db, recordsCol;
+var fbApp, auth, db, recordsCol;
 try {
   fbApp = initializeApp(CFG.FIREBASE);
   auth = getAuth(fbApp);
@@ -308,116 +279,96 @@ try {
   console.error('Firebase init failed:', e);
 }
 
-/* ------- TEST: Firebase Auth ------- */
-function testFirebaseAuth() {
-  return new Promise((resolve) => {
-    const row = makeRow(firebaseTestsEl, 'auth', 'Firebase Anonymous Sign-In');
-    setRow(row, 'run', 'Signing in anonymously…');
+/* ==================== FIREBASE TESTS ==================== */
 
+function testFirebaseAuth() {
+  return new Promise(function(resolve) {
+    var row = makeRow(firebaseTestsEl, 'auth', 'Firebase Anonymous Sign-In');
+    setRow(row, 'run', 'Signing in anonymously...');
     if (!auth) {
-      setRow(row, 'err', 'Firebase Auth not initialized', 'initializeApp failed earlier.');
+      setRow(row, 'err', 'Firebase Auth not initialized');
       tally('err'); return resolve(false);
     }
-
-    let done = false;
-    const timeout = setTimeout(() => {
+    var done = false;
+    var timeout = setTimeout(function() {
       if (done) return;
       done = true;
-      setRow(row, 'err', 'Timeout — 15s mein sign-in nahi hua',
-        'Check: Firebase Console → Authentication → Sign-in method → Anonymous ENABLED?');
+      setRow(row, 'err', 'Timeout - 15s mein sign-in nahi hua');
       tally('err'); resolve(false);
     }, 15000);
-
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, function(user) {
       if (done || !user) return;
       done = true; clearTimeout(timeout);
       setRow(row, 'ok', 'Signed in as UID: ' + user.uid,
         JSON.stringify({ uid: user.uid, isAnonymous: user.isAnonymous }, null, 2));
       tally('ok'); resolve(true);
     });
-
-    signInAnonymously(auth).catch((err) => {
+    signInAnonymously(auth).catch(function(err) {
       if (done) return;
       done = true; clearTimeout(timeout);
-      setRow(row, 'err', 'Sign-in failed: ' + err.code + ' — ' + err.message,
-        'Common causes:\n' +
-        '1. Anonymous auth disabled\n' +
-        '2. apiKey galat\n' +
-        '3. authDomain galat\n' +
-        '4. Authorized domains mein localhost add nahi');
+      setRow(row, 'err', 'Sign-in failed: ' + err.code + ' - ' + err.message);
       tally('err'); resolve(false);
     });
   });
 }
 
-/* ------- TEST: Firestore Read ------- */
 async function testFirestoreRead() {
-  const row = makeRow(firebaseTestsEl, 'read', 'Firestore Read (list collection)');
-  setRow(row, 'run', 'Reading collection…');
+  var row = makeRow(firebaseTestsEl, 'read', 'Firestore Read (list collection)');
+  setRow(row, 'run', 'Reading collection...');
   try {
-    const snap = await getDocs(query(recordsCol, limit(5)));
-    setRow(row, 'ok', `Read OK — ${snap.size} document(s) found`,
-      snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    var snap = await getDocs(query(recordsCol, limit(5)));
+    setRow(row, 'ok', 'Read OK - ' + snap.size + ' document(s)',
+      snap.docs.map(function(d) { return { id: d.id, data: d.data() }; }));
     tally('ok'); return true;
   } catch (err) {
-    setRow(row, 'err', 'Read failed: ' + err.code + ' — ' + err.message,
-      'Fix:\n' +
-      '1. Firestore enable karein\n' +
-      '2. Rules mein: allow read, write: if true;');
+    setRow(row, 'err', 'Read failed: ' + err.code + ' - ' + err.message);
     tally('err'); return false;
   }
 }
 
-/* ------- TEST: Firestore CRUD ------- */
 async function testFirestoreCRUD() {
-  const row = makeRow(firebaseTestsEl, 'crud', 'Firestore Write → Update → Delete');
-  setRow(row, 'run', 'Creating test document…');
-  let docRef = null;
-  const logs = [];
-
+  var row = makeRow(firebaseTestsEl, 'crud', 'Firestore Write -> Update -> Delete');
+  setRow(row, 'run', 'Creating test document...');
+  var docRef = null;
+  var logs = [];
   try {
     docRef = await addDoc(recordsCol, {
-      title: '__DIAGNOSTIC_TEST__',
-      description: 'Auto-created at ' + new Date().toISOString(),
+      title: '__DIAG__',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-    logs.push('✅ CREATE: doc id = ' + docRef.id);
-
+    logs.push('OK CREATE: ' + docRef.id);
     await updateDoc(doc(db, CFG.FIRESTORE_COLLECTION, docRef.id), {
-      title: '__DIAGNOSTIC_TEST_UPDATED__',
+      title: '__DIAG_UPDATED__',
       updatedAt: serverTimestamp()
     });
-    logs.push('✅ UPDATE: doc modified');
-
+    logs.push('OK UPDATE');
     await deleteDoc(doc(db, CFG.FIRESTORE_COLLECTION, docRef.id));
-    logs.push('✅ DELETE: doc removed');
-
-    setRow(row, 'ok', 'CREATE → UPDATE → DELETE sab OK', logs.join('\n'));
+    logs.push('OK DELETE');
+    setRow(row, 'ok', 'CRUD OK', logs.join('\n'));
     tally('ok'); return true;
   } catch (err) {
-    logs.push('❌ FAILED: ' + err.code + ' — ' + err.message);
-    if (docRef) {
-      try { await deleteDoc(doc(db, CFG.FIRESTORE_COLLECTION, docRef.id)); logs.push('(cleanup done)'); }
-      catch {}
-    }
+    logs.push('FAILED: ' + err.code + ' - ' + err.message);
+    if (docRef) { try { await deleteDoc(doc(db, CFG.FIRESTORE_COLLECTION, docRef.id)); } catch(e){} }
     setRow(row, 'err', 'CRUD failed', logs.join('\n'));
     tally('err'); return false;
   }
 }
 
-/* ------- Drive OAuth ------- */
-let tokenClient = null;
-let accessToken = null;
-let tokenExpiresAt = 0;
-let pendingResolve = null, pendingReject = null;
+/* ==================== DRIVE OAUTH ==================== */
 
-function waitForGoogle(maxMs = 12000) {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
+var tokenClient = null;
+var accessToken = null;
+var tokenExpiresAt = 0;
+var pendingResolve = null, pendingReject = null;
+
+function waitForGoogle(maxMs) {
+  maxMs = maxMs || 12000;
+  return new Promise(function(resolve, reject) {
+    var start = Date.now();
     (function chk() {
       if (window.google && window.google.accounts && window.google.accounts.oauth2) return resolve();
-      if (Date.now() - start > maxMs) return reject(new Error('GSI library failed to load within ' + maxMs + 'ms'));
+      if (Date.now() - start > maxMs) return reject(new Error('GSI failed to load'));
       setTimeout(chk, 100);
     })();
   });
@@ -427,18 +378,18 @@ function initTokenClient() {
   tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CFG.DRIVE.oauthClientId,
     scope: CFG.DRIVE.scope,
-    callback: (resp) => {
-      const res = pendingResolve, rej = pendingReject;
+    callback: function(resp) {
+      var res = pendingResolve, rej = pendingReject;
       pendingResolve = pendingReject = null;
-      if (resp && resp.error) { rej && rej(new Error(resp.error_description || resp.error)); return; }
+      if (resp && resp.error) { if (rej) rej(new Error(resp.error_description || resp.error)); return; }
       accessToken = resp.access_token;
       tokenExpiresAt = Date.now() + (Number(resp.expires_in || 3600) * 1000) - 60000;
-      res && res(accessToken);
+      if (res) res(accessToken);
     },
-    error_callback: (err) => {
-      const rej = pendingReject;
+    error_callback: function(err) {
+      var rej = pendingReject;
       pendingResolve = pendingReject = null;
-      rej && rej(new Error((err && (err.message || err.type)) || 'Google auth failed'));
+      if (rej) rej(new Error((err && (err.message || err.type)) || 'Google auth failed'));
     }
   });
 }
@@ -447,108 +398,57 @@ async function getAccessToken() {
   if (accessToken && Date.now() < tokenExpiresAt) return accessToken;
   await waitForGoogle();
   if (!tokenClient) initTokenClient();
-  return new Promise((resolve, reject) => {
-    pendingResolve = resolve; pendingReject = reject;
+  return new Promise(function(resolve, reject) {
+    pendingResolve = resolve;
+    pendingReject = reject;
     try { tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' }); }
     catch (e) { pendingResolve = pendingReject = null; reject(e); }
   });
 }
 
-/* ------- TEST: GSI library ------- */
+/* ==================== DRIVE TESTS ==================== */
+
 function testGSILibrary() {
-  const row = makeRow(driveTestsEl, 'gsi', 'Google Identity Services loaded');
-  setRow(row, 'run', 'Checking window.google.accounts.oauth2…');
-  waitForGoogle(8000).then(() => {
-    setRow(row, 'ok', 'GSI library loaded OK', 'window.google.accounts.oauth2 available');
+  var row = makeRow(driveTestsEl, 'gsi', 'Google Identity Services loaded');
+  setRow(row, 'run', 'Checking GSI...');
+  waitForGoogle(8000).then(function() {
+    setRow(row, 'ok', 'GSI library loaded OK');
     tally('ok');
-  }).catch((e) => {
-    setRow(row, 'err', 'GSI failed: ' + e.message,
-      'Check karein:\n' +
-      '1. <script src="https://accounts.google.com/gsi/client"> present?\n' +
-      '2. Network tab mein status 200?\n' +
-      '3. Ad blocker / privacy extension block kar raha?');
+  }).catch(function(e) {
+    setRow(row, 'err', 'GSI failed: ' + e.message);
     tally('err');
   });
 }
 
-/* ------- TEST: Drive OAuth ------- */
 async function testDriveOAuth() {
-  const row = makeRow(driveTestsEl, 'oauth', 'Google Drive OAuth (popup)');
-  setRow(row, 'run', 'Opening Google sign-in popup…');
-
-  if (location.protocol === 'file:') {
-    setRow(row, 'err', 'file:// protocol — OAuth kaam nahi karega',
-      'Local server chalayein:\npython -m http.server 5500');
-    tally('err'); return false;
-  }
-
+  var row = makeRow(driveTestsEl, 'oauth', 'Google Drive OAuth (popup)');
+  setRow(row, 'run', 'Opening Google sign-in popup...');
   try {
-    const token = await getAccessToken();
+    var token = await getAccessToken();
     setRow(row, 'ok', 'Access token received (len ' + token.length + ')',
-      'Scope: ' + CFG.DRIVE.scope +
-      '\n\nNOTE: drive.file scope mein sirf app-created files accessible hain.');
+      'Scope: ' + CFG.DRIVE.scope);
     tally('ok'); return true;
   } catch (err) {
-    setRow(row, 'err', 'OAuth failed: ' + err.message,
-      'Common causes:\n' +
-      '1. Authorized JavaScript origins mein localhost add nahi\n' +
-      '   → Cloud Console → Credentials → OAuth Client ID → Origins\n' +
-      '2. OAuth consent screen "Testing" aur aapka email test users mein nahi\n' +
-      '3. Popup blocker');
+    setRow(row, 'err', 'OAuth failed: ' + err.message);
     tally('err'); return false;
   }
 }
 
-/* ------- TEST: Drive Folder ------- */
-async function testDriveFolder() {
-  const row = makeRow(driveTestsEl, 'folder', 'Drive Folder access');
-  setRow(row, 'run', 'Checking folder ' + CFG.DRIVE.folderId + '…');
-  try {
-    const token = await getAccessToken();
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${CFG.DRIVE.folderId}` +
-      `?fields=id,name,mimeType&supportsAllDrives=true`,
-      { headers: { 'Authorization': 'Bearer ' + token } }
-    );
-    if (!res.ok) {
-      const t = await res.text();
-      throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 300));
-    }
-    const data = await res.json();
-    if (data.mimeType !== 'application/vnd.google-apps.folder') {
-      setRow(row, 'warn', 'ID folder nahi hai (mimeType: ' + data.mimeType + ')',
-        JSON.stringify(data, null, 2));
-      tally('warn'); return false;
-    }
-    setRow(row, 'ok', 'Folder OK: "' + data.name + '"', JSON.stringify(data, null, 2));
-    tally('ok'); return true;
-  } catch (err) {
-    setRow(row, 'err', 'Folder access failed: ' + err.message,
-      'Common causes:\n' +
-      '1. Folder ID galat\n' +
-      '2. drive.file scope mein folder accessible nahi\n' +
-      '   (sirf app-created ya picker-selected files)\n' +
-      '3. Folder delete ho gaya');
-    tally('err'); return false;
-  }
-}
-
-/* ------- TEST: Drive List ------- */
 async function testDriveList() {
-  const row = makeRow(driveTestsEl, 'list', 'Drive list files in folder');
-  setRow(row, 'run', 'Listing files…');
+  var row = makeRow(driveTestsEl, 'list', 'Drive list files in folder');
+  setRow(row, 'run', 'Listing files...');
   try {
-    const token = await getAccessToken();
-    const q = encodeURIComponent(`'${CFG.DRIVE.folderId}' in parents and trashed=false`);
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files?q=${q}` +
-      `&fields=files(id,name,mimeType,size,modifiedTime)&pageSize=20&supportsAllDrives=true`,
+    var token = await getAccessToken();
+    var q = encodeURIComponent("'" + CFG.DRIVE.folderId + "' in parents and trashed=false");
+    var res = await fetch(
+      'https://www.googleapis.com/drive/v3/files?q=' + q +
+      '&fields=files(id,name,mimeType,size,modifiedTime)&pageSize=20&supportsAllDrives=true',
       { headers: { 'Authorization': 'Bearer ' + token } }
     );
     if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 300));
-    const data = await res.json();
-    const files = data.files || [];
-    setRow(row, 'ok', `List OK — ${files.length} file(s)`, JSON.stringify(files, null, 2));
+    var data = await res.json();
+    var files = data.files || [];
+    setRow(row, 'ok', 'List OK - ' + files.length + ' file(s)', JSON.stringify(files, null, 2));
     tally('ok'); return true;
   } catch (err) {
     setRow(row, 'err', 'List failed: ' + err.message);
@@ -556,96 +456,155 @@ async function testDriveList() {
   }
 }
 
-/* ------- TEST: Drive full CRUD ------- */
-async function testDriveFullCRUD() {
-  const row = makeRow(driveTestsEl, 'crud', 'Drive Upload → Update → Trash → Restore → Delete');
-  setRow(row, 'run', 'Running full lifecycle…');
-  const logs = [];
-  let fileId = null;
-
+async function testDriveUpload() {
+  var row = makeRow(driveTestsEl, 'upload', 'Drive upload file');
+  setRow(row, 'run', 'Uploading test file...');
   try {
-    const token = await getAccessToken();
-
-    // UPLOAD
-    const meta = { name: '__DIAG_' + Date.now() + '.txt', parents: [CFG.DRIVE.folderId] };
-    const boundary = 'diag_' + Date.now();
-    const body = new Blob([
-      `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(meta)}`,
-      `\r\n--${boundary}\r\nContent-Type: text/plain\r\n\r\nHello diagnostic v1`,
-      `\r\n--${boundary}--`
-    ], { type: `multipart/related; boundary=${boundary}` });
-
-    const upRes = await fetch(
+    var token = await getAccessToken();
+    var meta = { name: '__DIAG_' + Date.now() + '.txt', parents: [CFG.DRIVE.folderId] };
+    var boundary = 'diag_' + Date.now();
+    var body = new Blob([
+      '--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + JSON.stringify(meta),
+      '\r\n--' + boundary + '\r\nContent-Type: text/plain\r\n\r\nDiagnostic v1',
+      '\r\n--' + boundary + '--'
+    ], { type: 'multipart/related; boundary=' + boundary });
+    var res = await fetch(
       'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,size',
       { method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': `multipart/related; boundary=${boundary}` },
-        body }
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'multipart/related; boundary=' + boundary },
+        body: body }
     );
-    if (!upRes.ok) throw new Error('UPLOAD: ' + (await upRes.text()).slice(0, 200));
-    const upData = await upRes.json();
-    fileId = upData.id;
-    logs.push('✅ UPLOAD OK — id=' + fileId);
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 300));
+    var data = await res.json();
+    setRow(row, 'ok', 'Upload OK - id: ' + data.id, JSON.stringify(data, null, 2));
+    tally('ok'); return data.id;
+  } catch (err) {
+    setRow(row, 'err', 'Upload failed: ' + err.message);
+    tally('err'); return null;
+  }
+}
 
-    // UPDATE
-    const upRes2 = await fetch(
-      `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&fields=id,size,modifiedTime`,
+async function testDriveUpdateContent(fileId) {
+  if (!fileId) {
+    var row = makeRow(driveTestsEl, 'update', 'Drive update content');
+    setRow(row, 'warn', 'Skipped - upload pehle fail hua');
+    tally('warn'); return false;
+  }
+  var row = makeRow(driveTestsEl, 'update', 'Drive update content');
+  setRow(row, 'run', 'Updating content...');
+  try {
+    var token = await getAccessToken();
+    var res = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media&fields=id,size,modifiedTime',
       { method: 'PATCH',
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'text/plain' },
-        body: 'Hello diagnostic v2 — UPDATED' }
+        body: 'Diagnostic v2 - UPDATED content' }
     );
-    if (!upRes2.ok) throw new Error('UPDATE: ' + (await upRes2.text()).slice(0, 200));
-    logs.push('✅ UPDATE OK');
-
-    // TRASH
-    const trRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,trashed`,
-      { method: 'PATCH',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trashed: true }) }
-    );
-    if (!trRes.ok) throw new Error('TRASH: ' + (await trRes.text()).slice(0, 200));
-    logs.push('✅ TRASH OK');
-
-    // RESTORE
-    const reRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,trashed`,
-      { method: 'PATCH',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trashed: false }) }
-    );
-    if (!reRes.ok) throw new Error('RESTORE: ' + (await reRes.text()).slice(0, 200));
-    logs.push('✅ RESTORE OK');
-
-    // DELETE
-    const delRes = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`,
-      { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }
-    );
-    if (!delRes.ok && delRes.status !== 204 && delRes.status !== 404)
-      throw new Error('DELETE: ' + (await delRes.text()).slice(0, 200));
-    logs.push('✅ DELETE OK');
-
-    setRow(row, 'ok', 'Full Drive lifecycle OK', logs.join('\n'));
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 300));
+    var data = await res.json();
+    setRow(row, 'ok', 'Update OK', JSON.stringify(data, null, 2));
     tally('ok'); return true;
   } catch (err) {
-    logs.push('❌ FAILED: ' + err.message);
-    if (fileId) {
-      try {
-        const token = await getAccessToken();
-        await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`,
-          { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-        logs.push('(cleanup: file deleted)');
-      } catch {}
-    }
-    setRow(row, 'err', 'Lifecycle failed', logs.join('\n'));
+    setRow(row, 'err', 'Update failed: ' + err.message);
     tally('err'); return false;
   }
 }
 
-/* ------- Picker ------- */
-function waitForGapi(maxMs = 12000) {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
+/* ==================== TRASH / RESTORE TESTS ==================== */
+
+async function testDriveTrash(fileId) {
+  if (!fileId) {
+    var row0 = makeRow(trashTestsEl, 'trash', 'Drive move to Trash');
+    setRow(row0, 'warn', 'Skipped - upload fail hua tha');
+    tally('warn'); return false;
+  }
+  var row = makeRow(trashTestsEl, 'trash', 'Drive move to Trash');
+  setRow(row, 'run', 'Moving to trash...');
+  try {
+    var token = await getAccessToken();
+    var res = await fetch(
+      'https://www.googleapis.com/drive/v3/files/' + fileId + '?fields=id,name,trashed',
+      { method: 'PATCH',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trashed: true }) }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 300));
+    var data = await res.json();
+    if (data.trashed !== true) {
+      setRow(row, 'warn', 'Trash request bheja lekin trashed != true',
+        JSON.stringify(data, null, 2));
+      tally('warn'); return false;
+    }
+    setRow(row, 'ok', 'Trash OK - file is in Trash now', JSON.stringify(data, null, 2));
+    tally('ok'); return true;
+  } catch (err) {
+    setRow(row, 'err', 'Trash failed: ' + err.message);
+    tally('err'); return false;
+  }
+}
+
+async function testDriveRestore(fileId) {
+  if (!fileId) {
+    var row0 = makeRow(trashTestsEl, 'restore', 'Drive restore from Trash');
+    setRow(row0, 'warn', 'Skipped');
+    tally('warn'); return false;
+  }
+  var row = makeRow(trashTestsEl, 'restore', 'Drive restore from Trash');
+  setRow(row, 'run', 'Restoring from trash...');
+  try {
+    var token = await getAccessToken();
+    var res = await fetch(
+      'https://www.googleapis.com/drive/v3/files/' + fileId + '?fields=id,name,trashed',
+      { method: 'PATCH',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trashed: false }) }
+    );
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 300));
+    var data = await res.json();
+    if (data.trashed !== false) {
+      setRow(row, 'warn', 'Restore request bheja lekin trashed != false',
+        JSON.stringify(data, null, 2));
+      tally('warn'); return false;
+    }
+    setRow(row, 'ok', 'Restore OK', JSON.stringify(data, null, 2));
+    tally('ok'); return true;
+  } catch (err) {
+    setRow(row, 'err', 'Restore failed: ' + err.message);
+    tally('err'); return false;
+  }
+}
+
+async function testDriveDelete(fileId) {
+  if (!fileId) {
+    var row0 = makeRow(trashTestsEl, 'delete', 'Drive permanent delete');
+    setRow(row0, 'warn', 'Skipped');
+    tally('warn'); return false;
+  }
+  var row = makeRow(trashTestsEl, 'delete', 'Drive permanent delete');
+  setRow(row, 'run', 'Deleting permanently...');
+  try {
+    var token = await getAccessToken();
+    var res = await fetch(
+      'https://www.googleapis.com/drive/v3/files/' + fileId + '?supportsAllDrives=true',
+      { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok && res.status !== 204 && res.status !== 404) {
+      throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 300));
+    }
+    setRow(row, 'ok', 'Permanent delete OK (status ' + res.status + ')');
+    tally('ok'); return true;
+  } catch (err) {
+    setRow(row, 'err', 'Delete failed: ' + err.message);
+    tally('err'); return false;
+  }
+}
+
+/* ==================== PICKER TESTS ==================== */
+
+function waitForGapi(maxMs) {
+  maxMs = maxMs || 12000;
+  return new Promise(function(resolve, reject) {
+    var start = Date.now();
     (function chk() {
       if (window.gapi && typeof window.gapi.load === 'function') return resolve();
       if (Date.now() - start > maxMs) return reject(new Error('gapi loader not available'));
@@ -657,84 +616,90 @@ function waitForGapi(maxMs = 12000) {
 function testPickerScripts() {
   return new Promise(function(resolve) {
     var row = makeRow(pickerTestsEl, 'scripts', 'Picker required scripts loaded');
-    setRow(row, 'run', 'Checking gapi and google.picker...');
+    setRow(row, 'run', 'Checking gapi + google.picker...');
     waitForGapi(12000).then(function() {
       window.gapi.load('picker', {
         callback: function() {
           if (window.google && window.google.picker) {
             setRow(row, 'ok', 'gapi + google.picker loaded OK');
-            tally('ok');
-            resolve(true);
+            tally('ok'); resolve(true);
           } else {
             setRow(row, 'err', 'google.picker missing',
-              'Google Picker API enable karein. Cloud Console -> APIs and Services -> Library -> Google Picker API -> Enable');
-            tally('err');
-            resolve(false);
+              'Google Picker API enable karein. Cloud Console APIs and Services Library Google Picker API Enable');
+            tally('err'); resolve(false);
           }
         },
         onerror: function() {
           setRow(row, 'err', 'gapi.load picker failed',
-            'Google Picker API enable nahi hai. Cloud Console -> APIs and Services -> Library -> Google Picker API -> Enable');
-          tally('err');
-          resolve(false);
+            'Google Picker API enable nahi hai. Cloud Console APIs and Services Library Google Picker API Enable');
+          tally('err'); resolve(false);
         }
       });
     }).catch(function(e) {
       setRow(row, 'err', 'gapi script not loaded: ' + e.message,
         'Script tag https://apis.google.com/js/api.js check karein');
-      tally('err');
-      resolve(false);
+      tally('err'); resolve(false);
     });
   });
 }
 
 async function testPickerOpen() {
-  const row = makeRow(pickerTestsEl, 'open', 'Open Google Picker dialog');
-  setRow(row, 'run', 'Opening picker…');
+  var row = makeRow(pickerTestsEl, 'open', 'Open Google Picker dialog');
+  setRow(row, 'run', 'Opening picker (dialog check karein)...');
 
   if (!CFG.GOOGLE_APP_ID || CFG.GOOGLE_APP_ID === 'PASTE_HERE') {
-    setRow(row, 'warn', 'GOOGLE_APP_ID set nahi hai',
-      'Cloud Console → Dashboard → Project number copy karein aur\nscript ke top par GOOGLE_APP_ID mein daalein.');
+    setRow(row, 'warn', 'GOOGLE_APP_ID set nahi hai');
     tally('warn'); return false;
   }
 
+  var pickedResolve;
+  var pickedPromise = new Promise(function(res) { pickedResolve = res; });
+
   try {
-    const token = await getAccessToken();
-    await new Promise((res, rej) => {
+    var token = await getAccessToken();
+    await new Promise(function(res, rej) {
       window.gapi.load('picker', { callback: res, onerror: rej });
     });
 
-    const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
+    var view = new google.picker.DocsView(google.picker.ViewId.DOCS)
       .setIncludeFolders(true)
       .setSelectFolderEnabled(false);
 
-    const picker = new google.picker.PickerBuilder()
+    var picker = new google.picker.PickerBuilder()
       .addView(view)
       .setOAuthToken(token)
       .setDeveloperKey(CFG.DRIVE.apiKey)
       .setAppId(CFG.GOOGLE_APP_ID)
-      .setCallback((data) => {
+      .setCallback(function(data) {
         if (data.action === google.picker.Action.PICKED) {
-          const file = data.docs[0];
-          setRow(row, 'ok', 'Picker picked: ' + file.name, JSON.stringify(file, null, 2));
+          var file = data.docs[0];
+          setRow(row, 'ok', 'Picker picked: ' + file.name,
+            JSON.stringify(file, null, 2));
           tally('ok');
+          pickedResolve(true);
         } else if (data.action === google.picker.Action.CANCEL) {
           setRow(row, 'warn', 'Picker khula, user ne cancel kiya',
-            'Yeh normal hai — picker kaam kar raha hai.');
+            'Yeh normal hai - picker kaam kar raha hai.');
           tally('warn');
+          pickedResolve(false);
         }
       })
       .build();
+
     picker.setVisible(true);
 
-    setTimeout(() => {
-      const icon = row.querySelector('[data-icon]');
-      if (icon.classList.contains('run')) {
+    /* 3 second mein check karein ke dialog khula ya nahi */
+    setTimeout(function() {
+      var icon = row.querySelector('[data-icon]');
+      if (icon && icon.classList.contains('run')) {
         setRow(row, 'ok', 'Picker dialog khul gaya',
           'Agar dialog nazar aa raha hai to Picker OK hai. Cancel karke aage badh sakte hain.');
         tally('ok');
+        pickedResolve(true);
       }
-    }, 2500);
+    }, 3000);
+
+    return await pickedPromise;
 
   } catch (err) {
     setRow(row, 'err', 'Picker open failed: ' + err.message,
@@ -742,12 +707,15 @@ async function testPickerOpen() {
       '1. Google Picker API enabled\n' +
       '2. GOOGLE_APP_ID sahi hai\n' +
       '3. DRIVE.apiKey sahi hai\n' +
-      '4. OAuth token mila hai');
-    tally('err'); return false;
+      '4. OAuth token mila hai\n' +
+      '5. Authorized origins mein ' + location.origin + ' hai');
+    tally('err');
+    return false;
   }
 }
 
-/* ------- Run functions ------- */
+/* ==================== RUN FUNCTIONS ==================== */
+
 async function runFirebaseTests() {
   firebaseTestsEl.innerHTML = '';
   await testFirebaseAuth();
@@ -757,19 +725,36 @@ async function runFirebaseTests() {
 
 async function runDriveTests() {
   driveTestsEl.innerHTML = '';
+  trashTestsEl.innerHTML = '';
+
   testGSILibrary();
-  await new Promise(r => setTimeout(r, 500));
-  const oauthOK = await testDriveOAuth();
-  if (oauthOK) {
-    await testDriveFolder();
-    await testDriveList();
-    await testDriveFullCRUD();
+  await new Promise(function(r) { setTimeout(r, 500); });
+
+  var oauthOK = await testDriveOAuth();
+  if (!oauthOK) return;
+
+  await testDriveList();
+
+  var fileId = await testDriveUpload();
+  if (fileId) {
+    await testDriveUpdateContent(fileId);
+    await testDriveTrash(fileId);
+    await testDriveRestore(fileId);
+    await testDriveDelete(fileId);
+  } else {
+    makeRow(trashTestsEl, 'trash', 'Drive move to Trash');
+    makeRow(trashTestsEl, 'restore', 'Drive restore from Trash');
+    makeRow(trashTestsEl, 'delete', 'Drive permanent delete');
+    setRow(document.getElementById('test-trash'), 'warn', 'Skipped - upload fail');
+    setRow(document.getElementById('test-restore'), 'warn', 'Skipped - upload fail');
+    setRow(document.getElementById('test-delete'), 'warn', 'Skipped - upload fail');
+    tally('warn'); tally('warn'); tally('warn');
   }
 }
 
 async function runPickerTests() {
   pickerTestsEl.innerHTML = '';
-  const scriptsOK = await testPickerScripts();
+  var scriptsOK = await testPickerScripts();
   if (scriptsOK) {
     await testPickerOpen();
   }
@@ -777,27 +762,38 @@ async function runPickerTests() {
 
 async function runAllTests() {
   resetCounts();
-  const btn = document.getElementById('runAllBtn');
-  btn.disabled = true; btn.textContent = '⏳ Running…';
+  var btn = document.getElementById('runAllBtn');
+  btn.disabled = true;
+  btn.textContent = 'Running...';
 
   await runFirebaseTests();
   await runDriveTests();
   await runPickerTests();
 
-  btn.disabled = false; btn.textContent = '▶ Run All Tests';
+  btn.disabled = false;
+  btn.textContent = 'Run All Tests';
 }
 
 document.getElementById('runAllBtn').addEventListener('click', runAllTests);
-document.getElementById('runFirebaseBtn').addEventListener('click', () => { resetCounts(); runFirebaseTests(); });
-document.getElementById('runDriveBtn').addEventListener('click', () => { resetCounts(); runDriveTests(); });
-document.getElementById('clearBtn').addEventListener('click', () => {
+document.getElementById('runFirebaseBtn').addEventListener('click', function() {
+  resetCounts(); runFirebaseTests();
+});
+document.getElementById('runDriveBtn').addEventListener('click', function() {
+  resetCounts(); runDriveTests();
+});
+document.getElementById('runPickerBtn').addEventListener('click', function() {
+  resetCounts(); runPickerTests();
+});
+document.getElementById('clearBtn').addEventListener('click', function() {
   firebaseTestsEl.innerHTML = '';
   driveTestsEl.innerHTML = '';
+  trashTestsEl.innerHTML = '';
   pickerTestsEl.innerHTML = '';
   resetCounts();
 });
 
-console.log('✅ Diagnostic page loaded. Config:', CFG);
+console.log('Diagnostic v3 page loaded. Config:', CFG);
+
 </script>
 
 </body>
