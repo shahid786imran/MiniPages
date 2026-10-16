@@ -1,20 +1,192 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><title>Debug</title></head>
-<body>
-  <h2>Debug Page</h2>
-  <input type="file" id="fileInput" />
-  <button id="driveUploadBtn">Test Upload Button</button>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Google API Load Test</title>
 
-  <script>
-    document.getElementById("driveUploadBtn").addEventListener("click", () => {
-      const fi = document.getElementById("fileInput");
-      console.log("fileInput element:", fi);
-      console.log("fileInput.files:", fi ? fi.files : "NULL");
-      if (!fi) { alert("fileInput NOT FOUND in the page!"); return; }
-      if (!fi.files || fi.files.length === 0) { alert("No file selected."); return; }
-      alert("File selected: " + fi.files[0].name);
+<!-- Configuration -->
+<script>
+  const DRIVE_CONFIG = {
+    oauthClientId:  "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com",
+    apiKey:         "AIzaSyBSf3HKUR652Kja3l65D91VfCkQSoxgZDY",
+    parentFolderId: "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT",
+    subFolderName:  "Test1",
+    scope:          "https://www.googleapis.com/auth/drive.file"
+  };
+  window._gapiReady   = false;
+  window._accessToken = null;
+  window._tokenClient = null;
+</script>
+
+<!-- Google API loader -->
+<script src="https://apis.google.com/js/api.js"></script>
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<style>
+  body { font-family: Arial; max-width: 760px; margin: 20px auto; padding: 0 12px; }
+  fieldset { margin-bottom: 14px; padding: 10px; }
+  button { padding: 6px 12px; margin: 4px 2px; }
+  pre { background: #f4f4f4; padding: 8px; border: 1px solid #ccc; }
+  .ok { color: green; font-weight: bold; }
+  .fail { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h2>Google API Load Test</h2>
+
+<fieldset>
+  <legend><b>Status</b></legend>
+  <div id="statusBox">Checking…</div>
+</fieldset>
+
+<fieldset>
+  <legend><b>Manual Re-check</b></legend>
+  <button id="checkBtn">Re-check Now</button>
+  <button id="authBtn">Authorize (Get Token)</button>
+  <button id="listBtn">List Test1 Files</button>
+  <pre id="out">-</pre>
+</fieldset>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const out = $("out");
+
+  function log(msg) {
+    console.log(msg);
+    out.textContent += "\n" + msg;
+  }
+  out.textContent = "== Log ==";
+
+  /* ---------- Status check ---------- */
+  function checkStatus() {
+    const gapiLoaded   = typeof gapi !== "undefined";
+    const googleLoaded = typeof google !== "undefined" &&
+                         google.accounts && google.accounts.oauth2;
+    const gapiReady    = window._gapiReady === true;
+
+    let html = "";
+    html += gapiLoaded
+      ? '<div class="ok">✔ gapi loaded</div>'
+      : '<div class="fail">✘ gapi NOT loaded</div>';
+    html += googleLoaded
+      ? '<div class="ok">✔ google.accounts.oauth2 loaded</div>'
+      : '<div class="fail">✘ google.accounts.oauth2 NOT loaded</div>';
+    html += gapiReady
+      ? '<div class="ok">✔ gapi.client ready</div>'
+      : '<div class="fail">✘ gapi.client not ready yet</div>';
+
+    $("statusBox").innerHTML = html;
+    return { gapiLoaded, googleLoaded, gapiReady };
+  }
+
+  /* ---------- Initial gapi init ---------- */
+  function initGapi() {
+    if (typeof gapi === "undefined") {
+      console.warn("gapi not loaded, retrying...");
+      return setTimeout(initGapi, 300);
+    }
+    gapi.load("client", async () => {
+      try {
+        await gapi.client.init({
+          apiKey: DRIVE_CONFIG.apiKey,
+          discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+        });
+        window._gapiReady = true;
+        console.log("gapi.client ready");
+        checkStatus();
+      } catch (e) {
+        console.error("gapi init error:", e);
+        log("gapi init error: " + e.message);
+      }
     });
-  </script>
+  }
+  initGapi();
+
+  /* ---------- Token client init ---------- */
+  function initTokenClient() {
+    if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
+      return setTimeout(initTokenClient, 300);
+    }
+    window._tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: DRIVE_CONFIG.oauthClientId,
+      scope:     DRIVE_CONFIG.scope,
+      callback: (r) => {
+        if (r.access_token) {
+          window._accessToken = r.access_token;
+          gapi.client.setToken({ access_token: r.access_token });
+          log("✔ Access token acquired");
+        } else {
+          log("✘ Token error: " + JSON.stringify(r));
+        }
+      }
+    });
+    console.log("token client ready");
+    checkStatus();
+  }
+  initTokenClient();
+
+  /* ---------- Buttons ---------- */
+  document.addEventListener("DOMContentLoaded", () => {
+    $("checkBtn").addEventListener("click", () => {
+      out.textContent = "== Log ==";
+      const s = checkStatus();
+      log("gapi loaded ........ " + s.gapiLoaded);
+      log("google loaded ...... " + s.googleLoaded);
+      log("gapi.client ready .. " + s.gapiReady);
+      log("typeof gapi ........ " + typeof gapi);
+      log("typeof google ...... " + typeof google);
+      log("tokenClient set .... " + (window._tokenClient ? "yes" : "no"));
+      log("accessToken set .... " + (window._accessToken ? "yes" : "no"));
+    });
+
+    $("authBtn").addEventListener("click", () => {
+      if (!window._tokenClient) return log("✘ Token client not ready");
+      window._tokenClient.requestAccessToken({ prompt: "consent" });
+    });
+
+    $("listBtn").addEventListener("click", async () => {
+      try {
+        if (!window._accessToken) return log("✘ No access token. Click Authorize first.");
+        if (!window._gapiReady)   return log("✘ gapi not ready");
+
+        // Find or create subfolder
+        const q = `'${DRIVE_CONFIG.parentFolderId}' in parents and name='${DRIVE_CONFIG.subFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+        const list = await gapi.client.drive.files.list({ q, fields: "files(id,name)" });
+        let subId;
+        if (list.result.files && list.result.files.length) {
+          subId = list.result.files[0].id;
+          log("✔ Subfolder found: " + subId);
+        } else {
+          const created = await gapi.client.drive.files.create({
+            resource: {
+              name: DRIVE_CONFIG.subFolderName,
+              mimeType: "application/vnd.google-apps.folder",
+              parents: [DRIVE_CONFIG.parentFolderId]
+            },
+            fields: "id"
+          });
+          subId = created.result.id;
+          log("✔ Subfolder created: " + subId);
+        }
+
+        const files = await gapi.client.drive.files.list({
+          q: `'${subId}' in parents and trashed=false`,
+          fields: "files(id,name,mimeType)",
+          orderBy: "modifiedTime desc"
+        });
+        const arr = files.result.files || [];
+        log("Files in Test1: " + arr.length);
+        arr.forEach(f => log(" - " + f.name + "  (" + f.id + ")"));
+      } catch (e) {
+        log("✘ Error: " + e.message);
+      }
+    });
+  });
+
+</script>
+
 </body>
 </html>
