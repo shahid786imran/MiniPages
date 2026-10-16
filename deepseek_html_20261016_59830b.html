@@ -3,161 +3,79 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Full Diagnostic Test — Firebase + Drive</title>
+  <title>Firebase + Drive Test</title>
   <style>
-    * { box-sizing: border-box; }
-    body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 20px;
-      background: #f7f8fa;
-      color: #222;
-    }
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 0 16px; background: #f7f8fa; }
+    .card { background: #fff; border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin: 16px 0; }
     h1 { margin-bottom: 4px; }
-    .sub { color: #666; margin-top: 0; font-size: 14px; }
-    .card {
-      background: #fff;
-      border: 1px solid #e0e0e0;
-      border-radius: 10px;
-      padding: 16px;
-      margin: 16px 0;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-    .card h2 {
-      margin: 0 0 12px;
-      font-size: 17px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .badge {
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-weight: 600;
-    }
-    .badge.pass { background: #d4f4dd; color: #0a6b2e; }
-    .badge.fail { background: #fdd8d8; color: #a00; }
-    .badge.pending { background: #fff3cd; color: #856404; }
-    button {
-      padding: 9px 16px;
-      margin: 3px 4px 3px 0;
-      cursor: pointer;
-      border-radius: 6px;
-      border: 1px solid #c8c8c8;
-      background: #fff;
-      font-size: 14px;
-    }
+    .sub { color: #666; font-size: 14px; margin-top: 0; }
+    button { padding: 9px 16px; margin: 3px 4px 3px 0; cursor: pointer; border-radius: 6px; border: 1px solid #c8c8c8; background: #fff; font-size: 14px; }
     button:hover:not(:disabled) { background: #eef2ff; border-color: #8aa4ff; }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
     button.primary { background: #1a73e8; color: #fff; border-color: #1a73e8; }
     button.primary:hover:not(:disabled) { background: #1557b0; }
-    pre {
-      background: #1e1e1e;
-      color: #d4d4d4;
-      padding: 12px;
-      border-radius: 6px;
-      max-height: 320px;
-      overflow: auto;
-      font-size: 12.5px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .ok   { color: #7ee787; }
-    .err  { color: #ff7b72; }
-    .warn { color: #ffd866; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 6px; max-height: 300px; overflow: auto; font-size: 12.5px; white-space: pre-wrap; word-break: break-word; }
+    .ok { color: #7ee787; }
+    .err { color: #ff7b72; }
     .info { color: #79c0ff; }
     input[type="file"] { margin: 8px 0; font-size: 13px; }
-    #status { font-weight: 600; color: #333; }
-    .kv { display: grid; grid-template-columns: 220px 1fr; gap: 4px 12px; font-size: 13px; }
-    .kv div:nth-child(odd) { color: #666; }
-    .kv div:nth-child(even) { font-family: monospace; word-break: break-all; }
+    #status { font-weight: 600; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; margin-left: 6px; }
+    .badge.pass { background: #d4f4dd; color: #0a6b2e; }
+    .badge.fail { background: #fdd8d8; color: #a00; }
+    .badge.pending { background: #fff3cd; color: #856404; }
   </style>
 </head>
 <body>
 
-  <h1>🧪 Full Diagnostic Test</h1>
-  <p class="sub">Firebase Firestore + Google Auth + Google Drive API</p>
+  <h1>🧪 Firebase + Drive Test</h1>
+  <p class="sub">Firestore collection: <b>test1</b> &nbsp;|&nbsp; Drive sub folder: <b>test1</b></p>
 
-  <!-- ============================================================ -->
   <div class="card">
-    <h2>Session Status <span id="authBadge" class="badge pending">NOT SIGNED IN</span></h2>
+    <h2>Session <span id="authBadge" class="badge pending">NOT SIGNED IN</span></h2>
     <p>Status: <span id="status">Loading…</span></p>
     <button id="loginBtn" class="primary">Sign in with Google</button>
     <button id="logoutBtn" disabled>Sign out</button>
-    <button id="runAllBtn" disabled>▶ Run Full Diagnostic</button>
   </div>
 
-  <!-- ============================================================ -->
   <div class="card">
-    <h2>Environment Info <span id="envBadge" class="badge pending">—</span></h2>
-    <div class="kv" id="envInfo"></div>
-  </div>
-
-  <!-- ============================================================ -->
-  <div class="card">
-    <h2>1. Firebase Firestore <span id="fbBadge" class="badge pending">PENDING</span></h2>
-    <button id="fbTestBtn" disabled>Run Firestore Test</button>
+    <h2>1. Firestore Test <span id="fbBadge" class="badge pending">PENDING</span></h2>
+    <button id="fbWriteBtn" disabled>Write Test Doc</button>
+    <button id="fbReadBtn" disabled>Read Test Docs</button>
     <pre id="fbOut">—</pre>
   </div>
 
-  <!-- ============================================================ -->
   <div class="card">
-    <h2>2. Google Drive — List Files <span id="listBadge" class="badge pending">PENDING</span></h2>
-    <button id="listTestBtn" disabled>List Sub Folder Files</button>
-    <pre id="listOut">—</pre>
-  </div>
-
-  <!-- ============================================================ -->
-  <div class="card">
-    <h2>3. Google Drive — Create Sub Folder <span id="folderBadge" class="badge pending">PENDING</span></h2>
-    <button id="folderTestBtn" disabled>Find / Create Sub Folder</button>
-    <pre id="folderOut">—</pre>
-  </div>
-
-  <!-- ============================================================ -->
-  <div class="card">
-    <h2>4. Google Drive — Upload File (multipart) <span id="uploadBadge" class="badge pending">PENDING</span></h2>
-    <input type="file" id="uploadInput" disabled />
+    <h2>2. Drive Test <span id="driveBadge" class="badge pending">PENDING</span></h2>
+    <button id="driveListBtn" disabled>List Files in Sub Folder</button>
     <br />
-    <button id="uploadTestBtn" disabled>Upload Selected File</button>
-    <pre id="uploadOut">—</pre>
-  </div>
-
-  <!-- ============================================================ -->
-  <div class="card">
-    <h2>5. Google Drive — Upload File (resumable) <span id="upload2Badge" class="badge pending">PENDING</span></h2>
-    <button id="upload2TestBtn" disabled>Upload Selected File (Resumable)</button>
-    <pre id="upload2Out">—</pre>
-  </div>
-
-  <!-- ============================================================ -->
-  <div class="card">
-    <h2>6. Raw Token Info <span id="tokenBadge" class="badge pending">PENDING</span></h2>
-    <button id="tokenTestBtn" disabled>Show Token Info</button>
-    <pre id="tokenOut">—</pre>
+    <input type="file" id="uploadInput" disabled />
+    <button id="uploadBtn" disabled>Upload Selected File</button>
+    <pre id="driveOut">—</pre>
   </div>
 
   <script type="module">
     // ============================================================
-    // CONFIGURATION
+    // CONFIGURATION — EDIT HERE ONLY
     // ============================================================
-    const firebaseConfig = {
-      apiKey: "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
-      authDomain: "mywebapps-e3b63.firebaseapp.com",
-      projectId: "mywebapps-e3b63",
-      storageBucket: "mywebapps-e3b63.firebasestorage.app",
+    const FIREBASE_CONFIG = {
+      apiKey:            "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+      authDomain:        "mywebapps-e3b63.firebaseapp.com",
+      projectId:         "mywebapps-e3b63",
+      storageBucket:     "mywebapps-e3b63.firebasestorage.app",
       messagingSenderId: "46681415809",
-      appId: "1:46681415809:web:c4528b9da97abc310a2d80"
+      appId:             "1:46681415809:web:c4528b9da97abc310a2d80"
     };
 
-    const FIRESTORE_COLLECTION   = "Test1";
-    const DRIVE_PARENT_FOLDER_ID = "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT";
-    const DRIVE_SUB_FOLDER_NAME  = "Test1";
-    const DRIVE_SCOPE            = "https://www.googleapis.com/auth/drive.file";
-    const DRIVE_API_KEY          = "AIzaSyBSf3HKUR652Kja3l65D91VfCkQSoxgZDY";
+    const FIRESTORE_COLLECTION = "test1";
+
+    const DRIVE_CONFIG = {
+      oauthClientId: "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com",
+      apiKey:        "AIzaSyBSf3HKUR652Kja3l65D91VfCkQSoxgZDY",
+      parentFolderId: "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT",
+      subFolderName: "test1",
+      scope:         "https://www.googleapis.com/auth/drive.file"
+    };
 
     // ============================================================
     // IMPORTS
@@ -174,26 +92,38 @@
     // ============================================================
     // INIT
     // ============================================================
-    const app  = initializeApp(firebaseConfig);
+    const app  = initializeApp(FIREBASE_CONFIG);
     const auth = getAuth(app);
     const db   = getFirestore(app);
 
     const provider = new GoogleAuthProvider();
-    provider.addScope(DRIVE_SCOPE);
-    // Force account picker every time (so you can re-consent to new scope)
+    provider.addScope(DRIVE_CONFIG.scope);
     provider.setCustomParameters({ prompt: "consent select_account" });
 
     // ============================================================
     // STATE
     // ============================================================
-    let accessToken       = null;
-    let currentUser       = null;
+    let accessToken = null;
+    let currentUser = null;
     let cachedSubFolderId = null;
 
     // ============================================================
-    // DOM HELPERS
+    // DOM
     // ============================================================
     const $ = id => document.getElementById(id);
+    const statusEl   = $("status");
+    const authBadge  = $("authBadge");
+    const loginBtn   = $("loginBtn");
+    const logoutBtn  = $("logoutBtn");
+    const fbBadge    = $("fbBadge");
+    const fbWriteBtn = $("fbWriteBtn");
+    const fbReadBtn  = $("fbReadBtn");
+    const fbOut      = $("fbOut");
+    const driveBadge = $("driveBadge");
+    const driveListBtn = $("driveListBtn");
+    const uploadInput = $("uploadInput");
+    const uploadBtn  = $("uploadBtn");
+    const driveOut   = $("driveOut");
 
     function setBadge(el, state, text) {
       el.className = "badge " + state;
@@ -204,80 +134,13 @@
       const arr = Array.isArray(lines) ? lines : [lines];
       el.innerHTML = arr.map(l => {
         if (typeof l === "string") return escapeHtml(l);
-        const cls = l.type || "";
-        return `<span class="${cls}">${escapeHtml(l.text)}</span>`;
+        return `<span class="${l.type || ""}">${escapeHtml(l.text)}</span>`;
       }).join("\n");
     }
 
     function escapeHtml(s) {
-      return String(s)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
-
-    function ts() {
-      return new Date().toISOString().split("T")[1].replace("Z", "");
-    }
-
-    // ============================================================
-    // DOM REFS
-    // ============================================================
-    const statusEl     = $("status");
-    const authBadge    = $("authBadge");
-    const loginBtn     = $("loginBtn");
-    const logoutBtn    = $("logoutBtn");
-    const runAllBtn    = $("runAllBtn");
-
-    const envBadge     = $("envBadge");
-    const envInfo      = $("envInfo");
-
-    const fbBadge      = $("fbBadge");
-    const fbTestBtn    = $("fbTestBtn");
-    const fbOut        = $("fbOut");
-
-    const listBadge    = $("listBadge");
-    const listTestBtn  = $("listTestBtn");
-    const listOut      = $("listOut");
-
-    const folderBadge  = $("folderBadge");
-    const folderTestBtn= $("folderTestBtn");
-    const folderOut    = $("folderOut");
-
-    const uploadBadge  = $("uploadBadge");
-    const uploadInput  = $("uploadInput");
-    const uploadTestBtn= $("uploadTestBtn");
-    const uploadOut    = $("uploadOut");
-
-    const upload2Badge = $("upload2Badge");
-    const upload2TestBtn = $("upload2TestBtn");
-    const upload2Out   = $("upload2Out");
-
-    const tokenBadge   = $("tokenBadge");
-    const tokenTestBtn = $("tokenTestBtn");
-    const tokenOut     = $("tokenOut");
-
-    // ============================================================
-    // ENVIRONMENT INFO
-    // ============================================================
-    (function showEnv() {
-      const rows = [
-        ["Page Origin",      location.origin],
-        ["Page URL",         location.href],
-        ["Protocol",         location.protocol],
-        ["User Agent",       navigator.userAgent],
-        ["Firebase Project", firebaseConfig.projectId],
-        ["Firestore Coll.",  FIRESTORE_COLLECTION],
-        ["Drive Parent",     DRIVE_PARENT_FOLDER_ID],
-        ["Drive Sub Folder", DRIVE_SUB_FOLDER_NAME],
-        ["Drive Scope",      DRIVE_SCOPE],
-        ["API Key (masked)", DRIVE_API_KEY.slice(0, 10) + "…" + DRIVE_API_KEY.slice(-4)]
-      ];
-      envInfo.innerHTML = rows
-        .map(([k, v]) => `<div>${escapeHtml(k)}</div><div>${escapeHtml(v)}</div>`)
-        .join("");
-      setBadge(envBadge, "pass", "LOADED");
-    })();
 
     // ============================================================
     // AUTH
@@ -289,13 +152,8 @@
         const cred   = GoogleAuthProvider.credentialFromResult(result);
         accessToken  = cred.accessToken;
         currentUser  = result.user;
-
         statusEl.textContent = `Signed in: ${currentUser.displayName} <${currentUser.email}>`;
         setBadge(authBadge, "pass", "SIGNED IN");
-        loginBtn.disabled = true;
-        logoutBtn.disabled = false;
-        enableAll(true);
-        updateTokenBadge();
       } catch (err) {
         statusEl.textContent = "Sign-in failed: " + err.message;
         setBadge(authBadge, "fail", "FAILED");
@@ -303,86 +161,78 @@
       }
     };
 
-    logoutBtn.onclick = async () => {
-      await signOut(auth);
-    };
+    logoutBtn.onclick = () => signOut(auth);
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
         currentUser = user;
-        setBadge(authBadge, "pass", "SIGNED IN");
-        loginBtn.disabled = true;
+        loginBtn.disabled  = true;
         logoutBtn.disabled = false;
-        enableAll(true);
+        setBadge(authBadge, "pass", "SIGNED IN");
+        fbWriteBtn.disabled = false;
+        fbReadBtn.disabled  = false;
+        driveListBtn.disabled = false;
+        uploadInput.disabled  = false;
       } else {
         currentUser = null;
         accessToken = null;
         cachedSubFolderId = null;
-        setBadge(authBadge, "pending", "NOT SIGNED IN");
-        loginBtn.disabled = false;
+        loginBtn.disabled  = false;
         logoutBtn.disabled = true;
-        enableAll(false);
-        statusEl.textContent = "Not signed in";
-        updateTokenBadge();
+        setBadge(authBadge, "pending", "NOT SIGNED IN");
+        fbWriteBtn.disabled = true;
+        fbReadBtn.disabled  = true;
+        driveListBtn.disabled = true;
+        uploadInput.disabled  = true;
+        uploadBtn.disabled    = true;
       }
     });
 
-    function enableAll(on) {
-      fbTestBtn.disabled      = !on;
-      listTestBtn.disabled    = !on;
-      folderTestBtn.disabled  = !on;
-      uploadInput.disabled    = !on;
-      uploadTestBtn.disabled  = !on || !uploadInput.files.length;
-      upload2TestBtn.disabled = !on || !uploadInput.files.length;
-      tokenTestBtn.disabled   = !on;
-      runAllBtn.disabled      = !on;
-    }
-
     uploadInput.onchange = () => {
-      uploadTestBtn.disabled  = !uploadInput.files.length;
-      upload2TestBtn.disabled = !uploadInput.files.length;
+      uploadBtn.disabled = !uploadInput.files.length;
     };
 
     // ============================================================
-    // TEST 1 — FIRESTORE
+    // FIRESTORE TEST
     // ============================================================
-    fbTestBtn.onclick = async () => {
+    fbWriteBtn.onclick = async () => {
       setBadge(fbBadge, "pending", "RUNNING…");
-      const lines = [`[${ts()}] Firestore test started`];
+      const lines = ["Firestore write test…"];
       try {
-        lines.push({ text: `Collection: ${FIRESTORE_COLLECTION}`, type: "info" });
-
-        const docRef = await addDoc(collection(db, FIRESTORE_COLLECTION), {
-          message: "Diagnostic test entry",
+        const ref = await addDoc(collection(db, FIRESTORE_COLLECTION), {
+          message: "Test entry",
           createdAt: serverTimestamp(),
           rand: Math.floor(Math.random() * 999999)
         });
-        lines.push({ text: `✔ WRITE OK — doc ID: ${docRef.id}`, type: "ok" });
-
-        const snap = await getDocs(collection(db, FIRESTORE_COLLECTION));
-        lines.push({ text: `✔ READ OK — ${snap.size} document(s)`, type: "ok" });
-
-        snap.forEach((d, i) => {
-          if (i < 5) lines.push(`   • ${d.id}: ${JSON.stringify(d.data())}`);
-        });
-
+        lines.push({ text: `✔ WRITE OK — ID: ${ref.id}`, type: "ok" });
         setBadge(fbBadge, "pass", "PASS");
       } catch (err) {
-        lines.push({ text: `✘ FIRESTORE FAILED: ${err.code || ""} ${err.message}`, type: "err" });
-        if (err.message && err.message.includes("permission")) {
-          lines.push({ text: "→ Check Firestore security rules for collection Test1", type: "warn" });
-        }
+        lines.push({ text: `✘ WRITE FAILED: ${err.message}`, type: "err" });
         setBadge(fbBadge, "fail", "FAIL");
       }
       log(fbOut, lines);
-      return lines;
+    };
+
+    fbReadBtn.onclick = async () => {
+      setBadge(fbBadge, "pending", "RUNNING…");
+      const lines = ["Firestore read test…"];
+      try {
+        const snap = await getDocs(collection(db, FIRESTORE_COLLECTION));
+        lines.push({ text: `✔ READ OK — ${snap.size} document(s)`, type: "ok" });
+        snap.forEach(d => lines.push(`   • ${d.id}: ${JSON.stringify(d.data())}`));
+        setBadge(fbBadge, "pass", "PASS");
+      } catch (err) {
+        lines.push({ text: `✘ READ FAILED: ${err.message}`, type: "err" });
+        setBadge(fbBadge, "fail", "FAIL");
+      }
+      log(fbOut, lines);
     };
 
     // ============================================================
-    // DRIVE HELPER
+    // DRIVE HELPERS
     // ============================================================
     async function driveFetch(url, options = {}) {
-      if (!accessToken) throw new Error("No accessToken. Sign in again.");
+      if (!accessToken) throw new Error("No access token. Sign in again.");
       const headers = Object.assign(
         { "Authorization": "Bearer " + accessToken },
         options.headers || {}
@@ -398,48 +248,44 @@
       if (cachedSubFolderId) return cachedSubFolderId;
 
       const q = encodeURIComponent(
-        `'${DRIVE_PARENT_FOLDER_ID}' in parents ` +
-        `and name='${DRIVE_SUB_FOLDER_NAME}' ` +
+        `'${DRIVE_CONFIG.parentFolderId}' in parents ` +
+        `and name='${DRIVE_CONFIG.subFolderName}' ` +
         `and mimeType='application/vnd.google-apps.folder' ` +
         `and trashed=false`
       );
       const search = await driveFetch(
         `https://www.googleapis.com/drive/v3/files` +
-        `?q=${q}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true&key=${DRIVE_API_KEY}`
+        `?q=${q}&fields=files(id,name)&supportsAllDrives=true&includeItemsFromAllDrives=true&key=${DRIVE_CONFIG.apiKey}`
       );
-      if (!search.ok) {
-        throw new Error(`Search failed [${search.status}]: ${search.text}`);
-      }
+      if (!search.ok) throw new Error(`Search failed [${search.status}]: ${search.text}`);
       if (search.json.files && search.json.files.length) {
         cachedSubFolderId = search.json.files[0].id;
         return cachedSubFolderId;
       }
 
       const create = await driveFetch(
-        `https://www.googleapis.com/drive/v3/files?fields=id,name&supportsAllDrives=true&key=${DRIVE_API_KEY}`,
+        `https://www.googleapis.com/drive/v3/files?fields=id,name&supportsAllDrives=true&key=${DRIVE_CONFIG.apiKey}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: DRIVE_SUB_FOLDER_NAME,
+            name: DRIVE_CONFIG.subFolderName,
             mimeType: "application/vnd.google-apps.folder",
-            parents: [DRIVE_PARENT_FOLDER_ID]
+            parents: [DRIVE_CONFIG.parentFolderId]
           })
         }
       );
-      if (!create.ok) {
-        throw new Error(`Create folder failed [${create.status}]: ${create.text}`);
-      }
+      if (!create.ok) throw new Error(`Create folder failed [${create.status}]: ${create.text}`);
       cachedSubFolderId = create.json.id;
       return cachedSubFolderId;
     }
 
     // ============================================================
-    // TEST 2 — LIST FILES
+    // DRIVE — LIST
     // ============================================================
-    listTestBtn.onclick = async () => {
-      setBadge(listBadge, "pending", "RUNNING…");
-      const lines = [`[${ts()}] Drive list test started`];
+    driveListBtn.onclick = async () => {
+      setBadge(driveBadge, "pending", "RUNNING…");
+      const lines = ["Drive list test…"];
       try {
         const folderId = await getOrCreateSubFolder();
         lines.push({ text: `✔ Sub Folder ID: ${folderId}`, type: "ok" });
@@ -448,91 +294,60 @@
         const res = await driveFetch(
           `https://www.googleapis.com/drive/v3/files` +
           `?q=${q}&fields=files(id,name,mimeType,size,createdTime)` +
-          `&supportsAllDrives=true&includeItemsFromAllDrives=true&key=${DRIVE_API_KEY}`
+          `&supportsAllDrives=true&includeItemsFromAllDrives=true&key=${DRIVE_CONFIG.apiKey}`
         );
-
         if (!res.ok) throw new Error(`[${res.status}] ${res.text}`);
 
         const files = res.json.files || [];
         lines.push({ text: `✔ LIST OK — ${files.length} file(s)`, type: "ok" });
         files.forEach(f => lines.push(`   • ${f.name} (${f.id})`));
-
-        setBadge(listBadge, "pass", "PASS");
+        setBadge(driveBadge, "pass", "PASS");
       } catch (err) {
         lines.push({ text: `✘ LIST FAILED: ${err.message}`, type: "err" });
-        setBadge(listBadge, "fail", "FAIL");
+        setBadge(driveBadge, "fail", "FAIL");
       }
-      log(listOut, lines);
-      return lines;
+      log(driveOut, lines);
     };
 
     // ============================================================
-    // TEST 3 — CREATE / FIND FOLDER
+    // DRIVE — UPLOAD (multipart with real CRLF bytes)
     // ============================================================
-    folderTestBtn.onclick = async () => {
-      setBadge(folderBadge, "pending", "RUNNING…");
-      const lines = [`[${ts()}] Folder test started`];
-      try {
-        const id = await getOrCreateSubFolder();
-        lines.push({ text: `✔ Folder ready: ${DRIVE_SUB_FOLDER_NAME}`, type: "ok" });
-        lines.push({ text: `  ID: ${id}`, type: "info" });
-        lines.push({ text: `  Parent: ${DRIVE_PARENT_FOLDER_ID}`, type: "info" });
-        setBadge(folderBadge, "pass", "PASS");
-      } catch (err) {
-        lines.push({ text: `✘ FOLDER FAILED: ${err.message}`, type: "err" });
-        setBadge(folderBadge, "fail", "FAIL");
-      }
-      log(folderOut, lines);
-      return lines;
-    };
-
-    // ============================================================
-    // TEST 4 — UPLOAD (multipart)
-    // ============================================================
-    uploadTestBtn.onclick = async () => {
+    uploadBtn.onclick = async () => {
       const file = uploadInput.files[0];
       if (!file) return;
 
-      setBadge(uploadBadge, "pending", "RUNNING…");
-      const lines = [`[${ts()}] Multipart upload: ${file.name} (${file.size} bytes, ${file.type || "unknown"})`];
+      setBadge(driveBadge, "pending", "RUNNING…");
+      const lines = [`Uploading: ${file.name} (${file.size} bytes)`];
 
       try {
         const folderId = await getOrCreateSubFolder();
         lines.push({ text: `✔ Folder: ${folderId}`, type: "ok" });
 
-        const metadata = { name: file.name, parents: [folderId] };
-
-        // Use actual CRLF bytes — critical!
         const boundary = "-------314159265358979323846";
         const CRLF = "\r\n";
-        const delimiter = CRLF + "--" + boundary + CRLF;
+        const delimiter  = CRLF + "--" + boundary + CRLF;
         const closeDelim = CRLF + "--" + boundary + "--";
 
-        // Read file as ArrayBuffer
         const buf = await file.arrayBuffer();
-
         const head =
           delimiter +
           "Content-Type: application/json; charset=UTF-8" + CRLF + CRLF +
-          JSON.stringify(metadata) +
+          JSON.stringify({ name: file.name, parents: [folderId] }) +
           delimiter +
           "Content-Type: " + (file.type || "application/octet-stream") + CRLF + CRLF;
 
-        const headBytes   = new TextEncoder().encode(head);
-        const fileBytes   = new Uint8Array(buf);
-        const closeBytes  = new TextEncoder().encode(closeDelim);
+        const headBytes  = new TextEncoder().encode(head);
+        const fileBytes  = new Uint8Array(buf);
+        const closeBytes = new TextEncoder().encode(closeDelim);
 
         const body = new Uint8Array(headBytes.length + fileBytes.length + closeBytes.length);
         body.set(headBytes, 0);
         body.set(fileBytes, headBytes.length);
         body.set(closeBytes, headBytes.length + fileBytes.length);
 
-        lines.push({ text: `Boundary: ${boundary}`, type: "info" });
-        lines.push({ text: `Body size: ${body.length} bytes`, type: "info" });
-
         const res = await fetch(
           `https://www.googleapis.com/upload/drive/v3/files` +
-          `?uploadType=multipart&fields=id,name,size&supportsAllDrives=true&key=${DRIVE_API_KEY}`,
+          `?uploadType=multipart&fields=id,name,size&supportsAllDrives=true&key=${DRIVE_CONFIG.apiKey}`,
           {
             method: "POST",
             headers: {
@@ -550,188 +365,18 @@
         if (!res.ok) {
           lines.push({ text: `✘ UPLOAD FAILED [${res.status} ${res.statusText}]`, type: "err" });
           lines.push({ text: text, type: "err" });
-          setBadge(uploadBadge, "fail", "FAIL");
+          setBadge(driveBadge, "fail", "FAIL");
         } else {
           lines.push({ text: `✔ UPLOAD OK`, type: "ok" });
           lines.push({ text: JSON.stringify(json, null, 2), type: "ok" });
-          setBadge(uploadBadge, "pass", "PASS");
+          setBadge(driveBadge, "pass", "PASS");
         }
       } catch (err) {
         lines.push({ text: `✘ UPLOAD ERROR: ${err.message}`, type: "err" });
-        setBadge(uploadBadge, "fail", "FAIL");
+        setBadge(driveBadge, "fail", "FAIL");
       }
-      log(uploadOut, lines);
-      return lines;
+      log(driveOut, lines);
     };
-
-    // ============================================================
-    // TEST 5 — UPLOAD (resumable)
-    // ============================================================
-    upload2TestBtn.onclick = async () => {
-      const file = uploadInput.files[0];
-      if (!file) return;
-
-      setBadge(upload2Badge, "pending", "RUNNING…");
-      const lines = [`[${ts()}] Resumable upload: ${file.name} (${file.size} bytes)`];
-
-      try {
-        const folderId = await getOrCreateSubFolder();
-        lines.push({ text: `✔ Folder: ${folderId}`, type: "ok" });
-
-        // Step 1: Initiate resumable session
-        const initRes = await fetch(
-          `https://www.googleapis.com/upload/drive/v3/files` +
-          `?uploadType=resumable&fields=id,name,size&supportsAllDrives=true&key=${DRIVE_API_KEY}`,
-          {
-            method: "POST",
-            headers: {
-              "Authorization": "Bearer " + accessToken,
-              "Content-Type": "application/json; charset=UTF-8",
-              "X-Upload-Content-Type": file.type || "application/octet-stream",
-              "X-Upload-Content-Length": file.size
-            },
-            body: JSON.stringify({ name: file.name, parents: [folderId] })
-          }
-        );
-
-        if (!initRes.ok) {
-          const t = await initRes.text();
-          throw new Error(`Init failed [${initRes.status}]: ${t}`);
-        }
-
-        const uploadUrl = initRes.headers.get("Location");
-        lines.push({ text: `✔ Session started`, type: "ok" });
-        lines.push({ text: `  Upload URL: ${uploadUrl ? uploadUrl.slice(0, 80) + "…" : "(missing)"}`, type: "info" });
-
-        if (!uploadUrl) throw new Error("No Location header in resumable init response");
-
-        // Step 2: Upload bytes
-        const putRes = await fetch(uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": file.type || "application/octet-stream"
-          },
-          body: file
-        });
-
-        const text = await putRes.text();
-        let json = null;
-        try { json = JSON.parse(text); } catch (_) {}
-
-        if (!putRes.ok) {
-          lines.push({ text: `✘ RESUMABLE FAILED [${putRes.status}]`, type: "err" });
-          lines.push({ text, type: "err" });
-          setBadge(upload2Badge, "fail", "FAIL");
-        } else {
-          lines.push({ text: `✔ RESUMABLE UPLOAD OK`, type: "ok" });
-          lines.push({ text: JSON.stringify(json, null, 2), type: "ok" });
-          setBadge(upload2Badge, "pass", "PASS");
-        }
-      } catch (err) {
-        lines.push({ text: `✘ RESUMABLE ERROR: ${err.message}`, type: "err" });
-        setBadge(upload2Badge, "fail", "FAIL");
-      }
-      log(upload2Out, lines);
-      return lines;
-    };
-
-    // ============================================================
-    // TEST 6 — TOKEN INFO
-    // ============================================================
-    function decodeJwt(token) {
-      try {
-        const payload = token.split(".")[1];
-        const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-        return JSON.parse(json);
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function updateTokenBadge() {
-      if (!accessToken) {
-        setBadge(tokenBadge, "pending", "NO TOKEN");
-        return;
-      }
-      const p = decodeJwt(accessToken);
-      if (p && p.exp) {
-        const secs = p.exp - Math.floor(Date.now() / 1000);
-        setBadge(tokenBadge, secs > 60 ? "pass" : "fail", secs > 60 ? `VALID ${secs}s` : `EXPIRES ${secs}s`);
-      } else {
-        setBadge(tokenBadge, "pending", "TOKEN SET");
-      }
-    }
-
-    tokenTestBtn.onclick = async () => {
-      const lines = [`[${ts()}] Token diagnostic`];
-      if (!accessToken) {
-        lines.push({ text: "✘ No access token available", type: "err" });
-        setBadge(tokenBadge, "fail", "NO TOKEN");
-        log(tokenOut, lines);
-        return;
-      }
-
-      lines.push({ text: `Length: ${accessToken.length} chars`, type: "info" });
-
-      const p = decodeJwt(accessToken);
-      if (p) {
-        lines.push({ text: "Decoded JWT payload:", type: "info" });
-        const interesting = ["iss", "aud", "sub", "email", "scope", "exp", "iat"];
-        interesting.forEach(k => {
-          if (p[k] !== undefined) {
-            let v = p[k];
-            if (k === "exp" || k === "iat") {
-              v = `${v} (${new Date(v * 1000).toISOString()})`;
-            }
-            lines.push(`   ${k}: ${Array.isArray(v) ? v.join(" ") : v}`);
-          }
-        });
-
-        const now = Math.floor(Date.now() / 1000);
-        const remain = p.exp - now;
-        lines.push({ text: `Time remaining: ${remain}s`, type: remain > 60 ? "ok" : "err" });
-
-        if (p.scope) {
-          const hasScope = p.scope.includes("drive.file");
-          lines.push({
-            text: hasScope ? "✔ drive.file scope granted" : "✘ drive.file scope MISSING",
-            type: hasScope ? "ok" : "err"
-          });
-        }
-        setBadge(tokenBadge, remain > 60 ? "pass" : "fail", remain > 60 ? "VALID" : "EXPIRING");
-      } else {
-        lines.push({ text: "Could not decode token payload", type: "warn" });
-        setBadge(tokenBadge, "pending", "UNKNOWN");
-      }
-      log(tokenOut, lines);
-    };
-
-    // ============================================================
-    // RUN ALL
-    // ============================================================
-    runAllBtn.onclick = async () => {
-      runAllBtn.disabled = true;
-      runAllBtn.textContent = "⏳ Running…";
-
-      await fbTestBtn.onclick();
-      await folderTestBtn.onclick();
-      await listTestBtn.onclick();
-
-      if (uploadInput.files.length) {
-        await uploadTestBtn.onclick();
-        if (uploadBadge.classList.contains("fail")) {
-          await upload2TestBtn.onclick(); // try resumable fallback
-        }
-      }
-
-      tokenTestBtn.onclick();
-
-      runAllBtn.disabled = false;
-      runAllBtn.textContent = "▶ Run Full Diagnostic";
-    };
-
-    // Init token badge
-    updateTokenBadge();
   </script>
 </body>
 </html>
