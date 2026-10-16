@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Firebase + Drive + Picker Diagnostic v3</title>
+<title>Firebase + Drive + Picker Diagnostic v4</title>
 <style>
   :root {
     --bg:#f4f6fb; --card:#fff; --border:#e2e6ef; --text:#1c2333;
@@ -103,7 +103,7 @@
 <header class="top">
   <div class="wrap">
     <h1>
-      Firebase + Drive + Picker Diagnostic v3
+      Firebase + Drive + Picker Diagnostic v4
       <small>Firebase, Drive CRUD, Trash, Restore, Delete, Picker - sab live test</small>
     </h1>
     <div class="summary-bar">
@@ -179,7 +179,7 @@ window.__CONFIG__ = {
     scope:         "https://www.googleapis.com/auth/drive.file"
   },
   FIRESTORE_COLLECTION: "Test-FireStore-Collection-Name",
-  GOOGLE_APP_ID:        "46681415809"
+  GOOGLE_APP_ID:        "203025420924"
 };
 </script>
 
@@ -679,7 +679,7 @@ async function testPickerOpen() {
           pickedResolve(true);
         } else if (data.action === google.picker.Action.CANCEL) {
           setRow(row, 'warn', 'Picker khula, user ne cancel kiya',
-            'Yeh normal hai - picker kaam kar raha hai.');
+            'Yeh normal hai - picker kaam kar raha hai. Dobara try karein aur file select karein.');
           tally('warn');
           pickedResolve(false);
         }
@@ -705,10 +705,11 @@ async function testPickerOpen() {
     setRow(row, 'err', 'Picker open failed: ' + err.message,
       'Check karein:\n' +
       '1. Google Picker API enabled\n' +
-      '2. GOOGLE_APP_ID sahi hai\n' +
+      '2. GOOGLE_APP_ID sahi hai (' + CFG.GOOGLE_APP_ID + ')\n' +
       '3. DRIVE.apiKey sahi hai\n' +
       '4. OAuth token mila hai\n' +
-      '5. Authorized origins mein ' + location.origin + ' hai');
+      '5. Authorized origins mein ' + location.origin + ' hai\n' +
+      '6. API key restrictions mein docs.google.com/* hai');
     tally('err');
     return false;
   }
@@ -792,7 +793,7 @@ document.getElementById('clearBtn').addEventListener('click', function() {
   resetCounts();
 });
 
-console.log('Diagnostic v3 page loaded. Config:', CFG);
+console.log('Diagnostic v4 page loaded. Config:', CFG);
 
 </script>
 
