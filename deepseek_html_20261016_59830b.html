@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Firebase + Google Drive Sample (Test1)</title>
+
+<!-- ============================================================
+     CONFIGURATION SECTION (reusable for future pages)
+     ============================================================ -->
+<script>
+  /* ---------- FIREBASE ---------- */
+  const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+    authDomain:        "mywebapps-e3b63.firebaseapp.com",
+    projectId:         "mywebapps-e3b63",
+    storageBucket:     "mywebapps-e3b63.firebasestorage.app",
+    messagingSenderId: "46681415809",
+    appId:             "1:46681415809:web:c4528b9da97abc310a2d80"
+  };
+
+  /* ---------- FIRESTORE ---------- */
+  const FIRESTORE_COLLECTION_NAME = "Test1";       // user-provided
+  const FIRESTORE_GLOBAL_DOC_ID   = "global";      // shared doc (no per-user paths)
+
+  /* ---------- GOOGLE DRIVE ---------- */
+  const DRIVE_CONFIG = {
+    oauthClientId: "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com",
+    apiKey:        "AIzaSyBSf3HKUR652Kja3l65D91VfCkQSoxgZDY",
+    parentFolderId: "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT", // MyWebApps Attachments
+    subFolderName:  "Test1",                              // user-provided
+    scope:          "https://www.googleapis.com/auth/drive.file"
+  };
+</script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getAuth, signInAnonymously, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  /* ---------- INIT FIREBASE ---------- */
+  const app  = initializeApp(FIREBASE_CONFIG);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  /* ---------- SHARED DOC REF (NO per-user path) ---------- */
+  const sharedDocRef = doc(db, FIRESTORE_COLLECTION_NAME, FIRESTORE_GLOBAL_DOC_ID);
+
+  /* ---------- ANONYMOUS AUTH ---------- */
+  signInAnonymously(auth).catch(err => console.error("Auth error:", err));
+  onAuthStateChanged(auth, user => {
+    const el = document.getElementById("authStatus");
+    if (el) el.textContent = user ? "Signed in (anonymous)" : "Not signed in";
+  });
+
+  /* ============================================================
+     FIRESTORE CRUD (all on shared "global" doc)
+     ============================================================ */
+  window.fsSave = async function () {
+    const name = document.getElementById("nameInput").value.trim();
+    const note = document.getElementById("noteInput").value.trim();
+    if (!name) return alert("Name required");
+    await setDoc(sharedDocRef, {
+      name, note,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    alert("Saved to Firestore (Test1/global)");
+    window.fsLoad();
+  };
+
+  window.fsLoad = async function () {
+    const snap = await getDoc(sharedDocRef);
+    const out  = document.getElementById("fsOutput");
+    if (snap.exists()) {
+      const d = snap.data();
+      out.textContent =
+        "Name: " + (d.name || "") +
+        "\nNote: " + (d.note || "") +
+        "\nUpdated: " + (d.updatedAt ? d.updatedAt.toDate().toLocaleString() : "-");
+    } else {
+      out.textContent = "No document yet.";
+    }
+  };
+
+  window.fsUpdate = async function () {
+    const note = document.getElementById("noteInput").value.trim();
+    await updateDoc(sharedDocRef, { note, updatedAt: serverTimestamp() });
+    alert("Updated.");
+    window.fsLoad();
+  };
+
+  window.fsDelete = async function () {
+    if (!confirm("Delete the shared Test1/global document?")) return;
+    await deleteDoc(sharedDocRef);
+    alert("Deleted.");
+    window.fsLoad();
+  };
+</script>
+</head>
+<body style="font-family:Arial;max-width:720px;margin:20px auto;padding:0 12px;">
+
+  <h2>Firebase + Google Drive Sample — Collection: <code>Test1</code></h2>
+
+  <p><b>Auth status:</b> <span id="authStatus">…</span></p>
+
+  <!-- ================= FIRESTORE ================= -->
+  <fieldset style="margin-bottom:16px;">
+    <legend><b>Firestore (Test1 / global)</b></legend>
+    <input id="nameInput" placeholder="Name" style="width:100%;padding:6px;margin-bottom:6px;">
+    <textarea id="noteInput" placeholder="Note" style="width:100%;padding:6px;height:60px;"></textarea>
+    <div style="margin-top:8px;">
+      <button onclick="fsSave()">Save</button>
+      <button onclick="fsLoad()">Load</button>
+      <button onclick="fsUpdate()">Update Note</button>
+      <button onclick="fsDelete()">Delete</button>
+    </div>
+    <pre id="fsOutput" style="background:#f4f4f4;padding:8px;margin-top:8px;">-</pre>
+  </fieldset>
+
+  <!-- ================= GOOGLE DRIVE ================= -->
+  <fieldset>
+    <legend><b>Google Drive (folder: MyWebApps Attachments / Test1)</b></legend>
+    <input type="file" id="fileInput" />
+    <button onclick="driveUpload()">Upload to Drive</button>
+    <pre id="driveOutput" style="background:#f4f4f4;padding:8px;margin-top:8px;">-</pre>
+  </fieldset>
+
+<!-- Google API loader -->
+<script src="https://apis.google.com/js/api.js"></script>
+<script>
+  /* ============================================================
+     GOOGLE DRIVE UPLOAD
+     - Uploads only into: MyWebApps Attachments / Test1
+     - Only files created/uploaded by this app
+     ============================================================ */
+  let gapiReady = false, tokenClient = null, accessToken = null;
+
+  function initGapi() {
+    gapi.load("client", async () => {
+      await gapi.client.init({
+        apiKey: DRIVE_CONFIG.apiKey,
+        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+      });
+      gapiReady = true;
+    });
+  }
+  initGapi();
+
+  window.onload = () => {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: DRIVE_CONFIG.oauthClientId,
+      scope: DRIVE_CONFIG.scope,
+      callback: (resp) => {
+        if (resp.access_token) {
+          accessToken = resp.access_token;
+          gapi.client.setToken({ access_token: accessToken });
+        }
+      }
+    });
+  };
+
+  async function ensureToken() {
+    if (!accessToken) {
+      await new Promise(res => {
+        const oldCb = tokenClient.callback;
+        tokenClient.callback = (r) => { oldCb(r); res(); };
+        tokenClient.requestAccessToken({ prompt: "consent" });
+      });
+    }
+    if (!gapiReady) await new Promise(r => setTimeout(r, 500));
+    return accessToken;
+  }
+
+  async function getOrCreateSubFolder() {
+    // search inside parent
+    const q = `'${DRIVE_CONFIG.parentFolderId}' in parents and name='${DRIVE_CONFIG.subFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+    const list = await gapi.client.drive.files.list({ q, fields: "files(id,name)" });
+    if (list.result.files && list.result.files.length) return list.result.files[0].id;
+
+    const created = await gapi.client.drive.files.create({
+      resource: {
+        name: DRIVE_CONFIG.subFolderName,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [DRIVE_CONFIG.parentFolderId]
+      },
+      fields: "id"
+    });
+    return created.result.id;
+  }
+
+  window.driveUpload = async function () {
+    const out = document.getElementById("driveOutput");
+    const fileInput = document.getElementById("fileInput");
+    if (!fileInput.files.length) return alert("Choose a file first.");
+
+    try {
+      await ensureToken();
+      const subId = await getOrCreateSubFolder();
+      const file  = fileInput.files[0];
+
+      const metadata = { name: file.name, parents: [subId] };
+      const form = new FormData();
+      form.append("metadata", new Blob([JSON.stringify(metadata)], { type: "application/json" }));
+      form.append("file", file);
+
+      const res = await fetch(
+        "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
+        { method: "POST", headers: { Authorization: "Bearer " + accessToken }, body: form }
+      );
+      const data = await res.json();
+
+      if (data.error) {
+        out.textContent = "Error: " + JSON.stringify(data.error, null, 2);
+        return;
+      }
+      out.textContent = "Uploaded:\nFile ID: " + data.id + "\nName: " + data.name +
+                        "\nFolder: MyWebApps Attachments / " + DRIVE_CONFIG.subFolderName;
+
+      // OPTIONAL: save file ID into Firestore (comment in if you want)
+      // await setDoc(sharedDocRef, { lastFileId: data.id, lastFileName: data.name }, { merge: true });
+
+    } catch (err) {
+      out.textContent = "Error: " + err.message;
+    }
+  };
+</script>
+
+<!-- Google Identity Services (OAuth token) -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+</body>
+</html>
