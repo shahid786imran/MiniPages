@@ -8,7 +8,7 @@
   :root {
     --bg:#f4f6fb; --card:#fff; --border:#e2e6ef; --text:#1c2333;
     --muted:#6b7488; --ok:#1f9d63; --err:#d9453f; --warn:#d97706;
-    --primary:#2f6df6; --code:#0f172a;
+    --primary:#2f6df6;
   }
   * { box-sizing: border-box; }
   body {
@@ -27,9 +27,7 @@
   h1 { font-size:19px; margin:0; }
   h1 small { display:block; font-size:12px; font-weight:400; color:var(--muted); margin-top:3px; }
 
-  .summary-bar {
-    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
-  }
+  .summary-bar { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   .badge {
     font-size:12px; padding:6px 12px; border-radius:999px; font-weight:600;
     border:1px solid var(--border); background:#eef1f7; color:var(--muted);
@@ -111,6 +109,10 @@
   }
 
   .footer { text-align:center; color:var(--muted); font-size:12px; margin-top:30px; }
+  .warn-box {
+    background:#fef4e6; border:1px solid #f8dfb5; color:#92400e;
+    padding:10px 14px; border-radius:9px; font-size:12.5px; margin-top:12px;
+  }
 </style>
 </head>
 <body>
@@ -138,7 +140,7 @@
     <button id="clearBtn" class="danger">Clear Logs</button>
   </div>
 
-  <!-- ==================== ENV INFO ==================== -->
+  <!-- ENV INFO -->
   <div class="section">
     <h2><span class="num">i</span> Environment Info</h2>
     <table class="env-table">
@@ -149,38 +151,42 @@
       <tr><td>Firestore Collection</td><td><code id="envCollection">—</code></td></tr>
       <tr><td>Drive Folder ID</td><td><code id="envFolder">—</code></td></tr>
       <tr><td>OAuth Client ID</td><td><code id="envClient">—</code></td></tr>
-      <tr><td>Project Number (for Picker)</td><td><code id="envAppId">—</code></td></tr>
+      <tr><td>Project Number (Picker)</td><td><code id="envAppId">—</code></td></tr>
     </table>
-    <p style="font-size:12.5px;color:#d97706;margin-top:10px;" id="protocolWarning" hidden>
+    <div id="protocolWarning" class="warn-box" hidden>
       ⚠️ Aap <code>file://</code> se khol rahe hain — Google OAuth aur Picker <strong>kaam nahi karenge</strong>.
       Local server chalayein: <code>python -m http.server 5500</code> ya VS Code Live Server.
-    </p>
+    </div>
   </div>
 
-  <!-- ==================== FIREBASE ==================== -->
+  <!-- FIREBASE -->
   <div class="section">
     <h2><span class="num">1</span> Firebase Tests</h2>
-    <div id="firebaseTests"></div>
+    <div id="firebaseTests">
+      <p style="color:#6b7488;font-style:italic;margin:0;">"Run All Tests" dabayein…</p>
+    </div>
   </div>
 
-  <!-- ==================== GOOGLE DRIVE ==================== -->
+  <!-- DRIVE -->
   <div class="section">
     <h2><span class="num">2</span> Google Drive Tests</h2>
-    <div id="driveTests"></div>
+    <div id="driveTests">
+      <p style="color:#6b7488;font-style:italic;margin:0;">"Run All Tests" dabayein…</p>
+    </div>
   </div>
 
-  <!-- ==================== PICKER ==================== -->
+  <!-- PICKER -->
   <div class="section">
     <h2><span class="num">3</span> Google Picker Tests</h2>
-    <div id="pickerTests"></div>
+    <div id="pickerTests">
+      <p style="color:#6b7488;font-style:italic;margin:0;">"Run All Tests" dabayein…</p>
+    </div>
   </div>
 
   <p class="footer">Yeh page sirf testing/diagnostic ke liye hai — credentials browser mein expose hote hain.</p>
 </div>
 
-<!-- ============================================================
-     CONFIG — aapke credentials (dono files se verified)
-     ============================================================ -->
+<!-- ============ CONFIG ============ -->
 <script>
 window.__CONFIG__ = {
   FIREBASE: {
@@ -199,19 +205,16 @@ window.__CONFIG__ = {
     scope:         "https://www.googleapis.com/auth/drive.file"
   },
   FIRESTORE_COLLECTION: "Test-FireStore-Collection-Name",
-  GOOGLE_APP_ID:        "46681415809"   // <-- agar Picker fail ho to Project Number yahan daalein
+  GOOGLE_APP_ID:        "46681415809"
 };
 </script>
 
-<!-- Google Identity Services -->
+<!-- Google libraries -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<!-- Google API Loader (for Picker) -->
 <script src="https://apis.google.com/js/api.js" async defer></script>
 
+<!-- Main app -->
 <script type="module">
-/* ============================================================
-   IMPORTS
-   ============================================================ */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getAuth, signInAnonymously, onAuthStateChanged
@@ -223,9 +226,7 @@ import {
 
 const CFG = window.__CONFIG__;
 
-/* ============================================================
-   UI HELPERS
-   ============================================================ */
+/* ------- UI helpers ------- */
 const firebaseTestsEl = document.getElementById('firebaseTests');
 const driveTestsEl    = document.getElementById('driveTests');
 const pickerTestsEl   = document.getElementById('pickerTests');
@@ -255,12 +256,13 @@ function makeRow(container, id, title) {
 }
 
 function setRow(row, status, detail, extra) {
-  const icon = row.querySelector('[data-icon]');
+  const icon     = row.querySelector('[data-icon]');
   const detailEl = row.querySelector('[data-detail]');
-  const box = row.querySelector('[data-box]');
+  const box      = row.querySelector('[data-box]');
 
   icon.className = 'icon ' + status;
-  icon.textContent = status === 'ok' ? '✓' : status === 'err' ? '✗' : status === 'warn' ? '!' : status === 'run' ? '…' : '?';
+  icon.textContent = status === 'ok' ? '✓' : status === 'err' ? '✗'
+                   : status === 'warn' ? '!' : status === 'run' ? '…' : '?';
 
   detailEl.className = 'detail' + (status === 'ok' ? ' ok' : status === 'err' ? ' err' : '');
   detailEl.textContent = detail || '';
@@ -280,12 +282,9 @@ function tally(status) {
   else if (status === 'warn') warnCount++;
   refreshBadges();
 }
-
 function resetCounts() { passCount = 0; failCount = 0; warnCount = 0; refreshBadges(); }
 
-/* ============================================================
-   ENV INFO
-   ============================================================ */
+/* ------- Env info ------- */
 document.getElementById('envUrl').textContent        = location.href;
 document.getElementById('envProtocol').textContent   = location.protocol;
 document.getElementById('envOrigin').textContent     = location.origin;
@@ -294,14 +293,11 @@ document.getElementById('envCollection').textContent = CFG.FIRESTORE_COLLECTION;
 document.getElementById('envFolder').textContent     = CFG.DRIVE.folderId;
 document.getElementById('envClient').textContent     = CFG.DRIVE.oauthClientId;
 document.getElementById('envAppId').textContent      = CFG.GOOGLE_APP_ID;
-
 if (location.protocol === 'file:') {
   document.getElementById('protocolWarning').hidden = false;
 }
 
-/* ============================================================
-   FIREBASE INIT
-   ============================================================ */
+/* ------- Firebase init ------- */
 let fbApp, auth, db, recordsCol;
 try {
   fbApp = initializeApp(CFG.FIREBASE);
@@ -312,16 +308,14 @@ try {
   console.error('Firebase init failed:', e);
 }
 
-/* ============================================================
-   TEST: Firebase Anonymous Auth
-   ============================================================ */
+/* ------- TEST: Firebase Auth ------- */
 function testFirebaseAuth() {
   return new Promise((resolve) => {
     const row = makeRow(firebaseTestsEl, 'auth', 'Firebase Anonymous Sign-In');
     setRow(row, 'run', 'Signing in anonymously…');
 
     if (!auth) {
-      setRow(row, 'err', 'Firebase Auth not initialized', 'Firebase initializeApp failed earlier.');
+      setRow(row, 'err', 'Firebase Auth not initialized', 'initializeApp failed earlier.');
       tally('err'); return resolve(false);
     }
 
@@ -329,20 +323,17 @@ function testFirebaseAuth() {
     const timeout = setTimeout(() => {
       if (done) return;
       done = true;
-      setRow(row, 'err',
-        'Timeout — 15s mein sign-in nahi hua',
-        'Check karein: Firebase Console → Authentication → Sign-in method → Anonymous ENABLED hai?');
+      setRow(row, 'err', 'Timeout — 15s mein sign-in nahi hua',
+        'Check: Firebase Console → Authentication → Sign-in method → Anonymous ENABLED?');
       tally('err'); resolve(false);
     }, 15000);
 
     onAuthStateChanged(auth, (user) => {
-      if (done) return;
-      if (user) {
-        done = true; clearTimeout(timeout);
-        setRow(row, 'ok', 'Signed in as UID: ' + user.uid,
-          JSON.stringify({ uid: user.uid, isAnonymous: user.isAnonymous }, null, 2));
-        tally('ok'); resolve(true);
-      }
+      if (done || !user) return;
+      done = true; clearTimeout(timeout);
+      setRow(row, 'ok', 'Signed in as UID: ' + user.uid,
+        JSON.stringify({ uid: user.uid, isAnonymous: user.isAnonymous }, null, 2));
+      tally('ok'); resolve(true);
     });
 
     signInAnonymously(auth).catch((err) => {
@@ -350,18 +341,16 @@ function testFirebaseAuth() {
       done = true; clearTimeout(timeout);
       setRow(row, 'err', 'Sign-in failed: ' + err.code + ' — ' + err.message,
         'Common causes:\n' +
-        '1. Anonymous auth disabled in Firebase Console\n' +
-        '2. apiKey galat hai\n' +
-        '3. authDomain galat hai\n' +
-        '4. Authorized domains mein localhost add nahi hai');
+        '1. Anonymous auth disabled\n' +
+        '2. apiKey galat\n' +
+        '3. authDomain galat\n' +
+        '4. Authorized domains mein localhost add nahi');
       tally('err'); resolve(false);
     });
   });
 }
 
-/* ============================================================
-   TEST: Firestore Read
-   ============================================================ */
+/* ------- TEST: Firestore Read ------- */
 async function testFirestoreRead() {
   const row = makeRow(firebaseTestsEl, 'read', 'Firestore Read (list collection)');
   setRow(row, 'run', 'Reading collection…');
@@ -372,19 +361,14 @@ async function testFirestoreRead() {
     tally('ok'); return true;
   } catch (err) {
     setRow(row, 'err', 'Read failed: ' + err.code + ' — ' + err.message,
-      'Common causes:\n' +
-      '1. Firestore not enabled in Firebase Console\n' +
-      '2. Firestore security rules deny read\n' +
-      '3. Collection name galat hai\n\n' +
-      'Fix: Firestore → Rules → testing ke liye:\n' +
-      'allow read, write: if true;');
+      'Fix:\n' +
+      '1. Firestore enable karein\n' +
+      '2. Rules mein: allow read, write: if true;');
     tally('err'); return false;
   }
 }
 
-/* ============================================================
-   TEST: Firestore Write / Update / Delete
-   ============================================================ */
+/* ------- TEST: Firestore CRUD ------- */
 async function testFirestoreCRUD() {
   const row = makeRow(firebaseTestsEl, 'crud', 'Firestore Write → Update → Delete');
   setRow(row, 'run', 'Creating test document…');
@@ -392,54 +376,48 @@ async function testFirestoreCRUD() {
   const logs = [];
 
   try {
-    // CREATE
     docRef = await addDoc(recordsCol, {
       title: '__DIAGNOSTIC_TEST__',
-      description: 'Auto-created by diagnostic page at ' + new Date().toISOString(),
+      description: 'Auto-created at ' + new Date().toISOString(),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
     logs.push('✅ CREATE: doc id = ' + docRef.id);
 
-    // UPDATE
     await updateDoc(doc(db, CFG.FIRESTORE_COLLECTION, docRef.id), {
       title: '__DIAGNOSTIC_TEST_UPDATED__',
       updatedAt: serverTimestamp()
     });
     logs.push('✅ UPDATE: doc modified');
 
-    // DELETE
     await deleteDoc(doc(db, CFG.FIRESTORE_COLLECTION, docRef.id));
     logs.push('✅ DELETE: doc removed');
 
     setRow(row, 'ok', 'CREATE → UPDATE → DELETE sab OK', logs.join('\n'));
     tally('ok'); return true;
   } catch (err) {
-    logs.push('❌ FAILED at step: ' + err.code + ' — ' + err.message);
+    logs.push('❌ FAILED: ' + err.code + ' — ' + err.message);
     if (docRef) {
-      try { await deleteDoc(doc(db, CFG.FIRESTORE_COLLECTION, docRef.id)); logs.push('(cleanup: doc deleted)'); }
+      try { await deleteDoc(doc(db, CFG.FIRESTORE_COLLECTION, docRef.id)); logs.push('(cleanup done)'); }
       catch {}
     }
-    setRow(row, 'err', 'CRUD failed: ' + err.code, logs.join('\n') + '\n\n' +
-      'Fix: Firestore → Rules → testing ke liye:\nallow read, write: if true;');
+    setRow(row, 'err', 'CRUD failed', logs.join('\n'));
     tally('err'); return false;
   }
 }
 
-/* ============================================================
-   DRIVE — OAuth
-   ============================================================ */
+/* ------- Drive OAuth ------- */
 let tokenClient = null;
 let accessToken = null;
 let tokenExpiresAt = 0;
 let pendingResolve = null, pendingReject = null;
 
-function waitForGoogle(maxMs = 10000) {
+function waitForGoogle(maxMs = 12000) {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     (function chk() {
-      if (window.google?.accounts?.oauth2) return resolve();
-      if (Date.now() - start > maxMs) return reject(new Error('GSI library failed to load'));
+      if (window.google && window.google.accounts && window.google.accounts.oauth2) return resolve();
+      if (Date.now() - start > maxMs) return reject(new Error('GSI library failed to load within ' + maxMs + 'ms'));
       setTimeout(chk, 100);
     })();
   });
@@ -452,15 +430,15 @@ function initTokenClient() {
     callback: (resp) => {
       const res = pendingResolve, rej = pendingReject;
       pendingResolve = pendingReject = null;
-      if (resp?.error) { rej?.(new Error(resp.error_description || resp.error)); return; }
+      if (resp && resp.error) { rej && rej(new Error(resp.error_description || resp.error)); return; }
       accessToken = resp.access_token;
       tokenExpiresAt = Date.now() + (Number(resp.expires_in || 3600) * 1000) - 60000;
-      res?.(accessToken);
+      res && res(accessToken);
     },
     error_callback: (err) => {
       const rej = pendingReject;
       pendingResolve = pendingReject = null;
-      rej?.(new Error(err?.message || err?.type || 'Google auth failed'));
+      rej && rej(new Error((err && (err.message || err.type)) || 'Google auth failed'));
     }
   });
 }
@@ -476,9 +454,7 @@ async function getAccessToken() {
   });
 }
 
-/* ============================================================
-   TEST: GSI library loaded
-   ============================================================ */
+/* ------- TEST: GSI library ------- */
 function testGSILibrary() {
   const row = makeRow(driveTestsEl, 'gsi', 'Google Identity Services loaded');
   setRow(row, 'run', 'Checking window.google.accounts.oauth2…');
@@ -486,83 +462,78 @@ function testGSILibrary() {
     setRow(row, 'ok', 'GSI library loaded OK', 'window.google.accounts.oauth2 available');
     tally('ok');
   }).catch((e) => {
-    setRow(row, 'err', 'GSI failed to load: ' + e.message,
-      'Check karein: <script src="https://accounts.google.com/gsi/client"> tag present hai?\n' +
-      'Network tab mein is script ka status 200 hai?');
+    setRow(row, 'err', 'GSI failed: ' + e.message,
+      'Check karein:\n' +
+      '1. <script src="https://accounts.google.com/gsi/client"> present?\n' +
+      '2. Network tab mein status 200?\n' +
+      '3. Ad blocker / privacy extension block kar raha?');
     tally('err');
   });
 }
 
-/* ============================================================
-   TEST: OAuth popup
-   ============================================================ */
+/* ------- TEST: Drive OAuth ------- */
 async function testDriveOAuth() {
   const row = makeRow(driveTestsEl, 'oauth', 'Google Drive OAuth (popup)');
   setRow(row, 'run', 'Opening Google sign-in popup…');
 
   if (location.protocol === 'file:') {
     setRow(row, 'err', 'file:// protocol — OAuth kaam nahi karega',
-      'Local server chalayein: python -m http.server 5500');
+      'Local server chalayein:\npython -m http.server 5500');
     tally('err'); return false;
   }
 
   try {
     const token = await getAccessToken();
-    setRow(row, 'ok', 'Access token received',
-      'Token length: ' + token.length + ' chars\nScope: ' + CFG.DRIVE.scope +
-      '\n\n⚠️ NOTE: sirf wahi files accessible hongi jo is app ne upload ki hain (drive.file scope).');
+    setRow(row, 'ok', 'Access token received (len ' + token.length + ')',
+      'Scope: ' + CFG.DRIVE.scope +
+      '\n\nNOTE: drive.file scope mein sirf app-created files accessible hain.');
     tally('ok'); return true;
   } catch (err) {
     setRow(row, 'err', 'OAuth failed: ' + err.message,
       'Common causes:\n' +
-      '1. Authorized JavaScript origin mein localhost add nahi hai\n' +
+      '1. Authorized JavaScript origins mein localhost add nahi\n' +
       '   → Cloud Console → Credentials → OAuth Client ID → Origins\n' +
-      '2. OAuth consent screen "Testing" mein hai aur aapka email test users mein nahi\n' +
-      '3. Popup blocker ne block kiya');
+      '2. OAuth consent screen "Testing" aur aapka email test users mein nahi\n' +
+      '3. Popup blocker');
     tally('err'); return false;
   }
 }
 
-/* ============================================================
-   TEST: Drive Folder access
-   ============================================================ */
+/* ------- TEST: Drive Folder ------- */
 async function testDriveFolder() {
   const row = makeRow(driveTestsEl, 'folder', 'Drive Folder access');
-  setRow(row, 'run', 'Checking folder ID ' + CFG.DRIVE.folderId + '…');
+  setRow(row, 'run', 'Checking folder ' + CFG.DRIVE.folderId + '…');
   try {
     const token = await getAccessToken();
     const res = await fetch(
       `https://www.googleapis.com/drive/v3/files/${CFG.DRIVE.folderId}` +
-      `?fields=id,name,mimeType,owners&supportsAllDrives=true`,
+      `?fields=id,name,mimeType&supportsAllDrives=true`,
       { headers: { 'Authorization': 'Bearer ' + token } }
     );
     if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`HTTP ${res.status}: ${errText.slice(0, 300)}`);
+      const t = await res.text();
+      throw new Error('HTTP ' + res.status + ': ' + t.slice(0, 300));
     }
     const data = await res.json();
     if (data.mimeType !== 'application/vnd.google-apps.folder') {
-      setRow(row, 'warn', 'ID exists but is NOT a folder (mimeType: ' + data.mimeType + ')',
+      setRow(row, 'warn', 'ID folder nahi hai (mimeType: ' + data.mimeType + ')',
         JSON.stringify(data, null, 2));
       tally('warn'); return false;
     }
-    setRow(row, 'ok', 'Folder OK: "' + data.name + '"',
-      JSON.stringify(data, null, 2));
+    setRow(row, 'ok', 'Folder OK: "' + data.name + '"', JSON.stringify(data, null, 2));
     tally('ok'); return true;
   } catch (err) {
     setRow(row, 'err', 'Folder access failed: ' + err.message,
       'Common causes:\n' +
-      '1. Folder ID galat hai\n' +
-      '2. drive.file scope mein folder accessible nahi (sirf app-created files)\n' +
-      '   → Folder khud app ne banaya ho ya file picker se select kiya ho\n' +
+      '1. Folder ID galat\n' +
+      '2. drive.file scope mein folder accessible nahi\n' +
+      '   (sirf app-created ya picker-selected files)\n' +
       '3. Folder delete ho gaya');
     tally('err'); return false;
   }
 }
 
-/* ============================================================
-   TEST: Drive List files
-   ============================================================ */
+/* ------- TEST: Drive List ------- */
 async function testDriveList() {
   const row = makeRow(driveTestsEl, 'list', 'Drive list files in folder');
   setRow(row, 'run', 'Listing files…');
@@ -577,8 +548,7 @@ async function testDriveList() {
     if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 300));
     const data = await res.json();
     const files = data.files || [];
-    setRow(row, 'ok', `List OK — ${files.length} file(s)`,
-      JSON.stringify(files, null, 2));
+    setRow(row, 'ok', `List OK — ${files.length} file(s)`, JSON.stringify(files, null, 2));
     tally('ok'); return true;
   } catch (err) {
     setRow(row, 'err', 'List failed: ' + err.message);
@@ -586,9 +556,7 @@ async function testDriveList() {
   }
 }
 
-/* ============================================================
-   TEST: Drive Upload → Update → Trash → Restore → Delete
-   ============================================================ */
+/* ------- TEST: Drive full CRUD ------- */
 async function testDriveFullCRUD() {
   const row = makeRow(driveTestsEl, 'crud', 'Drive Upload → Update → Trash → Restore → Delete');
   setRow(row, 'run', 'Running full lifecycle…');
@@ -598,12 +566,12 @@ async function testDriveFullCRUD() {
   try {
     const token = await getAccessToken();
 
-    // 1. UPLOAD
-    const meta = { name: '__DIAGNOSTIC_' + Date.now() + '.txt', parents: [CFG.DRIVE.folderId] };
+    // UPLOAD
+    const meta = { name: '__DIAG_' + Date.now() + '.txt', parents: [CFG.DRIVE.folderId] };
     const boundary = 'diag_' + Date.now();
     const body = new Blob([
       `--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(meta)}`,
-      `\r\n--${boundary}\r\nContent-Type: text/plain\r\n\r\nHello diagnostic test v1`,
+      `\r\n--${boundary}\r\nContent-Type: text/plain\r\n\r\nHello diagnostic v1`,
       `\r\n--${boundary}--`
     ], { type: `multipart/related; boundary=${boundary}` });
 
@@ -613,51 +581,51 @@ async function testDriveFullCRUD() {
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': `multipart/related; boundary=${boundary}` },
         body }
     );
-    if (!upRes.ok) throw new Error('UPLOAD failed: ' + (await upRes.text()).slice(0, 200));
+    if (!upRes.ok) throw new Error('UPLOAD: ' + (await upRes.text()).slice(0, 200));
     const upData = await upRes.json();
     fileId = upData.id;
     logs.push('✅ UPLOAD OK — id=' + fileId);
 
-    // 2. UPDATE CONTENT
+    // UPDATE
     const upRes2 = await fetch(
       `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&fields=id,size,modifiedTime`,
       { method: 'PATCH',
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'text/plain' },
-        body: 'Hello diagnostic test v2 — UPDATED' }
+        body: 'Hello diagnostic v2 — UPDATED' }
     );
-    if (!upRes2.ok) throw new Error('UPDATE failed: ' + (await upRes2.text()).slice(0, 200));
+    if (!upRes2.ok) throw new Error('UPDATE: ' + (await upRes2.text()).slice(0, 200));
     logs.push('✅ UPDATE OK');
 
-    // 3. TRASH
+    // TRASH
     const trRes = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,trashed`,
       { method: 'PATCH',
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
         body: JSON.stringify({ trashed: true }) }
     );
-    if (!trRes.ok) throw new Error('TRASH failed: ' + (await trRes.text()).slice(0, 200));
+    if (!trRes.ok) throw new Error('TRASH: ' + (await trRes.text()).slice(0, 200));
     logs.push('✅ TRASH OK');
 
-    // 4. RESTORE
+    // RESTORE
     const reRes = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?fields=id,trashed`,
       { method: 'PATCH',
         headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
         body: JSON.stringify({ trashed: false }) }
     );
-    if (!reRes.ok) throw new Error('RESTORE failed: ' + (await reRes.text()).slice(0, 200));
+    if (!reRes.ok) throw new Error('RESTORE: ' + (await reRes.text()).slice(0, 200));
     logs.push('✅ RESTORE OK');
 
-    // 5. DELETE PERMANENT
+    // DELETE
     const delRes = await fetch(
       `https://www.googleapis.com/drive/v3/files/${fileId}?supportsAllDrives=true`,
       { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } }
     );
     if (!delRes.ok && delRes.status !== 204 && delRes.status !== 404)
-      throw new Error('DELETE failed: ' + (await delRes.text()).slice(0, 200));
+      throw new Error('DELETE: ' + (await delRes.text()).slice(0, 200));
     logs.push('✅ DELETE OK');
 
-    setRow(row, 'ok', 'Full Drive lifecycle OK — sab 5 steps pass', logs.join('\n'));
+    setRow(row, 'ok', 'Full Drive lifecycle OK', logs.join('\n'));
     tally('ok'); return true;
   } catch (err) {
     logs.push('❌ FAILED: ' + err.message);
@@ -674,14 +642,9 @@ async function testDriveFullCRUD() {
   }
 }
 
-/* ============================================================
-   PICKER TESTS
-   ============================================================ */
-function waitForPickerApi(maxMs = 10000) {
+/* ------- Picker ------- */
+function waitForGapi(maxMs = 12000) {
   return new Promise((resolve, reject) => {
-    if (!window.gapi) {
-      // gapi script might still be loading; poll
-    }
     const start = Date.now();
     (function chk() {
       if (window.gapi && typeof window.gapi.load === 'function') return resolve();
@@ -695,27 +658,27 @@ function testPickerScripts() {
   return new Promise((resolve) => {
     const row = makeRow(pickerTestsEl, 'scripts', 'Picker required scripts loaded');
     setRow(row, 'run', 'Checking gapi + google.picker…');
-    waitForPickerApi(10000).then(() => {
+    waitForGapi(12000).then(() => {
       window.gapi.load('picker', {
         callback: () => {
           if (window.google && window.google.picker) {
-            setRow(row, 'ok', 'gapi + google.picker loaded OK', 'Picker API is ready.');
+            setRow(row, 'ok', 'gapi + google.picker loaded OK');
             tally('ok'); resolve(true);
           } else {
-            setRow(row, 'err', 'google.picker missing after gapi.load',
-              'Google Picker API project mein enabled hai? → Cloud Console → APIs & Services → Library → "Google Picker API"');
+            setRow(row, 'err', 'google.picker missing',
+              'Google Picker API enable karein:\nCloud Console → APIs & Services → Library → "Google Picker API" → Enable');
             tally('err'); resolve(false);
           }
         },
         onerror: () => {
           setRow(row, 'err', 'gapi.load("picker") failed',
-            'Google Picker API enable nahi hai. Cloud Console → APIs & Services → Library → "Google Picker API" → Enable');
+            'Google Picker API enable nahi hai\nCloud Console → APIs & Services → Library → "Google Picker API" → Enable');
           tally('err'); resolve(false);
         }
       });
     }).catch((e) => {
       setRow(row, 'err', 'gapi script not loaded: ' + e.message,
-        '<script src="https://apis.google.com/js/api.js"></script> tag check karein.');
+        '<script src="https://apis.google.com/js/api.js"></script> check karein');
       tally('err'); resolve(false);
     });
   });
@@ -726,9 +689,8 @@ async function testPickerOpen() {
   setRow(row, 'run', 'Opening picker…');
 
   if (!CFG.GOOGLE_APP_ID || CFG.GOOGLE_APP_ID === 'PASTE_HERE') {
-    setRow(row, 'warn', 'GOOGLE_APP_ID (Project Number) set nahi hai',
-      'Cloud Console → Dashboard → "Project number" copy karein aur\n' +
-      'script ke top par GOOGLE_APP_ID mein daalein.');
+    setRow(row, 'warn', 'GOOGLE_APP_ID set nahi hai',
+      'Cloud Console → Dashboard → Project number copy karein aur\nscript ke top par GOOGLE_APP_ID mein daalein.');
     tally('warn'); return false;
   }
 
@@ -750,22 +712,21 @@ async function testPickerOpen() {
       .setCallback((data) => {
         if (data.action === google.picker.Action.PICKED) {
           const file = data.docs[0];
-          setRow(row, 'ok', 'Picker picked: ' + file.name,
-            JSON.stringify(file, null, 2));
+          setRow(row, 'ok', 'Picker picked: ' + file.name, JSON.stringify(file, null, 2));
           tally('ok');
         } else if (data.action === google.picker.Action.CANCEL) {
-          setRow(row, 'warn', 'Picker khula lekin user ne cancel kiya',
+          setRow(row, 'warn', 'Picker khula, user ne cancel kiya',
             'Yeh normal hai — picker kaam kar raha hai.');
           tally('warn');
         }
       })
       .build();
     picker.setVisible(true);
-    // mark as running
+
     setTimeout(() => {
       const icon = row.querySelector('[data-icon]');
       if (icon.classList.contains('run')) {
-        setRow(row, 'ok', 'Picker dialog khul gaya (window check karein)',
+        setRow(row, 'ok', 'Picker dialog khul gaya',
           'Agar dialog nazar aa raha hai to Picker OK hai. Cancel karke aage badh sakte hain.');
         tally('ok');
       }
@@ -775,16 +736,14 @@ async function testPickerOpen() {
     setRow(row, 'err', 'Picker open failed: ' + err.message,
       'Check karein:\n' +
       '1. Google Picker API enabled\n' +
-      '2. GOOGLE_APP_ID (Project Number) sahi hai\n' +
-      '3. DRIVE.apiKey sahi hai aur usme Picker API allowed hai\n' +
+      '2. GOOGLE_APP_ID sahi hai\n' +
+      '3. DRIVE.apiKey sahi hai\n' +
       '4. OAuth token mila hai');
     tally('err'); return false;
   }
 }
 
-/* ============================================================
-   RUN ALL
-   ============================================================ */
+/* ------- Run functions ------- */
 async function runFirebaseTests() {
   firebaseTestsEl.innerHTML = '';
   await testFirebaseAuth();
@@ -814,15 +773,14 @@ async function runPickerTests() {
 
 async function runAllTests() {
   resetCounts();
-  document.getElementById('runAllBtn').disabled = true;
-  document.getElementById('runAllBtn').textContent = '⏳ Running…';
+  const btn = document.getElementById('runAllBtn');
+  btn.disabled = true; btn.textContent = '⏳ Running…';
 
   await runFirebaseTests();
   await runDriveTests();
   await runPickerTests();
 
-  document.getElementById('runAllBtn').disabled = false;
-  document.getElementById('runAllBtn').textContent = '▶ Run All Tests';
+  btn.disabled = false; btn.textContent = '▶ Run All Tests';
 }
 
 document.getElementById('runAllBtn').addEventListener('click', runAllTests);
@@ -834,6 +792,8 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   pickerTestsEl.innerHTML = '';
   resetCounts();
 });
+
+console.log('✅ Diagnostic page loaded. Config:', CFG);
 </script>
 
 </body>
