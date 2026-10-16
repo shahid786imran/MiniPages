@@ -655,31 +655,35 @@ function waitForGapi(maxMs = 12000) {
 }
 
 function testPickerScripts() {
-  return new Promise((resolve) => {
-    const row = makeRow(pickerTestsEl, 'scripts', 'Picker required scripts loaded');
-    setRow(row, 'run', 'Checking gapi + google.picker…');
-    waitForGapi(12000).then(() => {
+  return new Promise(function(resolve) {
+    var row = makeRow(pickerTestsEl, 'scripts', 'Picker required scripts loaded');
+    setRow(row, 'run', 'Checking gapi and google.picker...');
+    waitForGapi(12000).then(function() {
       window.gapi.load('picker', {
-        callback: () => {
+        callback: function() {
           if (window.google && window.google.picker) {
             setRow(row, 'ok', 'gapi + google.picker loaded OK');
-            tally('ok'); resolve(true);
+            tally('ok');
+            resolve(true);
           } else {
             setRow(row, 'err', 'google.picker missing',
-              'Google Picker API enable karein:\nCloud Console → APIs & Services → Library → "Google Picker API" → Enable');
-            tally('err'); resolve(false);
+              'Google Picker API enable karein. Cloud Console -> APIs and Services -> Library -> Google Picker API -> Enable');
+            tally('err');
+            resolve(false);
           }
         },
-        onerror: () => {
-          setRow(row, 'err', 'gapi.load("picker") failed',
-            'Google Picker API enable nahi hai\nCloud Console → APIs & Services → Library → "Google Picker API" → Enable');
-          tally('err'); resolve(false);
+        onerror: function() {
+          setRow(row, 'err', 'gapi.load picker failed',
+            'Google Picker API enable nahi hai. Cloud Console -> APIs and Services -> Library -> Google Picker API -> Enable');
+          tally('err');
+          resolve(false);
         }
       });
-    }).catch((e) => {
+    }).catch(function(e) {
       setRow(row, 'err', 'gapi script not loaded: ' + e.message,
-        '<script src="https://apis.google.com/js/api.js"></script> check karein');
-      tally('err'); resolve(false);
+        'Script tag https://apis.google.com/js/api.js check karein');
+      tally('err');
+      resolve(false);
     });
   });
 }
