@@ -1,258 +1,366 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Firebase + Drive Test (Test1)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagnostic Test Page</title>
 
 <script>
-const FIREBASE_CONFIG = {
-  apiKey:"AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
-  authDomain:"mywebapps-e3b63.firebaseapp.com",
-  projectId:"mywebapps-e3b63",
-  storageBucket:"mywebapps-e3b63.firebasestorage.app",
-  messagingSenderId:"46681415809",
-  appId:"1:46681415809:web:c4528b9da97abc310a2d80"
-};
-const DRIVE_CONFIG = {
-  oauthClientId:"203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com",
-  apiKey:"AIzaSyBSf3HKUR652Kja3l65D91VfCkQSoxgZDY",
-  parentFolderId:"1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT",
-  subFolderName:"Test1",
-  scope:"https://www.googleapis.com/auth/drive.file"
-};
-const COL = "Test1", DOC = "global";
-window._tokenClient = null; window._accessToken = null; window._subId = null; window._fileId = null; window._mime = null;
+  /* ---------- CONFIG ---------- */
+  const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+    authDomain:        "mywebapps-e3b63.firebaseapp.com",
+    projectId:         "mywebapps-e3b63",
+    storageBucket:     "mywebapps-e3b63.firebasestorage.app",
+    messagingSenderId: "46681415809",
+    appId:             "1:46681415809:web:c4528b9da97abc310a2d80"
+  };
+
+  const FIRESTORE_COLLECTION_NAME = "Test1";
+  const FIRESTORE_GLOBAL_DOC_ID   = "global";
+
+  const DRIVE_CONFIG = {
+    oauthClientId:  "203025420924-uvlehfup39hj4st7tpv7vud8uedafr9k.apps.googleusercontent.com",
+    apiKey:         "AIzaSyBSf3HKUR652Kja3l65D91VfCkQSoxgZDY",
+    parentFolderId: "1LFkmK8l6dB6HtFlcApI0TW2jgp7cGEGT",
+    subFolderName:  "Test1",
+    scope:          "https://www.googleapis.com/auth/drive.file"
+  };
+
+  window._gapiReady   = false;
+  window._tokenClient = null;
+  window._accessToken = null;
+  window._subId       = null;
 </script>
 
+<!-- Google API loader + GSI -->
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, deleteDoc, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const app  = initializeApp(FIREBASE_CONFIG);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  const sharedDocRef = doc(db, FIRESTORE_COLLECTION_NAME, FIRESTORE_GLOBAL_DOC_ID);
+  window._firestoreRef = sharedDocRef;
+  window._fsSetDoc = setDoc;
+  window._fsGetDoc = getDoc;
+  window._fsDeleteDoc = deleteDoc;
+  window._fsServerTime = serverTimestamp;
+
+  signInAnonymously(auth).catch(e => console.error("Auth error:", e));
+  onAuthStateChanged(auth, u => {
+    const el = document.getElementById("authSt");
+    if (el) el.textContent = u ? "✔ signed in" : "✘ not signed in";
+  });
+</script>
+
+<style>
+  body { font-family: Arial; max-width: 900px; margin: 20px auto; padding: 0 12px; color: #222; }
+  fieldset { margin-bottom: 14px; padding: 12px; border: 1px solid #ccc; border-radius: 6px; }
+  legend { font-weight: bold; padding: 0 6px; }
+  button { padding: 6px 12px; margin: 4px 2px; cursor: pointer; }
+  pre { background: #f4f4f4; padding: 8px; border: 1px solid #ddd; white-space: pre-wrap; font-size: 13px; }
+  .ok { color: green; font-weight: bold; }
+  .fail { color: red; font-weight: bold; }
+  .warn { color: #d97706; font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  th, td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; font-size: 14px; }
+  th { background: #eee; }
+</style>
 </head>
 
-<body style="font-family:Arial;max-width:780px;margin:20px auto;padding:0 10px">
-<h3>Firebase + Drive Test — Test1</h3>
-<p><b>Auth:</b> <span id="auth">…</span> | <b>Drive:</b> <span id="gapiSt">…</span></p>
+<body>
 
+<h2>Diagnostic Test Page</h2>
+
+<!-- ================= STATUS ================= -->
 <fieldset>
-  <legend>Firestore Test1/global</legend>
-  <input id="n" placeholder="Name" style="width:100%">
-  <textarea id="note" placeholder="Note" style="width:100%;height:40px"></textarea><br>
-  <button id="bSave">Save</button>
-  <button id="bLoad">Load</button>
-  <button id="bDel">Delete</button>
+  <legend>Live Status</legend>
+  <table>
+    <tr><th>Check</th><th>Status</th></tr>
+    <tr><td>Firebase Auth</td><td id="authSt">…</td></tr>
+    <tr><td>gapi script</td><td id="gapiJs">…</td></tr>
+    <tr><td>gapi.client</td><td id="gapiClient">…</td></tr>
+    <tr><td>gapi.client.init</td><td id="gapiInit">…</td></tr>
+    <tr><td>GSI OAuth2</td><td id="gsiSt">…</td></tr>
+    <tr><td>Token client</td><td id="tokSt">…</td></tr>
+    <tr><td>Access token</td><td id="accSt">…</td></tr>
+  </table>
+  <button id="refreshStatus">🔄 Refresh Status</button>
+  <button id="authBtn">🔐 Authorize Google Drive</button>
+</fieldset>
+
+<!-- ================= STEP TESTS ================= -->
+<fieldset>
+  <legend>Step-by-Step Diagnostics</legend>
+  <button id="runAllBtn">▶ Run All Tests</button>
+  <pre id="diagOut">== Diagnostics ==</pre>
+</fieldset>
+
+<!-- ================= FIRESTORE ================= -->
+<fieldset>
+  <legend>Firestore Test (Test1 / global)</legend>
+  <input type="text" id="fsName" placeholder="Name" style="width:100%;padding:5px;margin:3px 0;">
+  <textarea id="fsNote" placeholder="Note" style="width:100%;height:50px;"></textarea>
+  <button id="fsSave">Save</button>
+  <button id="fsLoad">Load</button>
+  <button id="fsDel">Delete</button>
   <pre id="fsOut">-</pre>
 </fieldset>
 
+<!-- ================= DRIVE FILE INPUT ================= -->
 <fieldset>
-  <legend>Drive: MyWebApps Attachments / Test1</legend>
-  <button id="bRefresh">Refresh</button>
-  <button id="bCreate">Create New</button>
-  <button id="bAuth">Authorize</button><br>
-  <input type="file" id="fInput"> <button id="bUp">Upload</button>
-  <div id="list" style="border:1px solid #ccc;padding:6px;margin-top:6px;min-height:40px">—</div>
-
-  <div id="editBox" style="display:none;margin-top:10px">
-    <b>Editing:</b> <span id="edName">—</span><br>
-    <input id="edNewName" placeholder="New name" style="width:50%">
-    <button id="bRen">Rename</button><br>
-    <textarea id="edContent" style="width:100%;height:140px;font-family:monospace"></textarea><br>
-    <button id="bSaveC">Save Content</button>
-    <button id="bTrash" style="color:#b00">Delete (Trash)</button>
-  </div>
-
-  <hr>
-  <b>Trash:</b> <button id="bTrashList">List Trashed</button>
-  <div id="trash" style="border:1px solid #ccc;padding:6px;margin-top:4px;background:#fff5f5">—</div>
-  <pre id="out" style="background:#eef">-</pre>
+  <legend>Drive Upload (Test1 subfolder)</legend>
+  <input type="file" id="fileInput">
+  <button id="uploadBtn">⬆ Upload</button>
+  <pre id="driveOut">-</pre>
 </fieldset>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-const app = initializeApp(FIREBASE_CONFIG);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const ref = doc(db, COL, DOC);
-
-signInAnonymously(auth);
-onAuthStateChanged(auth, u => document.getElementById("auth").textContent = u ? "OK" : "…");
-
-const $ = id => document.getElementById(id);
-const log = m => $("out").textContent = typeof m === "string" ? m : JSON.stringify(m, null, 2);
-const esc = s => (s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-
-$("bSave").onclick = async () => {
-  const n = $("n").value.trim(); if (!n) return alert("Name?");
-  await setDoc(ref, { name:n, note:$("note").value.trim(), updatedAt: serverTimestamp() }, { merge:true });
-  alert("Saved"); $("bLoad").click();
-};
-$("bLoad").onclick = async () => {
-  const s = await getDoc(ref);
-  $("fsOut").textContent = s.exists()
-    ? "Name: "+(s.data().name||"")+"\nNote: "+(s.data().note||"")+"\nUpdated: "+(s.data().updatedAt?s.data().updatedAt.toDate().toLocaleString():"-")
-    : "No document.";
-};
-$("bDel").onclick = async () => { if (confirm("Delete?")) { await deleteDoc(ref); alert("Deleted"); $("bLoad").click(); } };
-</script>
-
 <script>
-/* ============ DRIVE ============ */
-const $ = id => document.getElementById(id);
-const log = m => $("out").textContent = typeof m === "string" ? m : JSON.stringify(m, null, 2);
-const esc = s => (s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const $ = id => document.getElementById(id);
 
-function waitGapi(max=6000){
-  return new Promise(r=>{const t=Date.now();(function c(){
-    if(typeof gapi!=="undefined"&&typeof gapi.client!=="undefined")return r(true);
-    if(Date.now()-t>max)return r(false); setTimeout(c,150);
-  })();});
-}
-async function initGapi(){
-  if(typeof gapi==="undefined"){ $("gapiSt").textContent="✘ gapi missing"; return; }
-  await new Promise(r=>gapi.load("client",r));
-  if(!(await waitGapi())){ $("gapiSt").textContent="✘ gapi.client missing"; return; }
-  try{
-    await gapi.client.init({ apiKey:DRIVE_CONFIG.apiKey, discoveryDocs:["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]});
-    $("gapiSt").textContent="✔ ready";
-  }catch(e){ $("gapiSt").textContent="✘ init failed"; console.error(e); }
-}
-function initToken(){
-  if(typeof google==="undefined"||!google.accounts||!google.accounts.oauth2) return setTimeout(initToken,300);
-  window._tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id:DRIVE_CONFIG.oauthClientId, scope:DRIVE_CONFIG.scope,
-    callback:r=>{ if(r.access_token){ window._accessToken=r.access_token; gapi.client.setToken({access_token:r.access_token}); } }
+  function setStatus(id, ok, text) {
+    const el = $(id);
+    el.innerHTML = ok === true ? '<span class="ok">✔ ' + text + '</span>'
+                 : ok === false ? '<span class="fail">✘ ' + text + '</span>'
+                 : '<span class="warn">⚠ ' + text + '</span>';
+  }
+
+  function logDiag(msg) {
+    console.log("[DIAG]", msg);
+    $("diagOut").textContent += "\n" + msg;
+  }
+
+  /* ---------- gapi init ---------- */
+  function waitGapi(max = 6000) {
+    return new Promise(r => {
+      const t = Date.now();
+      (function c() {
+        if (typeof gapi !== "undefined" && typeof gapi.client !== "undefined") return r(true);
+        if (Date.now() - t > max) return r(false);
+        setTimeout(c, 150);
+      })();
+    });
+  }
+
+  async function initGapi() {
+    if (typeof gapi === "undefined") {
+      setStatus("gapiJs", false, "api.js NOT loaded");
+      return false;
+    }
+    setStatus("gapiJs", true, "api.js loaded");
+
+    await new Promise(r => gapi.load("client", r));
+    const ok = await waitGapi();
+    if (!ok) {
+      setStatus("gapiClient", false, "gapi.client NOT available");
+      return false;
+    }
+    setStatus("gapiClient", true, "gapi.client loaded");
+
+    try {
+      await gapi.client.init({
+        apiKey: DRIVE_CONFIG.apiKey,
+        discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"]
+      });
+      window._gapiReady = true;
+      setStatus("gapiInit", true, "gapi.client.init OK");
+      return true;
+    } catch (e) {
+      setStatus("gapiInit", false, "init failed: " + e.message);
+      console.error("gapi.client.init error:", e);
+      return false;
+    }
+  }
+
+  /* ---------- token client ---------- */
+  function initToken() {
+    if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
+      return setTimeout(initToken, 300);
+    }
+    setStatus("gsiSt", true, "GSI OAuth2 loaded");
+    window._tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: DRIVE_CONFIG.oauthClientId,
+      scope: DRIVE_CONFIG.scope,
+      callback: r => {
+        if (r.access_token) {
+          window._accessToken = r.access_token;
+          gapi.client.setToken({ access_token: r.access_token });
+          setStatus("accSt", true, "token acquired");
+        } else {
+          setStatus("accSt", false, "token error: " + JSON.stringify(r));
+        }
+      }
+    });
+    setStatus("tokSt", true, "token client ready");
+  }
+
+  /* ---------- subfolder ---------- */
+  async function subFolder() {
+    if (window._subId) return window._subId;
+    const q = `'${DRIVE_CONFIG.parentFolderId}' in parents and name='${DRIVE_CONFIG.subFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+    const l = await gapi.client.drive.files.list({ q, fields: "files(id)" });
+    if (l.result.files && l.result.files.length) {
+      window._subId = l.result.files[0].id;
+      return window._subId;
+    }
+    const c = await gapi.client.drive.files.create({
+      resource: {
+        name: DRIVE_CONFIG.subFolderName,
+        mimeType: "application/vnd.google-apps.folder",
+        parents: [DRIVE_CONFIG.parentFolderId]
+      },
+      fields: "id"
+    });
+    window._subId = c.result.id;
+    return window._subId;
+  }
+
+  /* ---------- diagnostics runner ---------- */
+  async function runDiagnostics() {
+    $("diagOut").textContent = "== Diagnostics ==";
+    logDiag("Time: " + new Date().toLocaleString());
+    logDiag("URL: " + location.href);
+    logDiag("Origin: " + location.origin);
+
+    logDiag("");
+    logDiag("--- Environment ---");
+    logDiag("typeof gapi ........ " + typeof gapi);
+    logDiag("typeof google ...... " + typeof google);
+    logDiag("typeof firebase .... " + typeof firebase);
+    logDiag("document.readyState  " + document.readyState);
+
+    logDiag("");
+    logDiag("--- Script tags ---");
+    const gapiTag = document.querySelector('script[src*="apis.google.com"]');
+    const gsiTag  = document.querySelector('script[src*="accounts.google.com"]');
+    logDiag("api.js tag ......... " + (gapiTag ? "FOUND" : "MISSING"));
+    logDiag("GSI tag ............ " + (gsiTag  ? "FOUND" : "MISSING"));
+
+    logDiag("");
+    logDiag("--- gapi ---");
+    logDiag("typeof gapi ........ " + typeof gapi);
+    if (typeof gapi !== "undefined") {
+      logDiag("typeof gapi.load ... " + typeof gapi.load);
+      logDiag("typeof gapi.client . " + typeof gapi.client);
+    }
+
+    logDiag("");
+    logDiag("--- fileInput ---");
+    const fi = $("fileInput");
+    logDiag("element ............ " + (fi ? "FOUND" : "NULL"));
+    logDiag("typeof fi.files .... " + (fi ? typeof fi.files : "N/A"));
+    logDiag("fi.files.length .... " + (fi && fi.files ? fi.files.length : "N/A"));
+
+    logDiag("");
+    logDiag("--- Token ---");
+    logDiag("tokenClient ........ " + (window._tokenClient ? "set" : "not set"));
+    logDiag("accessToken ........ " + (window._accessToken ? "set" : "not set"));
+    logDiag("gapi.client init ... " + (window._gapiReady ? "ready" : "not ready"));
+
+    logDiag("");
+    logDiag("--- Firestore ---");
+    try {
+      const snap = await window._fsGetDoc(window._firestoreRef);
+      logDiag("Firestore read OK. Exists: " + snap.exists());
+    } catch (e) {
+      logDiag("Firestore error: " + e.message);
+    }
+
+    logDiag("");
+    logDiag("--- Drive (subfolder) ---");
+    if (window._gapiReady && window._accessToken) {
+      try {
+        const sid = await subFolder();
+        logDiag("Subfolder ID: " + sid);
+      } catch (e) {
+        logDiag("Drive error: " + e.message);
+      }
+    } else {
+      logDiag("Skipped (need gapi ready + access token)");
+    }
+
+    logDiag("");
+    logDiag("== Done ==");
+  }
+
+  /* ---------- Firestore buttons ---------- */
+  async function fsLoad() {
+    const snap = await window._fsGetDoc(window._firestoreRef);
+    if (snap.exists()) {
+      const d = snap.data();
+      $("fsOut").textContent = "Name: " + (d.name || "") +
+        "\nNote: " + (d.note || "") +
+        "\nUpdated: " + (d.updatedAt ? d.updatedAt.toDate().toLocaleString() : "-");
+    } else {
+      $("fsOut").textContent = "No document yet.";
+    }
+  }
+
+  /* ---------- Bind after DOM ready ---------- */
+  document.addEventListener("DOMContentLoaded", () => {
+    $("refreshStatus").onclick = () => location.reload();
+    $("authBtn").onclick = () => {
+      if (!window._tokenClient) return alert("Token client not ready. Refresh page.");
+      window._tokenClient.requestAccessToken({ prompt: "consent" });
+    };
+
+    $("runAllBtn").onclick = runDiagnostics;
+
+    $("fsSave").onclick = async () => {
+      const n = $("fsName").value.trim();
+      if (!n) return alert("Name required");
+      await window._fsSetDoc(window._firestoreRef,
+        { name: n, note: $("fsNote").value.trim(), updatedAt: window._fsServerTime() },
+        { merge: true });
+      alert("Saved");
+      fsLoad();
+    };
+    $("fsLoad").onclick = fsLoad;
+    $("fsDel").onclick = async () => {
+      if (!confirm("Delete Test1/global?")) return;
+      await window._fsDeleteDoc(window._firestoreRef);
+      alert("Deleted");
+      fsLoad();
+    };
+
+    $("uploadBtn").onclick = async () => {
+      const fi = $("fileInput");
+      if (!fi || !fi.files || fi.files.length === 0) return alert("Choose a file first.");
+      try {
+        if (!window._gapiReady) return alert("gapi not ready");
+        if (!window._accessToken) return alert("Authorize first");
+        const sid = await subFolder();
+        const file = fi.files[0];
+        const form = new FormData();
+        form.append("metadata", new Blob([JSON.stringify({ name: file.name, parents: [sid] })], { type: "application/json" }));
+        form.append("file", file);
+        const res = await fetch(
+          "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
+          { method: "POST", headers: { Authorization: "Bearer " + window._accessToken }, body: form }
+        );
+        const data = await res.json();
+        if (data.error) return $("driveOut").textContent = "Error: " + JSON.stringify(data.error);
+        $("driveOut").textContent = "Uploaded: " + data.name + " (ID: " + data.id + ")";
+      } catch (e) {
+        $("driveOut").textContent = "Error: " + e.message;
+      }
+    };
+
+    /* auto init */
+    initGapi();
+    initToken();
+    setTimeout(fsLoad, 800);
   });
-}
-function ensureToken(){
-  return new Promise((res,rej)=>{
-    if(window._accessToken) return res();
-    if(!window._tokenClient) return rej(new Error("Token client not ready"));
-    const old=window._tokenClient.callback;
-    window._tokenClient.callback=r=>{ old(r); res(); };
-    window._tokenClient.requestAccessToken({prompt:"consent"});
-  });
-}
-async function subFolder(){
-  if(window._subId) return window._subId;
-  const q=`'${DRIVE_CONFIG.parentFolderId}' in parents and name='${DRIVE_CONFIG.subFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
-  const l=await gapi.client.drive.files.list({q,fields:"files(id)"});
-  if(l.result.files&&l.result.files.length) return window._subId=l.result.files[0].id;
-  const c=await gapi.client.drive.files.create({resource:{name:DRIVE_CONFIG.subFolderName,mimeType:"application/vnd.google-apps.folder",parents:[DRIVE_CONFIG.parentFolderId]},fields:"id"});
-  return window._subId=c.result.id;
-}
-async function refresh(){
-  try{
-    await ensureToken();
-    const sid=await subFolder();
-    const r=await gapi.client.drive.files.list({q:`'${sid}' in parents and trashed=false`,fields:"files(id,name,mimeType,webViewLink)",orderBy:"modifiedTime desc"});
-    const f=r.result.files||[];
-    $("list").innerHTML = f.length ? f.map(x=>`<div style="padding:4px;border-bottom:1px solid #eee">
-      <b>${esc(x.name)}</b><br><small>${x.id}</small><br>
-      <button data-id="${x.id}" data-n="${esc(x.name)}" data-m="${x.mimeType}">Open</button>
-      <a href="${x.webViewLink}" target="_blank">View</a></div>`).join("") : "<i>Empty</i>";
-    $("list").querySelectorAll("button[data-id]").forEach(b=>b.onclick=()=>open_(b.dataset.id,b.dataset.n,b.dataset.m));
-    log("Files: "+f.length);
-  }catch(e){ log("Error: "+e.message); }
-}
-async function upload(){
-  const fi=$("fInput"); if(!fi.files.length) return alert("Choose file");
-  try{
-    await ensureToken(); const sid=await subFolder();
-    const fd=new FormData();
-    fd.append("metadata",new Blob([JSON.stringify({name:fi.files[0].name,parents:[sid]})],{type:"application/json"}));
-    fd.append("file",fi.files[0]);
-    const r=await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
-      {method:"POST",headers:{Authorization:"Bearer "+window._accessToken},body:fd});
-    const d=await r.json(); if(d.error) return log(d.error);
-    log("Uploaded: "+d.name); fi.value=""; refresh();
-  }catch(e){ log("Error: "+e.message); }
-}
-async function createNew(){
-  const name=prompt("Name:","New_"+Date.now()+".txt"); if(!name) return;
-  try{
-    await ensureToken(); const sid=await subFolder();
-    const fd=new FormData();
-    fd.append("metadata",new Blob([JSON.stringify({name,parents:[sid],mimeType:"text/plain"})],{type:"application/json"}));
-    fd.append("file",new Blob([""],{type:"text/plain"}));
-    const r=await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
-      {method:"POST",headers:{Authorization:"Bearer "+window._accessToken},body:fd});
-    const d=await r.json(); if(d.error) return log(d.error);
-    log("Created: "+d.name); refresh();
-  }catch(e){ log("Error: "+e.message); }
-}
-async function open_(id,name,mime){
-  window._fileId=id; window._mime=mime;
-  $("editBox").style.display="block"; $("edName").textContent=name; $("edNewName").value=name; $("edContent").value="(loading…)";
-  try{
-    await ensureToken();
-    const r=await fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`,{headers:{Authorization:"Bearer "+window._accessToken}});
-    $("edContent").value=await r.text();
-    log("Opened: "+name);
-  }catch(e){ log("Error: "+e.message); }
-}
-async function saveContent(){
-  if(!window._fileId) return;
-  try{
-    await ensureToken();
-    const r=await fetch(`https://www.googleapis.com/upload/drive/v3/files/${window._fileId}?uploadType=media`,
-      {method:"PATCH",headers:{Authorization:"Bearer "+window._accessToken,"Content-Type":window._mime||"text/plain"},body:$("edContent").value});
-    const d=await r.json(); if(d.error) return log(d.error);
-    log("Content saved");
-  }catch(e){ log("Error: "+e.message); }
-}
-async function rename(){
-  if(!window._fileId) return;
-  const nn=$("edNewName").value.trim(); if(!nn) return;
-  try{
-    await ensureToken();
-    const r=await fetch(`https://www.googleapis.com/drive/v3/files/${window._fileId}`,
-      {method:"PATCH",headers:{Authorization:"Bearer "+window._accessToken,"Content-Type":"application/json"},body:JSON.stringify({name:nn})});
-    const d=await r.json(); if(d.error) return log(d.error);
-    log("Renamed to: "+d.name); refresh();
-  }catch(e){ log("Error: "+e.message); }
-}
-async function trash(){
-  if(!window._fileId||!confirm("Move to Trash?")) return;
-  try{
-    await ensureToken();
-    await fetch(`https://www.googleapis.com/drive/v3/files/${window._fileId}`,
-      {method:"DELETE",headers:{Authorization:"Bearer "+window._accessToken}});
-    log("Moved to Trash"); $("editBox").style.display="none"; window._fileId=null; refresh();
-  }catch(e){ log("Error: "+e.message); }
-}
-async function listTrash(){
-  try{
-    await ensureToken(); const sid=await subFolder();
-    const r=await gapi.client.drive.files.list({q:`'${sid}' in parents and trashed=true`,fields:"files(id,name)"});
-    const f=r.result.files||[];
-    $("trash").innerHTML = f.length ? f.map(x=>`<div><b>${esc(x.name)}</b> <button data-r="${x.id}">Restore</button></div>`).join("") : "<i>Empty</i>";
-    $("trash").querySelectorAll("button[data-r]").forEach(b=>b.onclick=()=>restore(b.dataset.r));
-    log("Trash: "+f.length);
-  }catch(e){ log("Error: "+e.message); }
-}
-async function restore(id){
-  try{
-    await ensureToken();
-    const r=await fetch(`https://www.googleapis.com/drive/v3/files/${id}`,
-      {method:"PATCH",headers:{Authorization:"Bearer "+window._accessToken,"Content-Type":"application/json"},body:JSON.stringify({trashed:false})});
-    const d=await r.json(); if(d.error) return log(d.error);
-    log("Restored"); listTrash(); refresh();
-  }catch(e){ log("Error: "+e.message); }
-}
-
-/* bind */
-$("bRefresh").onclick=refresh;
-$("bCreate").onclick=createNew;
-$("bUp").onclick=upload;
-$("bRen").onclick=rename;
-$("bSaveC").onclick=saveContent;
-$("bTrash").onclick=trash;
-$("bTrashList").onclick=listTrash;
-$("bAuth").onclick=()=>{ if(window._tokenClient) window._tokenClient.requestAccessToken({prompt:"consent"}); else alert("Not ready"); };
-
-initGapi();
-initToken();
 </script>
 
 </body>
