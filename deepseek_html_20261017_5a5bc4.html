@@ -6,9 +6,6 @@
 <title>Firebase + Drive Full Test — MyWebApps</title>
 
 <script>
-  /* ============================================================
-     CONFIGURATION
-     ============================================================ */
   const FIREBASE_CONFIG = {
     apiKey:            "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
     authDomain:        "mywebapps-e3b63.firebaseapp.com",
@@ -17,21 +14,17 @@
     messagingSenderId: "46681415809",
     appId:             "1:46681415809:web:c4528b9da97abc310a2d80"
   };
-
   const FIRESTORE_COLLECTION = "Test1";
   const FIRESTORE_GLOBAL_DOC = "global";
-
   const DRIVE_CONFIG = {
     oauthClientId:  "103334413601-4msa4v80kgdir5k6c9kjj4m17h4f9djr.apps.googleusercontent.com",
     apiKey:         "AIzaSyCzCtOAOk5mrh1WYw98f-IeqkhSzUyAY9s",
     universalFolderId: "1fkDwkqErHogFqYU4x2OwYBSMk-n5KsG_",
-    universalFolderName: "MyWebApps",
     subFolderName: "Test1",
     binFolderName: "Bin",
     scope: "https://www.googleapis.com/auth/drive.file",
     appId: "103334413601"
   };
-
   window._accessToken = null;
   window._tokenClient = null;
   window._subFolderId = null;
@@ -45,89 +38,51 @@
 
 <style>
   * { box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     max-width: 1100px; margin: 20px auto; padding: 0 14px 60px;
-    color: #1c2333; background: #f4f6fb; line-height: 1.5; font-size: 14px;
-  }
+    color: #1c2333; background: #f4f6fb; line-height: 1.5; font-size: 14px; }
   h1 { font-size: 22px; margin: 0 0 6px; }
-  h2 {
-    font-size: 16px; margin: 0 0 12px; padding-bottom: 8px;
-    border-bottom: 2px solid #2f6df6; color: #2f6df6;
-    display: flex; align-items: center; gap: 8px;
-  }
-  fieldset {
-    background: #fff; border: 1px solid #dde3ee; border-radius: 12px;
-    padding: 16px 18px; margin-bottom: 18px;
-    box-shadow: 0 2px 10px rgba(20,30,60,.05);
-  }
+  fieldset { background: #fff; border: 1px solid #dde3ee; border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 18px; box-shadow: 0 2px 10px rgba(20,30,60,.05); }
   legend { font-weight: 700; padding: 0 8px; color: #2f6df6; font-size: 14px; }
   label { display: block; margin: 6px 0 3px; font-size: 12.5px; color: #6b7488; font-weight: 600; }
   input[type=text], input[type=file], textarea, select {
     width: 100%; padding: 8px 10px; margin: 2px 0;
     border: 1px solid #dde3ee; border-radius: 7px;
-    font-family: inherit; font-size: 13.5px; background: #fafbff;
-    transition: border .15s;
-  }
-  input:focus, textarea:focus, select:focus {
-    outline: none; border-color: #2f6df6; background: #fff;
-  }
+    font-family: inherit; font-size: 13.5px; background: #fafbff; }
   textarea { font-family: "Courier New", monospace; resize: vertical; }
-  button {
-    padding: 8px 16px; margin: 6px 4px 6px 0; cursor: pointer;
+  button { padding: 8px 16px; margin: 6px 4px 6px 0; cursor: pointer;
     border: 1px solid #dde3ee; border-radius: 7px;
-    background: #fff; color: #1c2333; font-weight: 600; font-size: 13px;
-    transition: all .15s;
-  }
+    background: #fff; color: #1c2333; font-weight: 600; font-size: 13px; }
   button:hover { background: #eef4ff; border-color: #2f6df6; }
   button.primary { background: #2f6df6; color: #fff; border-color: #2f6df6; }
   button.primary:hover { background: #1e4fc4; }
   button.danger { color: #d9453f; border-color: #f0cfcd; }
   button.danger:hover { background: #fdeceb; }
-  pre {
-    background: #0f172a; color: #a7f3d0; padding: 10px 14px;
+  pre { background: #0f172a; color: #a7f3d0; padding: 10px 14px;
     border-radius: 8px; font-size: 12.5px; overflow: auto;
     max-height: 240px; white-space: pre-wrap; word-break: break-all;
-    font-family: "Courier New", monospace;
-  }
+    font-family: "Courier New", monospace; }
   .ok { color: #1f9d63; font-weight: 700; }
   .fail { color: #d9453f; font-weight: 700; }
   .warn { color: #d97706; font-weight: 700; }
-  .status-box {
-    background: #eef4ff; padding: 10px 14px; border-radius: 8px;
-    border-left: 4px solid #2f6df6; font-size: 13px;
-  }
-  .file-row {
-    padding: 10px 12px; border-bottom: 1px solid #eef1f7;
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
-    flex-wrap: wrap;
-  }
+  .status-box { background: #eef4ff; padding: 10px 14px; border-radius: 8px;
+    border-left: 4px solid #2f6df6; font-size: 13px; }
+  .file-row { padding: 10px 12px; border-bottom: 1px solid #eef1f7;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 10px; flex-wrap: wrap; }
   .file-row:last-child { border-bottom: none; }
   .file-row .info { flex: 1; min-width: 200px; }
   .file-row .name { font-weight: 600; font-size: 13.5px; }
   .file-row small { color: #6b7488; font-size: 11.5px; word-break: break-all; }
   .file-row .actions { display: flex; gap: 6px; flex-wrap: wrap; }
-  .file-list {
-    background: #fafbff; border: 1px solid #dde3ee; border-radius: 8px;
-    margin-top: 8px; max-height: 400px; overflow-y: auto;
-  }
+  .file-list { background: #fafbff; border: 1px solid #dde3ee; border-radius: 8px;
+    margin-top: 8px; max-height: 400px; overflow-y: auto; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
-  .badge {
-    display: inline-block; padding: 2px 8px; border-radius: 999px;
-    font-size: 11.5px; font-weight: 600; background: #dcfce7; color: #166534;
-  }
-  .badge.blue { background: #dbeafe; color: #1e40af; }
-  .tabs {
-    display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap;
-  }
-  .tabs button {
-    border-radius: 8px 8px 0 0; margin: 0;
-    background: #eef2f9; border-color: #dde3ee;
-  }
-  .tabs button.active {
-    background: #2f6df6; color: #fff; border-color: #2f6df6;
-  }
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+  .tabs button { border-radius: 8px 8px 0 0; margin: 0; background: #eef2f9; border-color: #dde3ee; }
+  .tabs button.active { background: #2f6df6; color: #fff; border-color: #2f6df6; }
   .hidden { display: none; }
 </style>
 </head>
@@ -136,17 +91,13 @@
 <h1>Firebase + Drive Full Test — MyWebApps</h1>
 <div class="status-box" id="statusBox">Checking…</div>
 
-<!-- ============================================================ -->
 <div class="tabs">
   <button id="tabFirebaseBtn" class="active">🔥 Firebase</button>
   <button id="tabDriveBtn">☁ Drive</button>
 </div>
 
-<!-- ============================================================ -->
 <!-- FIREBASE TAB -->
-<!-- ============================================================ -->
 <div id="tabFirebase">
-
 <fieldset>
   <legend>🔐 Auth</legend>
   <button id="anonBtn">Sign In Anonymously</button>
@@ -158,17 +109,11 @@
 <fieldset>
   <legend>📝 Firestore — Add / Edit / Delete</legend>
   <div class="grid-2">
-    <div>
-      <label>Name</label>
-      <input type="text" id="fsName" placeholder="Name">
-    </div>
-    <div>
-      <label>Note</label>
-      <input type="text" id="fsNote" placeholder="Note">
-    </div>
+    <div><label>Name</label><input type="text" id="fsName"></div>
+    <div><label>Note</label><input type="text" id="fsNote"></div>
   </div>
-  <label>Document ID (khali chhoren to naya banega)</label>
-  <input type="text" id="fsDocId" placeholder="auto">
+  <label>Document ID (khali = global)</label>
+  <input type="text" id="fsDocId" placeholder="global">
   <button id="fsSaveBtn" class="primary">💾 Save</button>
   <button id="fsUpdateBtn">✏ Update</button>
   <button id="fsDeleteBtn" class="danger">🗑 Delete</button>
@@ -177,26 +122,21 @@
 </fieldset>
 
 <fieldset>
-  <legend>📋 Firestore — List / Query</legend>
-  <label>Collection Name</label>
-  <input type="text" id="fsQueryCol" value="Test1">
-  <label>Limit</label>
-  <input type="text" id="fsQueryLimit" value="20">
+  <legend>📋 Query</legend>
+  <label>Collection</label><input type="text" id="fsQueryCol" value="Test1">
+  <label>Limit</label><input type="text" id="fsQueryLimit" value="20">
   <button id="fsQueryBtn">🔍 Query</button>
   <pre id="fsQueryOut">-</pre>
 </fieldset>
-
 </div>
 
-<!-- ============================================================ -->
 <!-- DRIVE TAB -->
-<!-- ============================================================ -->
 <div id="tabDrive" class="hidden">
 
 <fieldset>
   <legend>🔐 Authorize Google Drive</legend>
   <button id="authDriveBtn" class="primary">Authorize</button>
-  <button id="refreshBtn">🔄 Refresh</button>
+  <button id="refreshBtn">🔄 Refresh Status</button>
   <pre id="driveStatusOut">-</pre>
 </fieldset>
 
@@ -210,12 +150,8 @@
 <fieldset>
   <legend>➕ Create New File</legend>
   <div class="grid-2">
-    <div>
-      <label>File Name</label>
-      <input type="text" id="createName" placeholder="NewFile.txt">
-    </div>
-    <div>
-      <label>MIME Type</label>
+    <div><label>File Name</label><input type="text" id="createName" placeholder="NewFile.txt"></div>
+    <div><label>MIME Type</label>
       <select id="createMime">
         <option value="text/plain">text/plain</option>
         <option value="text/html">text/html</option>
@@ -225,7 +161,7 @@
     </div>
   </div>
   <label>Initial Content</label>
-  <textarea id="createContent" style="height:60px;" placeholder="Optional"></textarea>
+  <textarea id="createContent" style="height:60px;"></textarea>
   <button id="createBtn" class="primary">➕ Create</button>
   <pre id="createOut">-</pre>
 </fieldset>
@@ -239,24 +175,20 @@
 </fieldset>
 
 <fieldset>
-  <legend>✏ File Editor — Load, Edit, Rename, Delete</legend>
+  <legend>✏ File Editor</legend>
   <div id="editorBox" style="display:none;">
     <label>Editing: <span id="editName" style="color:#2f6df6;">—</span></label>
-    <label>New Name (rename)</label>
-    <input type="text" id="editNewName">
-    <label>Content (editable)</label>
-    <textarea id="editContent" style="height:200px;"></textarea>
-    <div>
-      <button id="saveContentBtn" class="primary">💾 Save Content</button>
-      <button id="renameBtn">✏ Rename</button>
-      <button id="deleteBtn" class="danger">🗑 Move to Bin</button>
-    </div>
+    <label>New Name</label><input type="text" id="editNewName">
+    <label>Content</label><textarea id="editContent" style="height:200px;"></textarea>
+    <button id="saveContentBtn" class="primary">💾 Save Content</button>
+    <button id="renameBtn">✏ Rename</button>
+    <button id="deleteBtn" class="danger">🗑 Move to Bin</button>
   </div>
   <pre id="editOut">-</pre>
 </fieldset>
 
 <fieldset>
-  <legend>🗑 Bin (Deleted Files)</legend>
+  <legend>🗑 Bin (Deleted Files) — Restore yahan se</legend>
   <button id="binListBtn">🔄 List Bin</button>
   <div id="binList" class="file-list">
     <div style="padding:10px;color:#6b7488;">No files loaded.</div>
@@ -271,51 +203,39 @@
 
 </div>
 
-<!-- ============================================================ -->
 <!-- Firebase SDK -->
-<!-- ============================================================ -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getAuth, signInAnonymously, onAuthStateChanged,
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import {
-  getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc,
-  collection, addDoc, getDocs, query, limit, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged, signInAnonymously,
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc,
+  collection, getDocs, query, limit, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const app = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-window._fb = {
-  app, auth, db,
-  doc, setDoc, getDoc, updateDoc, deleteDoc,
-  collection, addDoc, getDocs, query, limit, serverTimestamp
-};
+window._fb = { app, auth, db, doc, setDoc, getDoc, updateDoc, deleteDoc,
+  collection, getDocs, query, limit, serverTimestamp };
+window._firestoreRef = doc(db, FIRESTORE_COLLECTION, FIRESTORE_GLOBAL_DOC);
 
-const sharedRef = doc(db, FIRESTORE_COLLECTION, FIRESTORE_GLOBAL_DOC);
-window._firestoreRef = sharedRef;
+window._fbAuth = { signInAnonymously, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut };
 
 onAuthStateChanged(auth, u => {
   const el = document.getElementById("authInfo");
-  if (el) {
-    if (u) {
-      el.innerHTML = '<span class="ok">✔ Signed in</span> — UID: <code>' + u.uid + '</code>' +
-        (u.email ? ' | Email: <code>' + u.email + '</code>' : ' | (anonymous)');
-    } else {
-      el.innerHTML = '<span class="fail">✘ Not signed in</span>';
-    }
+  if (!el) return;
+  if (u) {
+    el.innerHTML = '<span class="ok">✔ Signed in</span> — UID: <code>' + u.uid + '</code>' +
+      (u.email ? ' | Email: <code>' + u.email + '</code>' : ' | (anonymous)');
+  } else {
+    el.innerHTML = '<span class="fail">✘ Not signed in</span>';
   }
 });
-
-window._fbReady = true;
 </script>
 
-<!-- ============================================================ -->
 <!-- Main Script -->
-<!-- ============================================================ -->
 <script>
 const $ = id => document.getElementById(id);
 const log = (id, m) => {
@@ -327,9 +247,7 @@ const esc = s => (s || "").replace(/[&<>"']/g, c => ({
   "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
 }[c]));
 
-/* ============================================================
-   TAB SWITCHING
-   ============================================================ */
+/* TABS */
 $("tabFirebaseBtn").onclick = () => {
   $("tabFirebase").classList.remove("hidden");
   $("tabDrive").classList.add("hidden");
@@ -343,24 +261,20 @@ $("tabDriveBtn").onclick = () => {
   $("tabFirebaseBtn").classList.remove("active");
 };
 
-/* ============================================================
-   STATUS
-   ============================================================ */
+/* STATUS */
 function updateStatus() {
   const gapiOk = typeof gapi !== "undefined" && typeof gapi.client !== "undefined";
   const gsiOk  = typeof google !== "undefined" && google.accounts && google.accounts.oauth2;
-  let html = "";
-  html += '<b>Drive:</b> ';
+  let html = '<b>Drive:</b> ';
   html += gapiOk ? '<span class="ok">✔ gapi</span> ' : '<span class="fail">✘ gapi</span> ';
   html += gsiOk  ? '<span class="ok">✔ GSI</span> ' : '<span class="fail">✘ GSI</span> ';
   html += window._accessToken ? '<span class="ok">✔ Token</span> ' : '<span class="fail">✘ No token</span>';
-  html += window._subFolderId ? '<span class="ok">✔ Test1 folder</span>' : '<span class="warn">⚠ Subfolder not resolved</span>';
+  html += window._subFolderId ? '<span class="ok">✔ Test1</span> ' : '<span class="warn">⚠ Subfolder</span>';
+  html += window._binFolderId ? '<span class="ok">✔ Bin</span>' : '<span class="warn">⚠ Bin</span>';
   $("statusBox").innerHTML = html;
 }
 
-/* ============================================================
-   GAPI INIT
-   ============================================================ */
+/* GAPI INIT */
 function waitGapi(max = 8000) {
   return new Promise(r => {
     const t = Date.now();
@@ -371,7 +285,6 @@ function waitGapi(max = 8000) {
     })();
   });
 }
-
 async function initGapi() {
   if (typeof gapi === "undefined") return false;
   await new Promise(r => gapi.load("client", r));
@@ -389,9 +302,7 @@ async function initGapi() {
   }
 }
 
-/* ============================================================
-   TOKEN CLIENT
-   ============================================================ */
+/* TOKEN */
 function initToken() {
   if (typeof google === "undefined" || !google.accounts || !google.accounts.oauth2) {
     return setTimeout(initToken, 300);
@@ -404,7 +315,7 @@ function initToken() {
         window._accessToken = r.access_token;
         gapi.client.setToken({ access_token: r.access_token });
         updateStatus();
-        log("driveStatusOut", "✔ Access token acquired (len " + r.access_token.length + ")");
+        log("driveStatusOut", "✔ Access token acquired");
       } else {
         log("driveStatusOut", "✘ Token error: " + JSON.stringify(r));
       }
@@ -423,73 +334,49 @@ function ensureToken() {
   });
 }
 
-/* ============================================================
-   FOLDER HELPERS
-   ============================================================ */
+/* FOLDERS */
 async function findOrCreateFolder(parentId, folderName) {
   const q = `'${parentId}' in parents and name='${folderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
   const l = await gapi.client.drive.files.list({ q, fields: "files(id,name)" });
-  if (l.result.files && l.result.files.length) {
-    return l.result.files[0].id;
-  }
+  if (l.result.files && l.result.files.length) return l.result.files[0].id;
   const c = await gapi.client.drive.files.create({
-    resource: {
-      name: folderName,
-      mimeType: "application/vnd.google-apps.folder",
-      parents: [parentId]
-    },
+    resource: { name: folderName, mimeType: "application/vnd.google-apps.folder", parents: [parentId] },
     fields: "id"
   });
   return c.result.id;
 }
-
 async function getSubFolder() {
   if (window._subFolderId) return window._subFolderId;
   window._subFolderId = await findOrCreateFolder(DRIVE_CONFIG.universalFolderId, DRIVE_CONFIG.subFolderName);
   return window._subFolderId;
 }
-
 async function getBinFolder() {
   if (window._binFolderId) return window._binFolderId;
   window._binFolderId = await findOrCreateFolder(DRIVE_CONFIG.universalFolderId, DRIVE_CONFIG.binFolderName);
   return window._binFolderId;
 }
 
-/* ============================================================
-   FIREBASE — ADD / UPDATE / DELETE / LOAD
-   ============================================================ */
+/* FIREBASE BUTTONS */
 $("anonBtn").onclick = async () => {
-  try {
-    const r = await window._fb.app && await window._fb.auth;
-    const { signInAnonymously } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-    await signInAnonymously(window._fb.auth);
-  } catch (e) { alert("Auth error: " + e.message); }
+  try { await window._fbAuth.signInAnonymously(window._fb.auth); }
+  catch (e) { alert("Auth error: " + e.message); }
 };
-
 $("emailLoginBtn").onclick = async () => {
-  const email = prompt("Email:");
-  if (!email) return;
-  const pass = prompt("Password:");
-  if (!pass) return;
+  const email = prompt("Email:"); if (!email) return;
+  const pass = prompt("Password:"); if (!pass) return;
   try {
-    const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-    try {
-      await mod.signInWithEmailAndPassword(window._fb.auth, email, pass);
-    } catch (e) {
+    try { await window._fbAuth.signInWithEmailAndPassword(window._fb.auth, email, pass); }
+    catch (e) {
       if (e.code === "auth/user-not-found") {
-        await mod.createUserWithEmailAndPassword(window._fb.auth, email, pass);
-      } else {
-        throw e;
-      }
+        await window._fbAuth.createUserWithEmailAndPassword(window._fb.auth, email, pass);
+      } else throw e;
     }
   } catch (e) { alert("Login error: " + e.message); }
 };
-
 $("logoutBtn").onclick = async () => {
-  const mod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js");
-  await mod.signOut(window._fb.auth);
+  try { await window._fbAuth.signOut(window._fb.auth); }
+  catch (e) { alert("Error: " + e.message); }
 };
-
 $("fsSaveBtn").onclick = async () => {
   try {
     const name = $("fsName").value.trim();
@@ -497,13 +384,10 @@ $("fsSaveBtn").onclick = async () => {
     if (!name) return alert("Name required");
     const docId = $("fsDocId").value.trim() || "global";
     const ref = window._fb.doc(window._fb.db, FIRESTORE_COLLECTION, docId);
-    await window._fb.setDoc(ref, {
-      name, note, updatedAt: window._fb.serverTimestamp()
-    }, { merge: true });
+    await window._fb.setDoc(ref, { name, note, updatedAt: window._fb.serverTimestamp() }, { merge: true });
     log("fsOut", "✔ Saved to " + FIRESTORE_COLLECTION + "/" + docId);
   } catch (e) { log("fsOut", "✘ Error: " + e.message); }
 };
-
 $("fsUpdateBtn").onclick = async () => {
   try {
     const docId = $("fsDocId").value.trim() || "global";
@@ -515,17 +399,14 @@ $("fsUpdateBtn").onclick = async () => {
     log("fsOut", "✔ Updated " + docId);
   } catch (e) { log("fsOut", "✘ Error: " + e.message); }
 };
-
 $("fsDeleteBtn").onclick = async () => {
   if (!confirm("Delete this document?")) return;
   try {
     const docId = $("fsDocId").value.trim() || "global";
-    const ref = window._fb.doc(window._fb.db, FIRESTORE_COLLECTION, docId);
-    await window._fb.deleteDoc(ref);
+    await window._fb.deleteDoc(window._fb.doc(window._fb.db, FIRESTORE_COLLECTION, docId));
     log("fsOut", "✔ Deleted " + docId);
   } catch (e) { log("fsOut", "✘ Error: " + e.message); }
 };
-
 $("fsLoadBtn").onclick = async () => {
   try {
     const snap = await window._fb.getDoc(window._firestoreRef);
@@ -534,12 +415,9 @@ $("fsLoadBtn").onclick = async () => {
       $("fsName").value = d.name || "";
       $("fsNote").value = d.note || "";
       log("fsOut", JSON.stringify(d, null, 2));
-    } else {
-      log("fsOut", "Document does not exist.");
-    }
+    } else log("fsOut", "Document does not exist.");
   } catch (e) { log("fsOut", "✘ Error: " + e.message); }
 };
-
 $("fsQueryBtn").onclick = async () => {
   try {
     const col = $("fsQueryCol").value.trim();
@@ -552,24 +430,20 @@ $("fsQueryBtn").onclick = async () => {
   } catch (e) { log("fsQueryOut", "✘ Error: " + e.message); }
 };
 
-/* ============================================================
-   DRIVE — AUTH
-   ============================================================ */
+/* DRIVE AUTH */
 $("authDriveBtn").onclick = async () => {
   try {
     await ensureToken();
     await initGapi();
     await getSubFolder();
+    await getBinFolder();
     updateStatus();
-    log("driveStatusOut", "✔ Authorized. Subfolder ID: " + window._subFolderId);
+    log("driveStatusOut", "✔ Authorized.\nTest1 ID: " + window._subFolderId + "\nBin ID: " + window._binFolderId);
   } catch (e) { log("driveStatusOut", "✘ Error: " + e.message); }
 };
+$("refreshBtn").onclick = () => updateStatus();
 
-$("refreshBtn").onclick = () => { updateStatus(); };
-
-/* ============================================================
-   DRIVE — UPLOAD
-   ============================================================ */
+/* UPLOAD */
 $("uploadBtn").onclick = async () => {
   const fi = $("fileInput");
   if (!fi || !fi.files || fi.files.length === 0) return alert("Choose a file first.");
@@ -580,10 +454,8 @@ $("uploadBtn").onclick = async () => {
     const form = new FormData();
     form.append("metadata", new Blob([JSON.stringify({ name: file.name, parents: [sid] })], { type: "application/json" }));
     form.append("file", file);
-    const res = await fetch(
-      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
-      { method: "POST", headers: { Authorization: "Bearer " + window._accessToken }, body: form }
-    );
+    const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
+      { method: "POST", headers: { Authorization: "Bearer " + window._accessToken }, body: form });
     const data = await res.json();
     if (data.error) return log("uploadOut", "✘ Error: " + JSON.stringify(data.error));
     log("uploadOut", "✔ Uploaded: " + data.name + "\nID: " + data.id);
@@ -592,9 +464,7 @@ $("uploadBtn").onclick = async () => {
   } catch (e) { log("uploadOut", "✘ Error: " + e.message); }
 };
 
-/* ============================================================
-   DRIVE — CREATE
-   ============================================================ */
+/* CREATE */
 $("createBtn").onclick = async () => {
   const name = $("createName").value.trim();
   if (!name) return alert("File name required.");
@@ -606,10 +476,8 @@ $("createBtn").onclick = async () => {
     const form = new FormData();
     form.append("metadata", new Blob([JSON.stringify({ name, parents: [sid], mimeType: mime })], { type: "application/json" }));
     form.append("file", new Blob([content], { type: mime }));
-    const res = await fetch(
-      "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
-      { method: "POST", headers: { Authorization: "Bearer " + window._accessToken }, body: form }
-    );
+    const res = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name",
+      { method: "POST", headers: { Authorization: "Bearer " + window._accessToken }, body: form });
     const data = await res.json();
     if (data.error) return log("createOut", "✘ Error: " + JSON.stringify(data.error));
     log("createOut", "✔ Created: " + data.name + "\nID: " + data.id);
@@ -617,9 +485,7 @@ $("createBtn").onclick = async () => {
   } catch (e) { log("createOut", "✘ Error: " + e.message); }
 };
 
-/* ============================================================
-   DRIVE — LIST
-   ============================================================ */
+/* LIST TEST1 */
 async function refreshList() {
   try {
     await ensureToken();
@@ -651,12 +517,9 @@ async function refreshList() {
     $("fileList").innerHTML = '<div style="padding:10px;color:#d9453f;">Error: ' + esc(e.message) + '</div>';
   }
 }
-
 $("listBtn").onclick = refreshList;
 
-/* ============================================================
-   DRIVE — OPEN / EDIT / SAVE / RENAME / DELETE
-   ============================================================ */
+/* OPEN / SAVE / RENAME / DELETE */
 async function openFile(id, name, mime) {
   window._currentFileId = id;
   window._currentMime = mime;
@@ -664,13 +527,11 @@ async function openFile(id, name, mime) {
   $("editName").textContent = name;
   $("editNewName").value = name;
   $("editContent").value = "(loading…)";
-  log("editOut", "Loading content of " + name + "…");
+  log("editOut", "Loading " + name + "…");
   try {
     await ensureToken();
-    const r = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
-      { headers: { Authorization: "Bearer " + window._accessToken } }
-    );
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`,
+      { headers: { Authorization: "Bearer " + window._accessToken } });
     $("editContent").value = await r.text();
     log("editOut", "✔ Loaded: " + name);
   } catch (e) {
@@ -678,46 +539,30 @@ async function openFile(id, name, mime) {
     log("editOut", "✘ Error: " + e.message);
   }
 }
-
 $("saveContentBtn").onclick = async () => {
   if (!window._currentFileId) return;
   try {
     await ensureToken();
-    const r = await fetch(
-      `https://www.googleapis.com/upload/drive/v3/files/${window._currentFileId}?uploadType=media`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: "Bearer " + window._accessToken,
-          "Content-Type": window._currentMime || "text/plain"
-        },
-        body: $("editContent").value
-      }
-    );
+    const r = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${window._currentFileId}?uploadType=media`,
+      { method: "PATCH",
+        headers: { Authorization: "Bearer " + window._accessToken, "Content-Type": window._currentMime || "text/plain" },
+        body: $("editContent").value });
     const d = await r.json();
     if (d.error) return log("editOut", "✘ Error: " + JSON.stringify(d.error));
     log("editOut", "✔ Content saved.");
     refreshList();
   } catch (e) { log("editOut", "✘ Error: " + e.message); }
 };
-
 $("renameBtn").onclick = async () => {
   if (!window._currentFileId) return;
   const nn = $("editNewName").value.trim();
   if (!nn) return alert("Enter new name.");
   try {
     await ensureToken();
-    const r = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${window._currentFileId}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: "Bearer " + window._accessToken,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name: nn })
-      }
-    );
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${window._currentFileId}`,
+      { method: "PATCH",
+        headers: { Authorization: "Bearer " + window._accessToken, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: nn }) });
     const d = await r.json();
     if (d.error) return log("editOut", "✘ Error: " + JSON.stringify(d.error));
     log("editOut", "✔ Renamed to: " + d.name);
@@ -725,20 +570,16 @@ $("renameBtn").onclick = async () => {
     refreshList();
   } catch (e) { log("editOut", "✘ Error: " + e.message); }
 };
-
 $("deleteBtn").onclick = async () => {
   if (!window._currentFileId) return;
   if (!confirm("Move file to Bin folder?")) return;
   try {
     await ensureToken();
     const binId = await getBinFolder();
+    const sid = await getSubFolder();
     const r = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${window._currentFileId}?addParents=${binId}&removeParents=${window._subFolderId}&fields=id,name,parents`,
-      {
-        method: "PATCH",
-        headers: { Authorization: "Bearer " + window._accessToken }
-      }
-    );
+      `https://www.googleapis.com/drive/v3/files/${window._currentFileId}?addParents=${binId}&removeParents=${sid}&fields=id,name,parents`,
+      { method: "PATCH", headers: { Authorization: "Bearer " + window._accessToken } });
     const d = await r.json();
     if (d.error) return log("editOut", "✘ Error: " + JSON.stringify(d.error));
     log("editOut", "✔ Moved to Bin: " + d.name);
@@ -749,16 +590,14 @@ $("deleteBtn").onclick = async () => {
   } catch (e) { log("editOut", "✘ Error: " + e.message); }
 };
 
-/* ============================================================
-   DRIVE — BIN (list / restore)
-   ============================================================ */
+/* BIN LIST */
 async function listBin() {
   try {
     await ensureToken();
     const binId = await getBinFolder();
     const res = await gapi.client.drive.files.list({
       q: `'${binId}' in parents and trashed=false`,
-      fields: "files(id,name,mimeType)",
+      fields: "files(id,name,mimeType,modifiedTime)",
       orderBy: "modifiedTime desc"
     });
     const files = res.result.files || [];
@@ -776,37 +615,32 @@ async function listBin() {
       </div>
     `).join("");
     box.querySelectorAll("button[data-restore-id]").forEach(b => {
-      b.onclick = () => restoreFile(b.dataset.restoreId);
+      b.onclick = () => restoreFile(b.dataset.restoreId, b.dataset.restoreName);
     });
   } catch (e) {
     $("binList").innerHTML = '<div style="padding:10px;color:#d9453f;">Error: ' + esc(e.message) + '</div>';
   }
 }
+$("binListBtn").onclick = listBin;
 
-async function restoreFile(id) {
+/* RESTORE */
+async function restoreFile(id, name) {
   try {
     await ensureToken();
     const sid = await getSubFolder();
+    const binId = await getBinFolder();
     const r = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${id}?addParents=${sid}&removeParents=${window._binFolderId}&fields=id,name`,
-      {
-        method: "PATCH",
-        headers: { Authorization: "Bearer " + window._accessToken }
-      }
-    );
+      `https://www.googleapis.com/drive/v3/files/${id}?addParents=${sid}&removeParents=${binId}&fields=id,name,parents`,
+      { method: "PATCH", headers: { Authorization: "Bearer " + window._accessToken } });
     const d = await r.json();
-    if (d.error) return alert("Restore error: " + JSON.stringify(d.error));
-    alert("✔ Restored: " + d.name);
+    if (d.error) { alert("Restore error: " + JSON.stringify(d.error)); return; }
+    alert("✔ Restored: " + (d.name || name));
     listBin();
     refreshList();
   } catch (e) { alert("Error: " + e.message); }
 }
 
-$("binListBtn").onclick = listBin;
-
-/* ============================================================
-   DRIVE — PICKER
-   ============================================================ */
+/* PICKER */
 $("pickerBtn").onclick = async () => {
   try {
     if (!window._accessToken) return alert("Authorize first.");
@@ -816,8 +650,7 @@ $("pickerBtn").onclick = async () => {
           return log("pickerOut", "✘ Picker library not loaded.");
         }
         const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
-          .setIncludeFolders(true)
-          .setSelectFolderEnabled(false);
+          .setIncludeFolders(true).setSelectFolderEnabled(false);
         const picker = new google.picker.PickerBuilder()
           .addView(view)
           .setOAuthToken(window._accessToken)
@@ -831,21 +664,16 @@ $("pickerBtn").onclick = async () => {
             } else if (data.action === google.picker.Action.CANCEL) {
               log("pickerOut", "Picker cancelled.");
             }
-          })
-          .build();
+          }).build();
         picker.setVisible(true);
         log("pickerOut", "Picker opened.");
       },
       onerror: () => log("pickerOut", "✘ Picker load error.")
     });
-  } catch (e) {
-    log("pickerOut", "✘ Error: " + e.message);
-  }
+  } catch (e) { log("pickerOut", "✘ Error: " + e.message); }
 };
 
-/* ============================================================
-   INIT
-   ============================================================ */
+/* INIT */
 document.addEventListener("DOMContentLoaded", () => {
   updateStatus();
   setTimeout(updateStatus, 1500);
