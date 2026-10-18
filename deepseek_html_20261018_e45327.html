@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MyWebApps — Firebase & Google APIs Testing</title>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --border:#334155;
+    --text:#e2e8f0; --muted:#94a3b8; --accent:#3b82f6; --accent2:#2563eb;
+    --ok:#22c55e; --fail:#ef4444; --warn:#f59e0b; --info:#0ea5e9;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    font-size:15px;line-height:1.5}
+  a{color:var(--accent);text-decoration:none}
+  h1,h2,h3{margin:0 0 10px}
+  h1{font-size:1.4rem}
+  h2{font-size:1.15rem;color:var(--accent)}
+  h3{font-size:1rem;color:var(--info)}
+  header{position:sticky;top:0;z-index:100;background:var(--panel);
+    border-bottom:1px solid var(--border);padding:12px 16px;
+    display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:space-between}
+  header .title{font-weight:600}
+  .status-pill{font-size:.8rem;padding:3px 10px;border-radius:999px;
+    background:var(--panel2);border:1px solid var(--border)}
+  .status-pill.ok{color:var(--ok);border-color:var(--ok)}
+  .status-pill.fail{color:var(--fail);border-color:var(--fail)}
+  main{padding:16px;max-width:1100px;margin:0 auto}
+  section{background:var(--panel);border:1px solid var(--border);
+    border-radius:12px;padding:14px;margin-bottom:16px}
+  label{display:block;font-size:.85rem;color:var(--muted);margin:8px 0 3px}
+  input[type=text],input[type=password],input[type=email],textarea,select{
+    width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-family:inherit;font-size:.9rem}
+  textarea{min-height:120px;font-family:ui-monospace,Menlo,monospace;font-size:.82rem}
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--accent)}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .row>*{flex:1 1 160px}
+  button{cursor:pointer;padding:9px 14px;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel2);color:var(--text);font-size:.88rem;font-weight:500;
+    transition:.15s}
+  button:hover:not(:disabled){background:var(--accent2);border-color:var(--accent2)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover:not(:disabled){background:var(--accent2)}
+  button.danger{background:#7f1d1d;border-color:#7f1d1d;color:#fff}
+  button.danger:hover:not(:disabled){background:#991b1b}
+  button.ok{background:#14532d;border-color:#14532d;color:#fff}
+  button.small{padding:5px 10px;font-size:.78rem}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}}
+  .kv{display:grid;grid-template-columns:140px 1fr;gap:4px 10px;font-size:.85rem}
+  .kv dt{color:var(--muted)}
+  .kv dd{margin:0;word-break:break-all;font-family:ui-monospace,monospace}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;
+    font-size:.72rem;font-weight:600}
+  .pill.pass{background:#052e16;color:var(--ok);border:1px solid var(--ok)}
+  .pill.fail{background:#450a0a;color:var(--fail);border:1px solid var(--fail)}
+  .pill.nt{background:#1e293b;color:var(--muted);border:1px solid var(--border)}
+  .pill.run{background:#0c4a6e;color:var(--info);border:1px solid var(--info)}
+  .msg{font-size:.82rem;padding:6px 10px;border-radius:6px;margin-top:8px}
+  .msg.ok{background:#052e16;color:#86efac;border:1px solid var(--ok)}
+  .msg.err{background:#450a0a;color:#fca5a5;border:1px solid var(--fail)}
+  .msg.info{background:#0c4a6e;color:#bae6fd;border:1px solid var(--info)}
+  .msg.warn{background:#451a03;color:#fde68a;border:1px solid var(--warn)}
+  .mono{font-family:ui-monospace,Menlo,monospace;font-size:.8rem;word-break:break-all}
+  table{width:100%;border-collapse:collapse;font-size:.8rem}
+  th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:600;background:var(--panel2)}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .tabs button{flex:0 0 auto}
+  .tabs button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .hidden{display:none!important}
+  .flex-between{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .tag{font-size:.7rem;padding:1px 6px;border-radius:4px;background:var(--panel2);
+    border:1px solid var(--border);color:var(--muted)}
+  .editor-toolbar{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .file-item{display:flex;justify-content:space-between;align-items:center;
+    padding:6px 8px;border-radius:6px;background:var(--panel2);margin-top:4px;
+    font-size:.82rem;gap:8px}
+  .file-item .meta{color:var(--muted);font-size:.72rem}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">🧪 MyWebApps API Testing</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <span class="status-pill" id="authStatusPill">Auth: checking…</span>
+    <span class="status-pill" id="driveStatusPill">Drive: signed out</span>
+    <button class="small" id="btnGlobalExport">Export Log</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- TABS -->
+  <div class="tabs" id="tabs">
+    <button class="active" data-tab="tab-auth">🔐 Auth</button>
+    <button data-tab="tab-db">🗄 Database</button>
+    <button data-tab="tab-drive">☁ Drive</button>
+    <button data-tab="tab-picker">📂 Picker</button>
+    <button data-tab="tab-bin">🗑 Bin</button>
+    <button data-tab="tab-dash">📊 Dashboard</button>
+    <button data-tab="tab-log">📜 Log</button>
+    <button data-tab="tab-cfg">⚙ Config</button>
+  </div>
+
+  <!-- ================= CONFIG ================= -->
+  <section id="tab-cfg" class="hidden">
+    <h2>⚙ Configuration (safe browser values only)</h2>
+    <div class="msg warn">
+      <b>Security:</b> Only paste values that are safe for browsers (Firebase API key,
+      Auth domain, Project ID, App ID, DB URL, Google OAuth <b>Client ID</b>,
+      Google API key restricted to your domain, Picker App/Project number).
+      <b>Never</b> paste Client Secret, Refresh Token, Service Account private key,
+      or any Admin SDK credential here.
+    </div>
+
+    <h3>Firebase</h3>
+    <div class="grid2">
+      <div><label>API Key</label><input id="cfgFbApiKey" type="text" /></div>
+      <div><label>Auth Domain</label><input id="cfgFbAuthDomain" type="text" /></div>
+      <div><label>Project ID</label><input id="cfgFbProjectId" type="text" /></div>
+      <div><label>App ID</label><input id="cfgFbAppId" type="text" /></div>
+      <div><label>Storage Bucket</label><input id="cfgFbStorage" type="text" /></div>
+      <div><label>Messaging Sender ID</label><input id="cfgFbSenderId" type="text" /></div>
+      <div><label>Realtime DB URL</label><input id="cfgFbDbUrl" type="text" placeholder="https://xxx-default-rtdb.firebaseio.com" /></div>
+      <div><label>Firestore Test Collection</label><input id="cfgFsCollection" type="text" /></div>
+      <div><label>Firestore Test Doc ID</label><input id="cfgFsDoc" type="text" /></div>
+      <div><label>RTDB Test Path</label><input id="cfgRtdbPath" type="text" placeholder="/test/mywebapps" /></div>
+    </div>
+
+    <h3>Google</h3>
+    <div class="grid2">
+      <div><label>OAuth Client ID</label><input id="cfgGOAuth" type="text" /></div>
+      <div><label>Google API Key (restricted)</label><input id="cfgGApiKey" type="text" /></div>
+      <div><label>Picker App ID (Project Number)</label><input id="cfgGPickerAppId" type="text" /></div>
+      <div><label>Scope</label><input id="cfgGScope" type="text" /></div>
+      <div><label>Main Drive Folder ID</label><input id="cfgMainFolder" type="text" /></div>
+      <div><label>Bin Folder Name</label><input id="cfgBinName" type="text" /></div>
+    </div>
+
+    <div class="row">
+      <button class="primary" id="btnSaveCfg">💾 Save to this browser</button>
+      <button id="btnLoadCfg">↺ Reload saved</button>
+      <button class="danger" id="btnClearCfg">🗑 Clear saved config</button>
+      <button class="primary" id="btnInitAll">🚀 Initialize Firebase & Drive</button>
+    </div>
+    <div class="msg info" style="margin-top:10px">
+      Config is stored in <b>localStorage</b> of this browser only (session testing convenience).
+      It is <b>not</b> a credential vault — clear browser data and it disappears.
+    </div>
+    <div id="cfgMsg"></div>
+  </section>
+
+  <!-- ================= AUTH ================= -->
+  <section id="tab-auth">
+    <h2>🔐 Firebase Authentication</h2>
+    <div class="grid2">
+      <div>
+        <h3>Anonymous</h3>
+        <div class="row">
+          <button class="primary" id="btnAnonSignIn">Sign in anonymously</button>
+          <button id="btnSignOut">Sign out</button>
+        </div>
+        <div id="authMsg"></div>
+      </div>
+      <div>
+        <h3>Email / Password</h3>
+        <label>Email</label>
+        <input id="emailInput" type="email" placeholder="you@example.com" autocomplete="username"/>
+        <label>Password</label>
+        <input id="passwordInput" type="password" placeholder="••••••••" autocomplete="current-password"/>
+        <div class="row">
+          <button class="primary" id="btnEmailLogin">Login</button>
+          <button class="ok" id="btnEmailRegister">Register</button>
+          <button id="btnEmailReset">Send reset email</button>
+        </div>
+        <div id="emailMsg"></div>
+      </div>
+    </div>
+    <h3 style="margin-top:16px">Current user</h3>
+    <dl class="kv" id="authInfo">
+      <dt>Status</dt><dd id="aiStatus">—</dd>
+      <dt>UID</dt><dd id="aiUid">—</dd>
+      <dt>Provider</dt><dd id="aiProvider">—</dd>
+      <dt>Email</dt><dd id="aiEmail">—</dd>
+      <dt>Anonymous</dt><dd id="aiAnon">—</dd>
+    </dl>
+  </section>
+
+  <!-- ================= DATABASE ================= -->
+  <section id="tab-db" class="hidden">
+    <h2>🗄 Database Testing</h2>
+    <div class="tabs" style="margin-bottom:8px">
+      <button class="active" data-sub="fs">Firestore</button>
+      <button data-sub="rtdb">Realtime DB</button>
+    </div>
+
+    <div id="sub-fs">
+      <h3>Cloud Firestore — <span class="tag" id="fsTargetLabel">—</span></h3>
+      <label>JSON payload (nested, arrays, Urdu, special chars allowed)</label>
+      <textarea id="fsPayload" placeholder='{"name":"Test","nested":{"a":1},"tags":["x","y"],"urdu":"اردو متن","special":"<>&\"\u0027"}'></textarea>
+      <div class="row">
+        <button class="primary" id="btnFsCreate">➕ Create / Overwrite</button>
+        <button id="btnFsRead">📖 Read</button>
+        <button id="btnFsUpdate">✏ Update fields</button>
+        <button class="danger" id="btnFsDelete">🗑 Delete</button>
+      </div>
+      <div class="row">
+        <button id="btnFsAddList">➕ Add item to list field</button>
+        <button id="btnFsVerify">✅ Read-back verify</button>
+      </div>
+      <div id="fsMsg"></div>
+      <h3 style="margin-top:12px">Current document</h3>
+      <pre class="mono" id="fsView">—</pre>
+    </div>
+
+    <div id="sub-rtdb" class="hidden">
+      <h3>Realtime Database — <span class="tag" id="rtdbTargetLabel">—</span></h3>
+      <label>JSON payload</label>
+      <textarea id="rtdbPayload" placeholder='{"name":"Test","nested":{"a":1},"urdu":"اردو"}'></textarea>
+      <div class="row">
+        <button class="primary" id="btnRtdbCreate">➕ Create / Overwrite</button>
+        <button id="btnRtdbRead">📖 Read</button>
+        <button id="btnRtdbUpdate">✏ Update</button>
+        <button class="danger" id="btnRtdbDelete">🗑 Delete</button>
+      </div>
+      <div id="rtdbMsg"></div>
+      <h3 style="margin-top:12px">Current value</h3>
+      <pre class="mono" id="rtdbView">—</pre>
+    </div>
+  </section>
+
+  <!-- ================= DRIVE ================= -->
+  <section id="tab-drive" class="hidden">
+    <h2>☁ Google Drive</h2>
+    <div class="row">
+      <button class="primary" id="btnDriveAuth">Authorize Google</button>
+      <button id="btnDriveSignOut">Sign out Google</button>
+      <button id="btnDriveRefresh">↻ Refresh file list</button>
+    </div>
+    <div id="driveMsg"></div>
+
+    <h3 style="margin-top:14px">Main folder</h3>
+    <dl class="kv">
+      <dt>Main folder ID</dt><dd id="mainFolderIdLabel">—</dd>
+      <dt>Main folder name</dt><dd id="mainFolderNameLabel">—</dd>
+      <dt>Bin folder ID</dt><dd id="binFolderIdLabel">—</dd>
+    </dl>
+    <div class="row">
+      <button id="btnDriveEnsureMain">📁 Create / verify main folder</button>
+      <button id="btnDriveEnsureBin">🗑 Create / verify Bin</button>
+    </div>
+
+    <h3 style="margin-top:14px">Create file</h3>
+    <div class="row">
+      <input id="newFileName" type="text" placeholder="filename.txt" style="flex:2 1 240px"/>
+      <select id="newFileType"><option value="text">text</option><option value="json">json</option></select>
+      <button class="primary" id="btnDriveCreateFile">➕ Create</button>
+    </div>
+    <label>Content for new file</label>
+    <textarea id="newFileContent" placeholder="Hello from MyWebApps"></textarea>
+
+    <h3 style="margin-top:14px">Files in main folder</h3>
+    <div id="driveFileList"><div class="msg info">No files loaded yet. Click “Refresh file list”.</div></div>
+
+    <h3 style="margin-top:14px">Editor</h3>
+    <dl class="kv">
+      <dt>Selected file</dt><dd id="editFileId">—</dd>
+      <dt>Name</dt><dd id="editFileName">—</dd>
+      <dt>MIME</dt><dd id="editFileMime">—</dd>
+      <dt>Location</dt><dd id="editFileLoc">—</dd>
+    </dl>
+    <label>Content (edit and save)</label>
+    <textarea id="editor" placeholder="Load a file to edit…"></textarea>
+    <div class="editor-toolbar">
+      <button class="primary" id="btnEditorSave">💾 Save to Drive</button>
+      <button id="btnEditorReload">↻ Read again</button>
+      <button id="btnEditorRename">✏ Rename</button>
+      <button id="btnEditorMove">📦 Move to…</button>
+      <button class="danger" id="btnEditorBin">🗑 Move to Bin</button>
+    </div>
+    <div id="editorMsg"></div>
+  </section>
+
+  <!-- ================= PICKER ================= -->
+  <section id="tab-picker" class="hidden">
+    <h2>📂 Google Picker</h2>
+    <div class="msg info">
+      Picker <b>select</b> karna permission <b>nahi</b> deta. Content read/write
+      ke liye OAuth scope (<code>drive.file</code> ya <code>drive</code>) chahiye.
+      Agar file aapke OAuth client se accessible nahi hai to error aayega.
+    </div>
+    <div class="row">
+      <button class="primary" id="btnPickerOpen">Open Google Picker</button>
+    </div>
+    <div id="pickerMsg"></div>
+    <h3 style="margin-top:12px">Picked file metadata</h3>
+    <dl class="kv" id="pickerMeta">
+      <dt>ID</dt><dd id="pmId">—</dd>
+      <dt>Name</dt><dd id="pmName">—</dd>
+      <dt>MIME</dt><dd id="pmMime">—</dd>
+      <dt>Location</dt><dd id="pmLoc">—</dd>
+      <dt>Owners</dt><dd id="pmOwners">—</dd>
+    </dl>
+    <div class="row">
+      <button id="btnPickerLoadContent">📖 Load into editor</button>
+      <button id="btnPickerGoEditor">➡ Open in Drive tab</button>
+    </div>
+    <div id="pickerContentMsg"></div>
+  </section>
+
+  <!-- ================= BIN ================= -->
+  <section id="tab-bin" class="hidden">
+    <h2>🗑 Custom Bin</h2>
+    <div class="msg info">
+      Bin = normal Drive folder <code>Bin</code> inside main folder. Files bin mein
+      move karne se Google Drive Trash mein nahi jate. Restore se original parent
+      par wapas. Permanent delete se file Google Drive Trash mein jati hai.
+    </div>
+    <div class="row">
+      <button class="primary" id="btnBinRefresh">↻ Refresh Bin contents</button>
+    </div>
+    <div id="binMsg"></div>
+    <h3 style="margin-top:12px">Files in Bin</h3>
+    <div id="binFileList"><div class="msg info">No Bin files loaded yet.</div></div>
+  </section>
+
+  <!-- ================= DASHBOARD ================= -->
+  <section id="tab-dash" class="hidden">
+    <h2>📊 Test Dashboard</h2>
+    <div class="row">
+      <button class="primary" id="btnRunAll">▶ Run all tests</button>
+      <button id="btnClearResults">↺ Clear results</button>
+    </div>
+    <div class="msg warn" style="margin-top:8px">
+      Tests real API calls karte hain. Repeated runs free-tier quotas kha sakte hain —
+      “Run all” ek baar chalayein.
+    </div>
+    <div style="overflow-x:auto;margin-top:12px">
+      <table id="testTable">
+        <thead>
+          <tr>
+            <th>Test</th><th>Expected</th><th>Actual</th>
+            <th>Result</th><th>Time</th><th>Error</th><th>Run</th>
+          </tr>
+        </thead>
+        <tbody id="testBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= LOG ================= -->
+  <section id="tab-log" class="hidden">
+    <h2>📜 Session Test Log</h2>
+    <div class="msg warn">
+      Log is <b>session-only</b> (in-memory). Browser data clear hone par ya tab
+      close hone par ye history kho sakti hai.
+    </div>
+    <div class="row">
+      <button id="btnLogJson">⬇ Export JSON</button>
+      <button id="btnLogCsv">⬇ Export CSV</button>
+      <button class="danger" id="btnLogClear">🗑 Clear log</button>
+    </div>
+    <div style="overflow-x:auto;margin-top:10px">
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Test</th><th>Result</th><th>Time (ms)</th><th>Error / Note</th></tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ Firebase SDK (compat for simplicity) ============ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<!-- ============ Google APIs ============ -->
+<script src="https://apis.google.com/js/api.js" async defer></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+
+<script>
+/* ============================================================
+   Global state
+   ============================================================ */
+const CFG_KEY = 'mywebapps_test_cfg_v1';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+
+const state = {
+  cfg: null,
+  firebaseReady: false,
+  auth: null,
+  db: null,
+  fs: null,
+  rtdb: null,
+  currentUser: null,
+  // Google
+  gapiReady: false,
+  tokenClient: null,
+  accessToken: null,
+  googleSignedIn: false,
+  driveReady: false,
+  // Drive state
+  mainFolderId: null,
+  binFolderId: null,
+  selectedFile: null, // { id, name, mimeType, parents }
+  pickedFile: null,
+  // tests + log
+  tests: [],
+  log: []
+};
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const now = () => new Date().toISOString();
+const ms = () => performance.now();
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtMs = (n) => (Math.round(n * 10) / 10) + ' ms';
+
+function showMsg(el, text, kind = 'info') {
+  const target = typeof el === 'string' ? $(el) : el;
+  if (!target) return;
+  target.innerHTML = `<div class="msg ${kind}">${text}</div>`;
+}
+function clearMsg(el) {
+  const t = typeof el === 'string' ? $(el) : el;
+  if (t) t.innerHTML = '';
+}
+
+function addLog(testName, result, durationMs, error) {
+  const entry = {
+    time: now(), test: testName, result,
+    durationMs: Math.round(durationMs), error: error || ''
+  };
+  state.log.push(entry);
+  renderLog();
+}
+function renderLog() {
+  const tb = $('logBody');
+  if (!tb) return;
+  tb.innerHTML = state.log.length
+    ? state.log.map(e => `
+        <tr>
+          <td class="mono">${esc(e.time)}</td>
+          <td>${esc(e.test)}</td>
+          <td><span class="pill ${e.result === 'PASS' ? 'pass' : e.result === 'FAIL' ? 'fail' : 'nt'}">${e.result}</span></td>
+          <td>${e.durationMs}</td>
+          <td class="mono">${esc(e.error)}</td>
+        </tr>`).join('')
+    : '<tr><td colspan="5" style="color:var(--muted)">No log entries yet.</td></tr>';
+}
+
+/* ============================================================
+   Tabs
+   ============================================================ */
+document.querySelectorAll('#tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#tabs button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['tab-auth','tab-db','tab-drive','tab-picker','tab-bin','tab-dash','tab-log','tab-cfg']
+      .forEach(id => $(id).classList.add('hidden'));
+    $(btn.dataset.tab).classList.remove('hidden');
+  });
+});
+// Sub tabs for database
+document.querySelectorAll('[data-sub]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-sub]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    $('sub-fs').classList.add('hidden');
+    $('sub-rtdb').classList.add('hidden');
+    $('sub-' + btn.dataset.sub).classList.remove('hidden');
+  });
+});
+
+/* ============================================================
+   Config handling
+   ============================================================ */
+const CFG_FIELDS = {
+  fbApiKey: 'cfgFbApiKey',
+  fbAuthDomain: 'cfgFbAuthDomain',
+  fbProjectId: 'cfgFbProjectId',
+  fbAppId: 'cfgFbAppId',
+  fbStorage: 'cfgFbStorage',
+  fbSenderId: 'cfgFbSenderId',
+  fbDbUrl: 'cfgFbDbUrl',
+  fsCollection: 'cfgFsCollection',
+  fsDoc: 'cfgFsDoc',
+  rtdbPath: 'cfgRtdbPath',
+  gOAuth: 'cfgGOAuth',
+  gApiKey: 'cfgGApiKey',
+  gPickerAppId: 'cfgGPickerAppId',
+  gScope: 'cfgGScope',
+  mainFolder: 'cfgMainFolder',
+  binName: 'cfgBinName'
+};
+
+function fillDefaults() {
+  const d = {
+    fbApiKey: 'AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs',
+    fbAuthDomain: 'mywebapps-e3b63.firebaseapp.com',
+    fbProjectId: 'mywebapps-e3b63',
+    fbAppId: '1:46681415809:web:c4528b9da97abc310a2d80',
+    fbStorage: 'mywebapps-e3b63.firebasestorage.app',
+    fbSenderId: '46681415809',
+    fbDbUrl: '',
+    fsCollection: 'Test1',
+    fsDoc: 'global',
+    rtdbPath: '/test/mywebapps',
+    gOAuth: '103334413601-4msa4v80kgdir5k6c9kjj4m17h4f9djr.apps.googleusercontent.com',
+    gApiKey: 'AIzaSyCzCtOAOk5mrh1WYw98f-IeqkhSzUyAY9s',
+    gPickerAppId: '103334413601',
+    gScope: SCOPES,
+    mainFolder: '1fkDwkqErHogFqYU4x2OwYBSMk-n5KsG_',
+    binName: 'Bin'
+  };
+  Object.entries(CFG_FIELDS).forEach(([k, id]) => { if ($(id)) $(id).value = d[k] || ''; });
+}
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(CFG_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function saveConfigFromForm() {
+  const cfg = {};
+  Object.entries(CFG_FIELDS).forEach(([k, id]) => cfg[k] = $(id).value.trim());
+  localStorage.setItem(CFG_KEY, JSON.stringify(cfg));
+  state.cfg = cfg;
+  return cfg;
+}
+function applyConfigToForm(cfg) {
+  if (!cfg) return;
+  Object.entries(CFG_FIELDS).forEach(([k, id]) => { if ($(id) && cfg[k] != null) $(id).value = cfg[k]; });
+}
+
+$('btnSaveCfg').onclick = () => {
+  saveConfigFromForm();
+  showMsg('cfgMsg', '✅ Saved to this browser (localStorage).', 'ok');
+};
+$('btnLoadCfg').onclick = () => {
+  const c = loadConfig();
+  if (c) { applyConfigToForm(c); state.cfg = c; showMsg('cfgMsg','↺ Reloaded saved config.','info'); }
+  else showMsg('cfgMsg','No saved config found.','warn');
+};
+$('btnClearCfg').onclick = () => {
+  if (!confirm('Clear saved config from this browser?')) return;
+  localStorage.removeItem(CFG_KEY);
+  showMsg('cfgMsg','🗑 Config cleared.','warn');
+};
+$('btnInitAll').onclick = async () => {
+  const cfg = saveConfigFromForm();
+  if (!cfg.fbApiKey || !cfg.fbProjectId) { showMsg('cfgMsg','Firebase config missing.','err'); return; }
+  try {
+    await initFirebase(cfg);
+    await initGoogle(cfg);
+    showMsg('cfgMsg','🚀 Firebase + Google initialized.','ok');
+  } catch (e) {
+    showMsg('cfgMsg','Init error: ' + esc(e.message), 'err');
+  }
+};
+
+/* ============================================================
+   Firebase init & auth
+   ============================================================ */
+async function initFirebase(cfg) {
+  if (state.firebaseReady) return;
+  const app = firebase.initializeApp({
+    apiKey: cfg.fbApiKey,
+    authDomain: cfg.fbAuthDomain,
+    projectId: cfg.fbProjectId,
+    storageBucket: cfg.fbStorage,
+    messagingSenderId: cfg.fbSenderId,
+    appId: cfg.fbAppId,
+    databaseURL: cfg.fbDbUrl || undefined
+  });
+  state.auth = firebase.auth();
+  state.fs = firebase.firestore();
+  if (cfg.fbDbUrl) state.rtdb = firebase.database();
+
+  state.auth.onAuthStateChanged(user => {
+    state.currentUser = user;
+    updateAuthUI(user);
+    if (!user) {
+      // auto anon sign-in if enabled
+      if (state.cfg && state.cfg.autoAnon !== false) {
+        state.auth.signInAnonymously().catch(err => {
+          showMsg('authMsg','Anonymous auto sign-in failed: ' + esc(err.message), 'err');
+        });
+      }
+    }
+  });
+  // Trigger anon sign-in if not signed in
+  if (!state.auth.currentUser) {
+    try { await state.auth.signInAnonymously(); }
+    catch (e) { showMsg('authMsg','Anonymous sign-in failed: ' + esc(e.message), 'err'); }
+  }
+  state.firebaseReady = true;
+  $('fsTargetLabel').textContent = `${cfg.fsCollection || 'Test1'} / ${cfg.fsDoc || 'global'}`;
+  $('rtdbTargetLabel').textContent = cfg.fbDbUrl ? (cfg.rtdbPath || '/test') : 'RTDB URL not set';
+}
+
+function updateAuthUI(user) {
+  const pill = $('authStatusPill');
+  if (user) {
+    pill.className = 'status-pill ok';
+    pill.textContent = 'Auth: ' + (user.isAnonymous ? 'Anonymous' : 'Email');
+    $('aiStatus').textContent = 'Signed in';
+    $('aiUid').textContent = user.uid;
+    $('aiProvider').textContent = (user.providerData.map(p => p.providerId).join(', ') || (user.isAnonymous ? 'anonymous' : '—'));
+    $('aiEmail').textContent = user.email || '—';
+    $('aiAnon').textContent = user.isAnonymous ? 'Yes' : 'No';
+  } else {
+    pill.className = 'status-pill';
+    pill.textContent = 'Auth: signed out';
+    $('aiStatus').textContent = 'Signed out';
+    ['aiUid','aiProvider','aiEmail','aiAnon'].forEach(id => $(id).textContent = '—');
+  }
+}
+
+$('btnAnonSignIn').onclick = async () => {
+  try {
+    const t0 = ms();
+    await state.auth.signInAnonymously();
+    const dt = ms() - t0;
+    showMsg('authMsg','✅ Signed in anonymously.', 'ok');
+    addLog('Anonymous sign-in', 'PASS', dt);
+  } catch (e) {
+    showMsg('authMsg','❌ ' + esc(e.message), 'err');
+    addLog('Anonymous sign-in', 'FAIL', 0, e.message);
+  }
+};
+$('btnSignOut').onclick = async () => {
+  try { await state.auth.signOut(); showMsg('authMsg','Signed out.', 'info'); }
+  catch (e) { showMsg('authMsg','❌ ' + esc(e.message), 'err'); }
+};
+$('btnEmailLogin').onclick = async () => {
+  const em = $('emailInput').value.trim(), pw = $('passwordInput').value;
+  if (!em || !pw) return showMsg('emailMsg','Email + password required.','warn');
+  try {
+    const t0 = ms();
+    await state.auth.signInWithEmailAndPassword(em, pw);
+    const dt = ms() - t0;
+    showMsg('emailMsg','✅ Logged in.', 'ok');
+    addLog('Email login', 'PASS', dt);
+  } catch (e) {
+    showMsg('emailMsg','❌ ' + esc(e.message), 'err');
+    addLog('Email login', 'FAIL', 0, e.message);
+  }
+};
+$('btnEmailRegister').onclick = async () => {
+  const em = $('emailInput').value.trim(), pw = $('passwordInput').value;
+  if (!em || !pw) return showMsg('emailMsg','Email + password required.','warn');
+  try {
+    const t0 = ms();
+    await state.auth.createUserWithEmailAndPassword(em, pw);
+    const dt = ms() - t0;
+    showMsg('emailMsg','✅ Registered & logged in.', 'ok');
+    addLog('Email register', 'PASS', dt);
+  } catch (e) {
+    showMsg('emailMsg','❌ ' + esc(e.message), 'err');
+    addLog('Email register', 'FAIL', 0, e.message);
+  }
+};
+$('btnEmailReset').onclick = async () => {
+  const em = $('emailInput').value.trim();
+  if (!em) return showMsg('emailMsg','Enter email first.','warn');
+  try {
+    await state.auth.sendPasswordResetEmail(em);
+    showMsg('emailMsg','📧 Reset email sent.', 'ok');
+  } catch (e) { showMsg('emailMsg','❌ ' + esc(e.message), 'err'); }
+};
+
+/* ============================================================
+   Firestore operations
+   ============================================================ */
+function fsDocRef() {
+  const c = state.cfg;
+  return state.fs.collection(c.fsCollection || 'Test1').doc(c.fsDoc || 'global');
+}
+
+$('btnFsCreate').onclick = async () => {
+  clearMsg('fsMsg');
+  let data;
+  try { data = JSON.parse($('fsPayload').value || '{}'); }
+  catch (e) { return showMsg('fsMsg','Invalid JSON: ' + esc(e.message), 'err'); }
+  try {
+    const t0 = ms();
+    await fsDocRef().set(data);
+    const dt = ms() - t0;
+    showMsg('fsMsg','✅ Created/overwritten.', 'ok');
+    $('fsView').textContent = JSON.stringify(data, null, 2);
+    addLog('Firestore create/overwrite', 'PASS', dt);
+  } catch (e) {
+    showMsg('fsMsg','❌ ' + esc(e.message), 'err');
+    addLog('Firestore create/overwrite', 'FAIL', 0, e.message);
+  }
+};
+$('btnFsRead').onclick = async () => {
+  clearMsg('fsMsg');
+  try {
+    const t0 = ms();
+    const snap = await fsDocRef().get();
+    const dt = ms() - t0;
+    if (!snap.exists) { showMsg('fsMsg','Document does not exist.','warn'); $('fsView').textContent='—'; addLog('Firestore read','PASS',dt,'not found'); return; }
+    const d = snap.data();
+    $('fsView').textContent = JSON.stringify(d, null, 2);
+    showMsg('fsMsg','✅ Read OK.', 'ok');
+    addLog('Firestore read', 'PASS', dt);
+  } catch (e) {
+    showMsg('fsMsg','❌ ' + esc(e.message), 'err');
+    addLog('Firestore read', 'FAIL', 0, e.message);
+  }
+};
+$('btnFsUpdate').onclick = async () => {
+  let data;
+  try { data = JSON.parse($('fsPayload').value || '{}'); }
+  catch (e) { return showMsg('fsMsg','Invalid JSON: ' + esc(e.message), 'err'); }
+  try {
+    const t0 = ms();
+    await fsDocRef().update(data);
+    const dt = ms() - t0;
+    showMsg('fsMsg','✅ Fields updated.', 'ok');
+    addLog('Firestore update fields', 'PASS', dt);
+  } catch (e) {
+    showMsg('fsMsg','❌ ' + esc(e.message), 'err');
+    addLog('Firestore update fields', 'FAIL', 0, e.message);
+  }
+};
+$('btnFsDelete').onclick = async () => {
+  if (!confirm('Delete this test document? This only affects the configured test doc.')) return;
+  try {
+    const t0 = ms();
+    await fsDocRef().delete();
+    const dt = ms() - t0;
+    showMsg('fsMsg','🗑 Deleted.', 'warn');
+    $('fsView').textContent = '—';
+    addLog('Firestore delete', 'PASS', dt);
+  } catch (e) {
+    showMsg('fsMsg','❌ ' + esc(e.message), 'err');
+    addLog('Firestore delete', 'FAIL', 0, e.message);
+  }
+};
+$('btnFsVerify').onclick = async () => {
+  try {
+    const t0 = ms();
+    const snap = await fsDocRef().get();
+    const dt = ms() - t0;
+    if (!snap.exists) return showMsg('fsMsg','Verify: doc missing.','warn');
+    $('fsView').textContent = JSON.stringify(snap.data(), null, 2);
+    showMsg('fsMsg','✅ Read-back verified.', 'ok');
+    addLog('Firestore read-back verify', 'PASS', dt);
+  } catch (e) { showMsg('fsMsg','❌ '+esc(e.message),'err'); addLog('Firestore verify','FAIL',0,e.message); }
+};
+
+/* ============================================================
+   Realtime Database
+   ============================================================ */
+function rtdbRef() {
+  if (!state.rtdb) throw new Error('Realtime DB URL not configured.');
+  return state.rtdb.ref(state.cfg.rtdbPath || '/test/mywebapps');
+}
+$('btnRtdbCreate').onclick = async () => {
+  let data;
+  try { data = JSON.parse($('rtdbPayload').value || '{}'); }
+  catch (e) { return showMsg('rtdbMsg','Invalid JSON: ' + esc(e.message), 'err'); }
+  try {
+    const t0 = ms();
+    await rtdbRef().set(data);
+    const dt = ms() - t0;
+    showMsg('rtdbMsg','✅ Written.', 'ok');
+    $('rtdbView').textContent = JSON.stringify(data, null, 2);
+    addLog('RTDB create/overwrite', 'PASS', dt);
+  } catch (e) { showMsg('rtdbMsg','❌ '+esc(e.message),'err'); addLog('RTDB create/overwrite','FAIL',0,e.message); }
+};
+$('btnRtdbRead').onclick = async () => {
+  try {
+    const t0 = ms();
+    const snap = await rtdbRef().once('value');
+    const dt = ms() - t0;
+    const v = snap.val();
+    $('rtdbView').textContent = v ? JSON.stringify(v, null, 2) : '—';
+    showMsg('rtdbMsg','✅ Read OK.', 'ok');
+    addLog('RTDB read', 'PASS', dt);
+  } catch (e) { showMsg('rtdbMsg','❌ '+esc(e.message),'err'); addLog('RTDB read','FAIL',0,e.message); }
+};
+$('btnRtdbUpdate').onclick = async () => {
+  let data;
+  try { data = JSON.parse($('rtdbPayload').value || '{}'); }
+  catch (e) { return showMsg('rtdbMsg','Invalid JSON: ' + esc(e.message), 'err'); }
+  try {
+    const t0 = ms();
+    await rtdbRef().update(data);
+    const dt = ms() - t0;
+    showMsg('rtdbMsg','✅ Updated.', 'ok');
+    addLog('RTDB update', 'PASS', dt);
+  } catch (e) { showMsg('rtdbMsg','❌ '+esc(e.message),'err'); addLog('RTDB update','FAIL',0,e.message); }
+};
+$('btnRtdbDelete').onclick = async () => {
+  if (!confirm('Delete RTDB test path?')) return;
+  try {
+    const t0 = ms();
+    await rtdbRef().remove();
+    const dt = ms() - t0;
+    $('rtdbView').textContent = '—';
+    showMsg('rtdbMsg','🗑 Removed.', 'warn');
+    addLog('RTDB delete', 'PASS', dt);
+  } catch (e) { showMsg('rtdbMsg','❌ '+esc(e.message),'err'); addLog('RTDB delete','FAIL',0,e.message); }
+};
+
+/* ============================================================
+   Google OAuth (GIS token client)
+   ============================================================ */
+async function initGoogle(cfg) {
+  state.cfg = cfg;
+  await new Promise(res => {
+    if (window.gapi && window.google) return res();
+    const iv = setInterval(() => {
+      if (window.gapi && window.google) { clearInterval(iv); res(); }
+    }, 100);
+    setTimeout(() => { clearInterval(iv); res(); }, 8000);
+  });
+
+  await new Promise(res => gapi.load('client:picker', res));
+  await gapi.client.init({
+    apiKey: cfg.gApiKey,
+    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+  });
+
+  state.tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cfg.gOAuth,
+    scope: cfg.gScope || SCOPES,
+    callback: async (resp) => {
+      if (resp.error) {
+        showMsg('driveMsg','OAuth error: ' + esc(resp.error_description || resp.error), 'err');
+        return;
+      }
+      state.accessToken = resp.access_token;
+      state.googleSignedIn = true;
+      gapi.client.setToken({ access_token: resp.access_token });
+      $('driveStatusPill').className = 'status-pill ok';
+      $('driveStatusPill').textContent = 'Drive: authorized';
+      showMsg('driveMsg','✅ Google authorized.', 'ok');
+      addLog('Google OAuth authorize', 'PASS', 0);
+      // refresh main folder info
+      await ensureMainFolderInfo();
+    }
+  });
+  state.gapiReady = true;
+}
+
+$('btnDriveAuth').onclick = () => {
+  if (!state.tokenClient) return showMsg('driveMsg','Init Google first (Config tab → Initialize).','warn');
+  state.tokenClient.requestAccessToken({ prompt: '' });
+};
+$('btnDriveSignOut').onclick = () => {
+  if (state.accessToken) google.accounts.oauth2.revoke(state.accessToken);
+  state.accessToken = null;
+  state.googleSignedIn = false;
+  $('driveStatusPill').className = 'status-pill';
+  $('driveStatusPill').textContent = 'Drive: signed out';
+  showMsg('driveMsg','Signed out of Google.', 'info');
+};
+
+/* ============================================================
+   Drive helpers
+   ============================================================ */
+async function driveList(q, fields = 'files(id,name,mimeType,parents,owners(displayName,emailAddress),modifiedTime,size)') {
+  if (!state.accessToken) throw new Error('Not authorized with Google.');
+  const res = await gapi.client.drive.files.list({
+    q, fields, pageSize: 100, supportsAllDrives: true, includeItemsFromAllDrives: true
+  });
+  return res.result.files || [];
+}
+async function driveGet(fileId, fields = 'id,name,mimeType,parents,owners(displayName,emailAddress),modifiedTime,size') {
+  const res = await gapi.client.drive.files.get({ fileId, fields, supportsAllDrives: true });
+  return res.result;
+}
+async function driveCreateFolder(name, parentId) {
+  const res = await gapi.client.drive.files.create({
+    resource: { name, mimeType: 'application/vnd.google-apps.folder', parents: parentId ? [parentId] : [] },
+    fields: 'id,name,parents', supportsAllDrives: true
+  });
+  return res.result;
+}
+async function driveCreateFile(name, content, mimeType, parentId) {
+  const boundary = '-------mywebapps' + Date.now();
+  const metadata = { name, mimeType: mimeType || 'text/plain', parents: parentId ? [parentId] : [] };
+  const body =
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
+    JSON.stringify(metadata) +
+    `\r\n--${boundary}\r\nContent-Type: ${mimeType || 'text/plain'}; charset=UTF-8\r\n\r\n` +
+    content +
+    `\r\n--${boundary}--`;
+  const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,mimeType,parents', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + state.accessToken,
+      'Content-Type': `multipart/related; boundary=${boundary}`
+    },
+    body
+  });
+  if (!res.ok) throw new Error('Create file failed: ' + res.status + ' ' + (await res.text()));
+  return res.json();
+}
+async function driveGetContent(fileId) {
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&supportsAllDrives=true`, {
+    headers: { Authorization: 'Bearer ' + state.accessToken }
+  });
+  if (!res.ok) throw new Error('Download failed: ' + res.status + ' ' + (await res.text()));
+  return res.text();
+}
+async function driveUpdateContent(fileId, content, mimeType) {
+  const res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media&supportsAllDrives=true`, {
+    method: 'PATCH',
+    headers: { Authorization: 'Bearer ' + state.accessToken, 'Content-Type': mimeType || 'text/plain; charset=UTF-8' },
+    body: content
+  });
+  if (!res.ok) throw new Error('Update failed: ' + res.status + ' ' + (await res.text()));
+  return res.json();
+}
+async function driveMove(fileId, newParentId, oldParentId) {
+  const res = await gapi.client.drive.files.update({
+    fileId,
+    addParents: newParentId,
+    removeParents: oldParentId || '',
+    fields: 'id,name,parents',
+    supportsAllDrives: true
+  });
+  return res.result;
+}
+async function driveRename(fileId, newName) {
+  const res = await gapi.client.drive.files.update({
+    fileId, resource: { name: newName }, fields: 'id,name,parents', supportsAllDrives: true
+  });
+  return res.result;
+}
+async function driveTrash(fileId) {
+  const res = await gapi.client.drive.files.update({
+    fileId, resource: { trashed: true }, supportsAllDrives: true, fields: 'id,name,trashed'
+  });
+  return res.result;
+}
+
+/* ============================================================
+   Drive main + bin folders
+   ============================================================ */
+async function ensureMainFolderInfo() {
+  const cfg = state.cfg;
+  if (!cfg.mainFolder) { $('mainFolderIdLabel').textContent = '—'; return; }
+  try {
+    const info = await driveGet(cfg.mainFolder);
+    state.mainFolderId = info.id;
+    $('mainFolderIdLabel').textContent = info.id;
+    $('mainFolderNameLabel').textContent = info.name;
+    // find or create Bin
+    const binName = cfg.binName || 'Bin';
+    const bins = await driveList(`'${info.id}' in parents and name='${binName.replace(/'/g,"\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false`);
+    if (bins.length) {
+      state.binFolderId = bins[0].id;
+    } else {
+      state.binFolderId = null;
+    }
+    $('binFolderIdLabel').textContent = state.binFolderId || '(not created yet)';
+    await refreshDriveFiles();
+  } catch (e) {
+    showMsg('driveMsg','Main folder error: ' + esc(e.message), 'err');
+  }
+}
+$('btnDriveEnsureMain').onclick = async () => {
+  try {
+    await ensureMainFolderInfo();
+    if (!state.mainFolderId) {
+      // create it
+      const f = await driveCreateFolder('MyWebApps', null);
+      state.mainFolderId = f.id;
+      state.cfg.mainFolder = f.id;
+      saveConfigFromForm();
+      showMsg('driveMsg','📁 Created main folder: ' + esc(f.id), 'ok');
+    } else {
+      showMsg('driveMsg','Main folder verified.', 'ok');
+    }
+    addLog('Drive main folder verify', 'PASS', 0);
+  } catch (e) { showMsg('driveMsg','❌ '+esc(e.message),'err'); addLog('Drive main folder verify','FAIL',0,e.message); }
+};
+$('btnDriveEnsureBin').onclick = async () => {
+  if (!state.mainFolderId) return showMsg('driveMsg','Create/verify main folder first.','warn');
+  try {
+    if (!state.binFolderId) {
+      const f = await driveCreateFolder(state.cfg.binName || 'Bin', state.mainFolderId);
+      state.binFolderId = f.id;
+      $('binFolderIdLabel').textContent = f.id;
+      showMsg('driveMsg','🗑 Bin created: ' + esc(f.id), 'ok');
+      addLog('Drive Bin create', 'PASS', 0);
+    } else {
+      showMsg('driveMsg','Bin already exists.','info');
+    }
+  } catch (e) { showMsg('driveMsg','❌ '+esc(e.message),'err'); addLog('Drive Bin create','FAIL',0,e.message); }
+};
+
+/* ============================================================
+   Drive file list
+   ============================================================ */
+async function refreshDriveFiles() {
+  if (!state.accessToken || !state.mainFolderId) return;
+  try {
+    const files = await driveList(`'${state.mainFolderId}' in parents and trashed=false`);
+    const list = $('driveFileList');
+    if (!files.length) {
+      list.innerHTML = '<div class="msg info">Main folder empty.</div>';
+      return;
+    }
+    list.innerHTML = files.map(f => `
+      <div class="file-item">
+        <div>
+          <div><b>${esc(f.name)}</b></div>
+          <div class="meta">${esc(f.mimeType)} · ${esc(f.id)}</div>
+        </div>
+        <button class="small" data-open="${esc(f.id)}">Open</button>
+      </div>`).join('');
+    list.querySelectorAll('[data-open]').forEach(b => {
+      b.onclick = () => openFileInEditor(b.dataset.open);
+    });
+  } catch (e) { showMsg('driveMsg','List error: ' + esc(e.message), 'err'); }
+}
+$('btnDriveRefresh').onclick = refreshDriveFiles;
+
+/* ============================================================
+   Create file
+   ============================================================ */
+$('btnDriveCreateFile').onclick = async () => {
+  if (!state.mainFolderId) return showMsg('driveMsg','Main folder not ready.','warn');
+  const name = $('newFileName').value.trim();
+  const type = $('newFileType').value;
+  const content = $('newFileContent').value || '';
+  if (!name) return showMsg('driveMsg','File name required.','warn');
+  const mime = type === 'json' ? 'application/json' : 'text/plain';
+  try {
+    const t0 = ms();
+    const f = await driveCreateFile(name, content, mime, state.mainFolderId);
+    const dt = ms() - t0;
+    showMsg('driveMsg','✅ Created: ' + esc(f.id), 'ok');
+    addLog('Drive create file', 'PASS', dt);
+    await refreshDriveFiles();
+  } catch (e) { showMsg('driveMsg','❌ '+esc(e.message),'err'); addLog('Drive create file','FAIL',0,e.message); }
+};
+
+/* ============================================================
+   Editor / file operations
+   ============================================================ */
+async function openFileInEditor(fileId) {
+  try {
+    const meta = await driveGet(fileId);
+    state.selectedFile = meta;
+    $('editFileId').textContent = meta.id;
+    $('editFileName').textContent = meta.name;
+    $('editFileMime').textContent = meta.mimeType;
+    $('editFileLoc').textContent = (meta.parents || []).join(', ') || '(root)';
+    $('editor').value = '';
+    // Only read content for text-ish files
+    const readable = !meta.mimeType.startsWith('application/vnd.google-apps');
+    if (readable) {
+      try {
+        $('editor').value = await driveGetContent(fileId);
+      } catch (e) {
+        showMsg('editorMsg','Content read failed: ' + esc(e.message), 'warn');
+      }
+    } else {
+      showMsg('editorMsg','Google-native file — content read not supported here.','info');
+    }
+  } catch (e) {
+    showMsg('editorMsg','Open failed: ' + esc(e.message), 'err');
+  }
+}
+
+$('btnEditorSave').onclick = async () => {
+  if (!state.selectedFile) return showMsg('editorMsg','Open a file first.','warn');
+  try {
+    const t0 = ms();
+    await driveUpdateContent(state.selectedFile.id, $('editor').value, state.selectedFile.mimeType);
+    const dt = ms() - t0;
+    showMsg('editorMsg','✅ Saved.', 'ok');
+    addLog('Drive update content', 'PASS', dt);
+  } catch (e) { showMsg('editorMsg','❌ '+esc(e.message),'err'); addLog('Drive update content','FAIL',0,e.message); }
+};
+$('btnEditorReload').onclick = async () => {
+  if (!state.selectedFile) return showMsg('editorMsg','Open a file first.','warn');
+  try {
+    const t0 = ms();
+    const txt = await driveGetContent(state.selectedFile.id);
+    const dt = ms() - t0;
+    $('editor').value = txt;
+    showMsg('editorMsg','✅ Re-read OK.', 'ok');
+    addLog('Drive re-read content', 'PASS', dt);
+  } catch (e) { showMsg('editorMsg','❌ '+esc(e.message),'err'); addLog('Drive re-read content','FAIL',0,e.message); }
+};
+$('btnEditorRename').onclick = async () => {
+  if (!state.selectedFile) return showMsg('editorMsg','Open a file first.','warn');
+  const n = prompt('New name:', state.selectedFile.name);
+  if (!n) return;
+  try {
+    const r = await driveRename(state.selectedFile.id, n.trim());
+    state.selectedFile.name = r.name;
+    $('editFileName').textContent = r.name;
+    showMsg('editorMsg','✅ Renamed.', 'ok');
+    addLog('Drive rename', 'PASS', 0);
+    await refreshDriveFiles();
+  } catch (e) { showMsg('editorMsg','❌ '+esc(e.message),'err'); addLog('Drive rename','FAIL',0,e.message); }
+};
+$('btnEditorMove').onclick = async () => {
+  if (!state.selectedFile) return showMsg('editorMsg','Open a file first.','warn');
+  const target = prompt('Target folder ID:', state.mainFolderId || '');
+  if (!target) return;
+  try {
+    const r = await driveMove(state.selectedFile.id, target, (state.selectedFile.parents || [])[0]);
+    state.selectedFile.parents = r.parents;
+    $('editFileLoc').textContent = (r.parents || []).join(', ');
+    showMsg('editorMsg','📦 Moved.', 'ok');
+    addLog('Drive move', 'PASS', 0);
+    await refreshDriveFiles();
+  } catch (e) { showMsg('editorMsg','❌ '+esc(e.message),'err'); addLog('Drive move','FAIL',0,e.message); }
+};
+$('btnEditorBin').onclick = async () => {
+  if (!state.selectedFile) return showMsg('editorMsg','Open a file first.','warn');
+  if (state.selectedFile.id === state.mainFolderId || state.selectedFile.id === state.binFolderId) {
+    return showMsg('editorMsg','Cannot bin the main folder or Bin folder itself.','warn');
+  }
+  if (!state.binFolderId) return showMsg('editorMsg','Bin folder not ready.','warn');
+  if (!confirm('Move this file to Bin?')) return;
+  try {
+    const originalParent = (state.selectedFile.parents || [])[0];
+    const t0 = ms();
+    await driveMove(state.selectedFile.id, state.binFolderId, originalParent);
+    const dt = ms() - t0;
+    // Remember original parent in appProperties
+    await gapi.client.drive.files.update({
+      fileId: state.selectedFile.id,
+      resource: { appProperties: { originalParent: originalParent || '' } },
+      supportsAllDrives: true
+    });
+    showMsg('editorMsg','🗑 Moved to Bin.', 'warn');
+    addLog('Drive move-to-Bin', 'PASS', dt);
+    await refreshDriveFiles();
+  } catch (e) { showMsg('editorMsg','❌ '+esc(e.message),'err'); addLog('Drive move-to-Bin','FAIL',0,e.message); }
+};
+
+/* ============================================================
+   Bin listing / restore / permanent delete
+   ============================================================ */
+async function refreshBin() {
+  if (!state.binFolderId) return showMsg('binMsg','Bin folder not created yet.','warn');
+  try {
+    const files = await driveList(`'${state.binFolderId}' in parents and trashed=false`,
+      'files(id,name,mimeType,parents,appProperties)');
+    const list = $('binFileList');
+    if (!files.length) {
+      list.innerHTML = '<div class="msg info">Bin is empty.</div>'; return;
+    }
+    list.innerHTML = files.map(f => `
+      <div class="file-item">
+        <div>
+          <div><b>${esc(f.name)}</b></div>
+          <div class="meta">${esc(f.mimeType)} · ${esc(f.id)}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="small" data-restore="${esc(f.id)}">↩ Restore</button>
+          <button class="small danger" data-perm="${esc(f.id)}">🗑 Permanent</button>
+        </div>
+      </div>`).join('');
+    list.querySelectorAll('[data-restore]').forEach(b => b.onclick = () => restoreFromBin(b.dataset.restore));
+    list.querySelectorAll('[data-perm]').forEach(b => b.onclick = () => permanentDelete(b.dataset.perm));
+  } catch (e) { showMsg('binMsg','Bin list error: ' + esc(e.message), 'err'); }
+}
+$('btnBinRefresh').onclick = refreshBin;
+
+async function restoreFromBin(fileId) {
+  if (!confirm('Restore this file to its original parent?')) return;
+  try {
+    const meta = await driveGet(fileId, 'id,name,parents,appProperties');
+    let target = meta.appProperties && meta.appProperties.originalParent;
+    if (!target) target = state.mainFolderId;
+    // verify target exists
+    try { await driveGet(target); }
+    catch {
+      target = state.mainFolderId;
+      showMsg('binMsg','⚠ Original parent unavailable — restoring to main folder.', 'warn');
+    }
+    await driveMove(fileId, target, state.binFolderId);
+    showMsg('binMsg','↩ Restored.', 'ok');
+    addLog('Bin restore', 'PASS', 0);
+    await refreshBin();
+  } catch (e) { showMsg('binMsg','❌ '+esc(e.message),'err'); addLog('Bin restore','FAIL',0,e.message); }
+}
+async function permanentDelete(fileId) {
+  if (!confirm('Move this file to Google Drive Trash permanently? (Not recoverable from Bin.)')) return;
+  try {
+    await driveTrash(fileId);
+    showMsg('binMsg','🗑 Moved to Google Drive Trash.', 'warn');
+    addLog('Bin permanent delete', 'PASS', 0);
+    await refreshBin();
+  } catch (e) { showMsg('binMsg','❌ '+esc(e.message),'err'); addLog('Bin permanent delete','FAIL',0,e.message); }
+}
+
+/* ============================================================
+   Google Picker
+   ============================================================ */
+$('btnPickerOpen').onclick = () => {
+  if (!state.gapiReady) return showMsg('pickerMsg','Initialize Google first.','warn');
+  if (!state.accessToken) return showMsg('pickerMsg','Authorize Google first.','warn');
+  try {
+    const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
+      .setIncludeFolders(true).setSelectFolderEnabled(false);
+    const picker = new google.picker.PickerBuilder()
+      .addView(view)
+      .setOAuthToken(state.accessToken)
+      .setDeveloperKey(state.cfg.gApiKey)
+      .setAppId(state.cfg.gPickerAppId)
+      .setCallback(pickerCallback)
+      .build();
+    picker.setVisible(true);
+  } catch (e) { showMsg('pickerMsg','Picker error: ' + esc(e.message), 'err'); }
+};
+async function pickerCallback(data) {
+  if (data.action === google.picker.Action.CANCEL) {
+    showMsg('pickerMsg','Picker cancelled.','warn'); return;
+  }
+  if (data.action !== google.picker.Action.PICKED) return;
+  const doc = data.docs[0];
+  state.pickedFile = { id: doc.id, name: doc.name, mimeType: doc.mimeType };
+  $('pmId').textContent = doc.id;
+  $('pmName').textContent = doc.name;
+  $('pmMime').textContent = doc.mimeType;
+  $('pmLoc').textContent = '—';
+  $('pmOwners').textContent = '—';
+  try {
+    const meta = await driveGet(doc.id);
+    $('pmLoc').textContent = (meta.parents || []).join(', ') || '(root)';
+    $('pmOwners').textContent = (meta.owners || []).map(o => o.displayName || o.emailAddress).join(', ');
+    showMsg('pickerMsg','✅ File selected.', 'ok');
+    addLog('Picker select', 'PASS', 0);
+  } catch (e) {
+    showMsg('pickerMsg','⚠ Metadata read failed: ' + esc(e.message), 'warn');
+    addLog('Picker select','FAIL',0,e.message);
+  }
+}
+$('btnPickerLoadContent').onclick = async () => {
+  if (!state.pickedFile) return showMsg('pickerContentMsg','Pick a file first.','warn');
+  try {
+    const txt = await driveGetContent(state.pickedFile.id);
+    $('editor').value = txt;
+    state.selectedFile = { id: state.pickedFile.id, name: state.pickedFile.name, mimeType: state.pickedFile.mimeType, parents: [] };
+    $('editFileId').textContent = state.pickedFile.id;
+    $('editFileName').textContent = state.pickedFile.name;
+    $('editFileMime').textContent = state.pickedFile.mimeType;
+    $('editFileLoc').textContent = '—';
+    showMsg('pickerContentMsg','✅ Loaded into editor.', 'ok');
+    addLog('Picker load content', 'PASS', 0);
+  } catch (e) { showMsg('pickerContentMsg','❌ '+esc(e.message),'err'); addLog('Picker load content','FAIL',0,e.message); }
+};
+$('btnPickerGoEditor').onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.remove('active'));
+  document.querySelector('#tabs button[data-tab="tab-drive"]').classList.add('active');
+  ['tab-auth','tab-db','tab-drive','tab-picker','tab-bin','tab-dash','tab-log','tab-cfg']
+    .forEach(id => $(id).classList.add('hidden'));
+  $('tab-drive').classList.remove('hidden');
+};
+
+/* ============================================================
+   Test Dashboard
+   ============================================================ */
+const TESTS = [
+  { id: 'cfg-fb', name: 'Firebase config present', expected: 'All required Firebase fields set',
+    run: async () => { if (!state.cfg) throw new Error('No config'); 
+      if (!state.cfg.fbApiKey || !state.cfg.fbProjectId || !state.cfg.fbAppId) throw new Error('Missing Firebase fields');
+      return 'OK'; } },
+  { id: 'fb-init', name: 'Firebase initialized', expected: 'SDK initialized',
+    run: async () => { if (!state.firebaseReady) throw new Error('Not initialized'); return 'OK'; } },
+  { id: 'auth-user', name: 'Auth user present', expected: 'UID available',
+    run: async () => { if (!state.currentUser) throw new Error('No user'); return state.currentUser.uid; } },
+  { id: 'fs-read', name: 'Firestore read test doc', expected: 'Read succeeds',
+    run: async () => { const s = await fsDocRef().get(); return s.exists ? 'exists' : 'missing'; } },
+  { id: 'rtdb-read', name: 'RTDB read test path', expected: 'Read succeeds',
+    run: async () => { if (!state.rtdb) throw new Error('RTDB URL not set');
+      const s = await rtdbRef().once('value'); return s.val() ? 'value present' : 'empty'; } },
+  { id: 'g-oauth', name: 'Google OAuth authorized', expected: 'Access token present',
+    run: async () => { if (!state.accessToken) throw new Error('Not authorized'); return 'OK'; } },
+  { id: 'g-main', name: 'Main Drive folder reachable', expected: 'Metadata readable',
+    run: async () => { const f = await driveGet(state.cfg.mainFolder); return f.name; } },
+  { id: 'g-bin', name: 'Bin folder present', expected: 'Bin folder found',
+    run: async () => { if (!state.binFolderId) throw new Error('Bin not created'); return state.binFolderId; } },
+  { id: 'g-list', name: 'List files in main folder', expected: 'List succeeds',
+    run: async () => { const f = await driveList(`'${state.mainFolderId}' in parents and trashed=false`); return f.length + ' files'; } },
+  { id: 'g-upload', name: 'Create + read-back temp file', expected: 'Content matches',
+    run: async () => {
+      const name = 'mywebapps-test-' + Date.now() + '.txt';
+      const payload = 'Hello MyWebApps ' + new Date().toISOString();
+      const f = await driveCreateFile(name, payload, 'text/plain', state.mainFolderId);
+      try {
+        const back = await driveGetContent(f.id);
+        if (back !== payload) throw new Error('Content mismatch');
+        return 'created & verified';
+      } finally {
+        try { await driveTrash(f.id); } catch {}
+      }
+    } },
+  { id: 'g-picker-api', name: 'Picker API loaded', expected: 'google.picker available',
+    run: async () => { if (!window.google || !google.picker) throw new Error('Picker not loaded'); return 'OK'; } }
+];
+
+function renderTests() {
+  const tb = $('testBody');
+  tb.innerHTML = TESTS.map(t => {
+    const r = state.results?.[t.id];
+    const cls = !r ? 'nt' : (r.result === 'PASS' ? 'pass' : 'fail');
+    const label = !r ? 'Not Tested' : r.result;
+    return `<tr>
+      <td>${esc(t.name)}</td>
+      <td class="mono">${esc(t.expected)}</td>
+      <td class="mono">${r ? esc(r.actual || '') : '—'}</td>
+      <td><span class="pill ${cls}">${label}</span></td>
+      <td>${r ? r.durationMs + ' ms' : '—'}</td>
+      <td class="mono">${r ? esc(r.error || '') : ''}</td>
+      <td><button class="small" data-run="${t.id}">▶</button></td>
+    </tr>`;
+  }).join('');
+  tb.querySelectorAll('[data-run]').forEach(b => b.onclick = () => runOne(b.dataset.run));
+}
+
+async function runOne(id) {
+  const t = TESTS.find(x => x.id === id);
+  if (!t) return;
+  state.results = state.results || {};
+  const t0 = ms();
+  try {
+    const actual = await t.run();
+    const dt = ms() - t0;
+    state.results[id] = { result: 'PASS', actual, durationMs: Math.round(dt), error: '' };
+    addLog(t.name, 'PASS', dt);
+  } catch (e) {
+    const dt = ms() - t0;
+    state.results[id] = { result: 'FAIL', actual: '', durationMs: Math.round(dt), error: e.message };
+    addLog(t.name, 'FAIL', dt, e.message);
+  }
+  renderTests();
+}
+$('btnRunAll').onclick = async () => {
+  for (const t of TESTS) await runOne(t.id);
+};
+$('btnClearResults').onclick = () => { state.results = {}; renderTests(); };
+
+/* ============================================================
+   Log export
+   ============================================================ */
+function downloadBlob(name, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$('btnLogJson').onclick = () => {
+  downloadBlob('mywebapps-test-log.json', JSON.stringify(state.log, null, 2), 'application/json');
+};
+$('btnLogCsv').onclick = () => {
+  const rows = [['time','test','result','durationMs','error']]
+    .concat(state.log.map(e => [e.time, e.test, e.result, e.durationMs, e.error]));
+  const csv = rows.map(r => r.map(v => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\n');
+  downloadBlob('mywebapps-test-log.csv', csv, 'text/csv');
+};
+$('btnLogClear').onclick = () => { if (confirm('Clear session log?')) { state.log = []; renderLog(); } };
+$('btnGlobalExport').onclick = () => { $('btnLogJson').click(); };
+
+/* ============================================================
+   Boot
+   ============================================================ */
+(function boot() {
+  const saved = loadConfig();
+  if (saved) { applyConfigToForm(saved); state.cfg = saved; }
+  else fillDefaults();
+  renderTests();
+  renderLog();
+
+  // Auto-init Firebase if we have enough config
+  const cfg = state.cfg || loadConfig();
+  if (cfg && cfg.fbApiKey && cfg.fbProjectId) {
+    initFirebase(cfg).then(() => {
+      if (cfg.gOAuth) initGoogle(cfg).catch(e => {
+        console.warn('Google init deferred:', e.message);
+      });
+    }).catch(e => {
+      showMsg('authMsg','Firebase auto-init failed: ' + esc(e.message), 'err');
+    });
+  } else {
+    showMsg('authMsg','Enter Firebase config in ⚙ Config tab and click Initialize.', 'info');
+  }
+})();
+</script>
+</body>
+</html>
