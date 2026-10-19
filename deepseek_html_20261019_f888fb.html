@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MyWebApps — Drive ٹول</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:Tahoma,sans-serif;max-width:860px;margin:0 auto;padding:1rem;background:#f0f4f9;color:#202124}
+  h1{color:#1a73e8;text-align:center;margin-bottom:.4rem}
+  .subtitle{text-align:center;color:#5f6368;font-size:.9rem;margin-bottom:1.2rem}
+  h3{margin:.2rem 0 1rem;color:#333}
+  .card{background:#fff;border-radius:14px;padding:1.5rem;box-shadow:0 4px 18px rgba(0,0,0,.07);margin-bottom:1.2rem}
+  label{display:block;margin-top:.9rem;font-weight:600;font-size:.92rem}
+  input[type=text],input[type=file]{width:100%;padding:.7rem;margin-top:.35rem;border:1px solid #dadce0;border-radius:9px;font-size:.95rem;background:#fafafa}
+  input:focus{outline:none;border-color:#1a73e8;background:#fff}
+  button{margin-top:1.1rem;padding:.75rem 1.5rem;background:#1a73e8;color:#fff;border:none;border-radius:9px;cursor:pointer;font-size:1rem;font-weight:600}
+  button:hover{background:#1765cc}
+  button:disabled{background:#9bbcf2;cursor:not-allowed}
+  button.sec{background:#e8f0fe;color:#1a73e8}
+  button.sec:hover{background:#d2e3fc}
+  .result{margin-top:1rem;padding:1rem;background:#e8f0fe;border-radius:10px;word-break:break-all;font-size:.9rem;line-height:1.9}
+  .result a{color:#1a73e8;text-decoration:none}
+  .result a:hover{text-decoration:underline}
+  .row{display:flex;gap:.6rem;flex-wrap:wrap}
+  .row button{flex:1}
+  #qrBox{margin-top:1rem;text-align:center;padding:1rem;background:#fafafa;border-radius:10px}
+  #qrBox img{border:1px solid #ddd;border-radius:10px;background:#fff;padding:6px}
+  .status{margin-top:.8rem;font-size:.9rem;min-height:1.2rem}
+  .ok{color:#188038;font-weight:600}
+  .err{color:#d93025;font-weight:600}
+  .info{color:#5f6368;font-size:.85rem}
+  .logs{font-size:.85rem;max-height:400px;overflow:auto}
+  .logs table{width:100%;border-collapse:collapse;margin-top:.5rem}
+  .logs th,.logs td{padding:.45rem;border-bottom:1px solid #eee;text-align:right}
+  .logs th{background:#f1f3f4;font-weight:600;position:sticky;top:0}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:.75rem}
+  .badge.view{background:#e8f0fe;color:#1a73e8}
+  .badge.download{background:#e6f4ea;color:#188038}
+  .hidden{display:none!important}
+  .loading{text-align:center;padding:2rem;color:#5f6368}
+  .section-title{display:flex;justify-content:space-between;align-items:center}
+  .section-title h3{margin:0}
+</style>
+</head>
+<body>
+
+<h1>📁 MyWebApps — Drive ٹول</h1>
+<p class="subtitle">سب کچھ ایک ہی صفحے پر — اپ لوڈ، لنک، QR، لاگ</p>
+
+<!-- لوڈنگ -->
+<div class="card loading" id="loadingCard">
+  <p>⏳ خودکار لاگ ان ہو رہا ہے...</p>
+</div>
+
+<!-- ✅ Google Drive جوڑیں -->
+<div class="card hidden" id="googleCard">
+  <h3>🔗 Google Drive</h3>
+  <p class="info">پہلی بار: Google اکاؤنٹ سے اجازت دیں تاکہ فائل آپ کی Drive میں محفوظ ہو۔</p>
+  <button class="sec" onclick="connectGoogle()" id="googleBtn">Google Drive سے جوڑیں</button>
+  <p class="status" id="googleStatus"></p>
+</div>
+
+<!-- 📤 اپ لوڈ -->
+<div class="card hidden" id="uploadCard">
+  <h3>📤 فائل اپ لوڈ کریں</h3>
+  <label>فائل کا نام (حسب ضرورت):</label>
+  <input type="text" id="fileName" placeholder="مثلاً رپورٹ-2026.pdf">
+  <label>تفصیل (اختیاری):</label>
+  <input type="text" id="description" placeholder="مختصر تفصیل">
+  <label>فائل منتخب کریں:</label>
+  <input type="file" id="fileInput">
+  <button id="uploadBtn" onclick="uploadFile()">اپ لوڈ کریں</button>
+  <p class="status" id="uploadStatus"></p>
+</div>
+
+<!-- ✅ نتیجہ -->
+<div class="card hidden" id="resultCard">
+  <h3>✅ اپ لوڈ کامیاب</h3>
+  <div class="result">
+    <p><strong>مکمل لنک (Drive):</strong><br><a id="fullLink" target="_blank"></a></p>
+    <p><strong>دیکھنے کا لنک (لاگ ریکارڈ ہوگا):</strong><br><a id="viewLink" target="_blank"></a></p>
+    <p><strong>ڈاؤن لوڈ لنک (لاگ ریکارڈ ہوگا):</strong><br><a id="downloadLink" target="_blank"></a></p>
+    <p><strong>مختصر لنک:</strong><br><a id="shortLink" target="_blank"></a></p>
+  </div>
+  <div id="qrBox">
+    <p><strong>QR کوڈ (مختصر لنک):</strong></p>
+    <img id="qrImg" width="280" height="280" alt="QR">
+    <p><a id="qrDownload" download="qrcode.png" style="color:#1a73e8">⬇ QR کوڈ ڈاؤن لوڈ</a></p>
+  </div>
+  <div class="row">
+    <button class="sec" onclick="copyLink('viewLink')">📋 دیکھنے کا لنک کاپی</button>
+    <button class="sec" onclick="copyLink('shortLink')">📋 مختصر لنک کاپی</button>
+  </div>
+</div>
+
+<!-- 📊 لاگ ریکارڈ — ہمیشہ نظر آئے -->
+<div class="card hidden" id="logsCard">
+  <div class="section-title">
+    <h3>📊 رسائی کا ریکارڈ (آخری 100)</h3>
+    <button class="sec" style="margin-top:0" onclick="loadLogs()">🔄 تازہ کریں</button>
+  </div>
+  <p class="info">یہ وہ لوگ ہیں جنہوں نے آپ کا ری ڈائریکٹ لنک کھولا یا ڈاؤن لوڈ کیا۔</p>
+  <div class="logs" id="logsBox">
+    <p class="info">لوڈ ہو رہا ہے...</p>
+  </div>
+</div>
+
+<script>
+// ================== Firebase config ==================
+const firebaseConfig = {
+  apiKey: "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+  authDomain: "mywebapps-e3b63.firebaseapp.com",
+  projectId: "mywebapps-e3b63",
+  storageBucket: "mywebapps-e3b63.firebasestorage.app",
+  messagingSenderId: "46681415809",
+  appId: "1:46681415809:web:c4528b9da97abc310a2d80"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3000'
+  : location.origin;
+
+let idToken = null;
+
+// ================== خودکار Anonymous لاگ ان ==================
+auth.onAuthStateChanged(async (user) => {
+  if (user) {
+    idToken = await user.getIdToken();
+    // سب کارڈ دکھائیں
+    document.getElementById('loadingCard').classList.add('hidden');
+    ['googleCard','uploadCard','logsCard'].forEach(id =>
+      document.getElementById(id).classList.remove('hidden')
+    );
+    checkGoogleStatus();
+    loadLogs(); // خودکار لوڈ
+  } else {
+    try {
+      const cred = await auth.signInAnonymously();
+      idToken = await cred.user.getIdToken();
+    } catch (e) {
+      document.getElementById('loadingCard').innerHTML =
+        '<p class="status err">❌ Anonymous لاگ ان ناکام: ' + e.message +
+        '<br><br>Firebase Console → Authentication → Sign-in method → Anonymous کو Enable کریں۔</p>';
+    }
+  }
+});
+
+// ================== Google ==================
+function connectGoogle() {
+  document.getElementById('googleStatus').textContent = '⏳ Google پر بھیج رہے ہیں...';
+  window.location.href = API_BASE + '/auth/google';
+}
+
+async function checkGoogleStatus() {
+  try {
+    const res = await fetch(API_BASE + '/api/google-status', {
+      headers: { 'Authorization': 'Bearer ' + idToken }
+    });
+    const data = await res.json();
+    const st = document.getElementById('googleStatus');
+    if (data.connected) {
+      st.className = 'status ok'; st.textContent = '✅ Google Drive منسلک ہے';
+      document.getElementById('googleBtn').textContent = '🔁 دوبارہ جوڑیں';
+    } else {
+      st.className = 'status'; st.textContent = '⚠️ Google Drive ابھی منسلک نہیں';
+    }
+  } catch (_) {}
+}
+
+// ================== اپ لوڈ ==================
+async function uploadFile() {
+  const fileName = document.getElementById('fileName').value.trim();
+  const description = document.getElementById('description').value.trim();
+  const fileInput = document.getElementById('fileInput');
+  const st = document.getElementById('uploadStatus');
+
+  if (!fileName || !fileInput.files[0]) {
+    st.className = 'status err'; st.textContent = '❌ فائل نام اور فائل لازمی ہیں'; return;
+  }
+
+  st.className = 'status'; st.textContent = '⏳ اپ لوڈ ہو رہا ہے...';
+  document.getElementById('uploadBtn').disabled = true;
+
+  try {
+    const fd = new FormData();
+    fd.append('fileName', fileName);
+    fd.append('description', description);
+    fd.append('file', fileInput.files[0]);
+
+    const res = await fetch(API_BASE + '/api/upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + idToken },
+      body: fd
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'اپ لوڈ ناکام');
+
+    document.getElementById('fullLink').textContent = data.fullLink;
+    document.getElementById('fullLink').href = data.fullLink;
+    document.getElementById('viewLink').textContent = data.viewLink;
+    document.getElementById('viewLink').href = data.viewLink;
+    document.getElementById('downloadLink').textContent = data.downloadLink;
+    document.getElementById('downloadLink').href = data.downloadLink;
+    document.getElementById('shortLink').textContent = data.shortLink;
+    document.getElementById('shortLink').href = data.shortLink;
+    document.getElementById('qrImg').src = data.qrDataUrl;
+    document.getElementById('qrDownload').href = data.qrDataUrl;
+    document.getElementById('resultCard').classList.remove('hidden');
+
+    // نتیجہ کارڈ پر اسکرول
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+
+    st.className = 'status ok'; st.textContent = '✅ اپ لوڈ مکمل!';
+
+    // لاگ ری فریش
+    loadLogs();
+  } catch (e) {
+    st.className = 'status err'; st.textContent = '❌ ' + e.message;
+  } finally {
+    document.getElementById('uploadBtn').disabled = false;
+  }
+}
+
+function copyLink(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => alert('✅ کاپی ہو گیا:\n' + text));
+}
+
+// ================== لاگ ریکارڈ ==================
+async function loadLogs() {
+  const box = document.getElementById('logsBox');
+  box.innerHTML = '<p class="info">لوڈ ہو رہا ہے...</p>';
+  try {
+    const snap = await db.collection('Test1').doc('global')
+      .collection('access_logs')
+      .orderBy('timestamp', 'desc')
+      .limit(100).get();
+
+    if (snap.empty) {
+      box.innerHTML = '<p class="info">ابھی کوئی ریکارڈ نہیں۔ جب کوئی آپ کا ری ڈائریکٹ لنک کھولے گا، یہاں دکھے گا۔</p>';
+      return;
+    }
+
+    let html = '<table><thead><tr><th>وقت</th><th>فائل</th><th>عمل</th><th>IP</th><th>آلہ</th></tr></thead><tbody>';
+    snap.forEach(doc => {
+      const d = doc.data();
+      const t = d.timestamp ? d.timestamp.toDate().toLocaleString('ur-PK') : '—';
+      const badge = d.action === 'download'
+        ? '<span class="badge download">ڈاؤن لوڈ</span>'
+        : '<span class="badge view">دیکھا</span>';
+      const ua = (d.userAgent || '').substring(0, 40);
+      html += `<tr>
+        <td>${t}</td>
+        <td title="${d.fileId}">${(d.fileId||'').substring(0, 10)}…</td>
+        <td>${badge}</td>
+        <td>${d.ip || '—'}</td>
+        <td title="${d.userAgent || ''}">${ua}…</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    box.innerHTML = html;
+  } catch (e) {
+    box.innerHTML = '<p class="status err">❌ ' + e.message + '</p>';
+  }
+}
+</script>
+</body>
+</html>
