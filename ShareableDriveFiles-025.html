@@ -1986,12 +1986,6 @@ function startActionAutoFire(key, file, section) {
 }
 $("actionClose").addEventListener("click", closeActionModal);
 $("actionBackdrop").addEventListener("click", (e) => { if (e.target === $("actionBackdrop")) closeActionModal(); });
-
-<!-- ===== FILE 2 : END ===== -->
-
-
-<!-- ===== FILE 3: deepseek_html_20261023_490cd1.html : START ===== -->
-
 async function runAction(key, f, section) {
   if (f.locked && ["archive", "move", "delete"].includes(key)) return;
   if (section === "archive" && archiveLockOn && ["archive", "move", "delete"].includes(key)) return;
