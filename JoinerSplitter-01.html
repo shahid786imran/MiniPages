@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTML Merger & File Splitter</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:16px;font-family:Arial,sans-serif;background:#eef2f7;color:#172033}
+.container{max-width:760px;margin:18px auto;background:white;padding:20px;border-radius:15px;box-shadow:0 5px 25px #0001}
+h2{text-align:center;margin-top:5px}
+h3{margin-top:0}
+p{line-height:1.5;color:#586579}
+.tabs{display:flex;gap:8px;margin:20px 0}
+.tabs button{flex:1}
+button{border:0;border-radius:8px;padding:12px 15px;background:#1769e0;color:white;font-size:15px;cursor:pointer}
+button:disabled{opacity:.5;cursor:not-allowed}
+.tabbtn{background:#e5eaf2;color:#24344d}
+.tabbtn.active{background:#1769e0;color:white}
+.section{display:none}
+.section.active{display:block}
+.file-item{display:flex;align-items:center;gap:10px;margin:10px 0;padding:12px;border:1px solid #d6deea;border-radius:9px}
+.file-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.file-name small{display:block;color:#667085;margin-top:5px}
+.remove-btn{background:#fee2e2;color:#b91c1c;padding:8px}
+.upload-btn{width:100%;background:#e8f1ff;color:#1457b8}
+.action-btn{width:100%;margin-top:15px}
+label{display:block;font-weight:bold;margin:15px 0 8px}
+input[type=number]{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px}
+.radio-row{display:flex;gap:15px;flex-wrap:wrap}
+.radio-row label{font-weight:normal;margin:5px 0}
+#status,#splitStatus{white-space:pre-wrap;margin-top:15px;overflow-wrap:anywhere}
+.result{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid #d6deea;border-radius:8px;padding:10px;margin:8px 0}
+.result span{overflow-wrap:anywhere;min-width:0}
+.result button{flex-shrink:0}
+.note{font-size:13px}
+hr{border:0;border-top:1px solid #e2e8f0;margin:22px 0}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>HTML Merger & File Splitter</h2>
+
+<div class="tabs">
+<button class="tabbtn active" data-tab="merger">File Merger</button>
+<button class="tabbtn" data-tab="splitter">File Splitter</button>
+</div>
+
+<!-- MERGER -->
+<section id="merger" class="section active">
+<h3>Merge Multiple Files</h3>
+<p>Upload files one by one. They will be appended in selection order.</p>
+
+<div id="fileList"></div>
+<input id="fileInput" type="file" accept=".html,.htm,text/html" hidden>
+<button id="uploadBtn" class="upload-btn">+ Upload HTML File</button>
+<button id="mergeBtn" class="action-btn" disabled>Merge & Download HTML</button>
+<div id="status" role="status"></div>
+</section>
+
+<!-- SPLITTER -->
+<section id="splitter" class="section">
+<h3>Split One File into Parts</h3>
+<p>Select a text, HTML, code, or other text-based file. The file will be split at line boundaries.</p>
+
+<input id="splitFile" type="file" hidden>
+<button id="chooseSplitFile" class="upload-btn">+ Upload File to Split</button>
+<div id="selectedFile"></div>
+
+<label>Choose splitting method</label>
+<div class="radio-row">
+<label><input type="radio" name="method" value="lines" checked> Lines per part</label>
+<label><input type="radio" name="method" value="parts"> Number of parts</label>
+</div>
+
+<div id="linesOption">
+<label for="linesCount">Lines in each part</label>
+<input id="linesCount" type="number" min="1" step="1" value="100">
+</div>
+
+<div id="partsOption" hidden>
+<label for="partsCount">Number of parts</label>
+<input id="partsCount" type="number" min="1" step="1" value="5">
+</div>
+
+<button id="splitBtn" class="action-btn" disabled>Split File</button>
+<div id="splitStatus" role="status"></div>
+<div id="results"></div>
+</section>
+
+<p class="note">All processing happens locally in your browser. Files are not uploaded to a server.</p>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* Tabs */
+document.querySelectorAll('.tabbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabbtn').forEach(b =>
+      b.classList.toggle('active', b === btn));
+    document.querySelectorAll('.section').forEach(s =>
+      s.classList.toggle('active', s.id === btn.dataset.tab));
+  });
+});
+
+/* MERGER */
+let mergeFiles = [];
+
+function renderMergeFiles() {
+  const list = $('fileList');
+  list.replaceChildren();
+
+  mergeFiles.forEach((file, index) => {
+    const item = document.createElement('div');
+    item.className = 'file-item';
+
+    const name = document.createElement('div');
+    name.className = 'file-name';
+
+    const title = document.createElement('strong');
+    title.textContent = (index + 1) + '. ' + file.name;
+
+    const size = document.createElement('small');
+    size.textContent = formatSize(file.size);
+
+    name.append(title, size);
+
+    const remove = document.createElement('button');
+    remove.className = 'remove-btn';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () => {
+      mergeFiles.splice(index, 1);
+      renderMergeFiles();
+      $('status').textContent = '';
+    });
+
+    item.append(name, remove);
+    list.append(item);
+  });
+
+  $('uploadBtn').textContent = mergeFiles.length
+    ? '+ Upload Next HTML File'
+    : '+ Upload HTML File';
+
+  $('mergeBtn').disabled = mergeFiles.length === 0;
+}
+
+$('uploadBtn').addEventListener('click', () => {
+  $('fileInput').value = '';
+  $('fileInput').click();
+});
+
+$('fileInput').addEventListener('change', () => {
+  const file = $('fileInput').files[0];
+  if (!file) return;
+
+  if (!/\.(html|htm)$/i.test(file.name)) {
+    $('status').textContent = 'Please select an HTML file.';
+    return;
+  }
+
+  mergeFiles.push(file);
+  renderMergeFiles();
+  $('status').textContent = mergeFiles.length + ' file(s) selected.';
+});
+
+$('mergeBtn').addEventListener('click', async () => {
+  if (!mergeFiles.length) return;
+
+  const total = mergeFiles.reduce((sum, f) => sum + f.size, 0);
+  if (total > 100 * 1024 * 1024) {
+    $('status').textContent = 'Total size must not exceed 100 MB.';
+    return;
+  }
+
+  $('mergeBtn').disabled = true;
+  $('uploadBtn').disabled = true;
+  $('status').textContent = 'Merging files...';
+
+  try {
+    const parts = [];
+
+    for (let i = 0; i < mergeFiles.length; i++) {
+      const content = await mergeFiles[i].text();
+      const safeName = mergeFiles[i].name.replace(/--/g, '—');
+
+      parts.push(
+        '\n\n<!-- ===== FILE ' + (i + 1) + ': ' +
+        safeName + ' : START ===== -->\n\n' +
+        content +
+        '\n\n<!-- ===== FILE ' + (i + 1) +
+        ' : END ===== -->\n'
+      );
+    }
+
+    downloadBlob(
+      new Blob(parts, {type:'text/html;charset=utf-8'}),
+      'Merged.html'
+    );
+
+    $('status').textContent =
+      'Download started. Files merged: ' + mergeFiles.length;
+  } catch (e) {
+    $('status').textContent = 'Error: ' + e.message;
+  } finally {
+    $('mergeBtn').disabled = mergeFiles.length === 0;
+    $('uploadBtn').disabled = false;
+  }
+});
+
+/* SPLITTER */
+let splitFile = null;
+let splitParts = [];
+
+$('chooseSplitFile').addEventListener('click', () => {
+  $('splitFile').click();
+});
+
+$('splitFile').addEventListener('change', () => {
+  splitFile = $('splitFile').files[0] || null;
+  $('selectedFile').textContent = splitFile
+    ? 'Selected: ' + splitFile.name + ' (' + formatSize(splitFile.size) + ')'
+    : '';
+  $('splitBtn').disabled = !splitFile;
+  $('splitStatus').textContent = '';
+  $('results').replaceChildren();
+});
+
+document.querySelectorAll('input[name="method"]').forEach(radio => {
+  radio.addEventListener('change', updateMethod);
+});
+
+function updateMethod() {
+  const method = document.querySelector('input[name="method"]:checked').value;
+  $('linesOption').hidden = method !== 'lines';
+  $('partsOption').hidden = method !== 'parts';
+}
+
+$('splitBtn').addEventListener('click', async () => {
+  if (!splitFile) {
+    $('splitStatus').textContent = 'Please select a file first.';
+    return;
+  }
+
+  const method = document.querySelector('input[name="method"]:checked').value;
+  const amount = Number(method === 'lines'
+    ? $('linesCount').value : $('partsCount').value);
+
+  if (!Number.isSafeInteger(amount) || amount < 1) {
+    $('splitStatus').textContent = 'Enter a valid positive whole number.';
+    return;
+  }
+
+  if (splitFile.size > 100 * 1024 * 1024) {
+    $('splitStatus').textContent = 'File size must not exceed 100 MB.';
+    return;
+  }
+
+  $('splitBtn').disabled = true;
+  $('splitStatus').textContent = 'Reading and splitting file...';
+  $('results').replaceChildren();
+
+  try {
+    const content = await splitFile.text();
+
+    // Keep line endings attached to their lines.
+    // A trailing newline does not create an extra empty line.
+    const lines = content.match(/[^\n]*\n|[^\n]+$/g) || [];
+
+    if (!lines.length) {
+      $('splitStatus').textContent = 'The selected file is empty.';
+      return;
+    }
+
+    if (method === 'lines') {
+      for (let i = 0; i < lines.length; i += amount) {
+        splitParts.push(lines.slice(i, i + amount).join(''));
+      }
+    } else {
+      const count = Math.min(amount, lines.length);
+      const base = Math.floor(lines.length / count);
+      const remainder = lines.length % count;
+      let start = 0;
+
+      for (let i = 0; i < count; i++) {
+        const length = base + (i < remainder ? 1 : 0);
+        splitParts.push(lines.slice(start, start + length).join(''));
+        start += length;
+      }
+    }
+
+    const stamp = getTimestamp();
+    const extensionMatch = splitFile.name.match(/\.([^.]+)$/);
+    const extension = extensionMatch
+      ? '.' + extensionMatch[1]
+      : '.txt';
+
+    const baseName = splitFile.name.replace(/\.[^.]*$/, '');
+    const fragment = document.createDocumentFragment();
+
+    splitParts.forEach((part, index) => {
+      const blob = new Blob([part], {
+        type: splitFile.type || 'application/octet-stream'
+      });
+
+      const filename = 'Part-' + (index + 1) +
+        '-' + stamp + extension;
+
+      const row = document.createElement('div');
+      row.className = 'result';
+
+      const label = document.createElement('span');
+      label.textContent = filename + ' — ' +
+        countLines(part) + ' lines';
+
+      const download = document.createElement('button');
+      download.textContent = 'Download';
+      download.addEventListener('click', () => {
+        downloadBlob(blob, filename);
+      });
+
+      row.append(label, download);
+      fragment.append(row);
+    });
+
+    $('results').append(fragment);
+
+    $('splitStatus').textContent =
+      'Split complete!\n' +
+      'Original file: ' + splitFile.name + '\n' +
+      'Total lines: ' + lines.length + '\n' +
+      'Parts created: ' + splitParts.length + '\n\n' +
+      'Use each Download button to save a part.';
+  } catch (e) {
+    $('splitStatus').textContent = 'Error: ' + e.message;
+  } finally {
+    splitParts = [];
+    $('splitBtn').disabled = !splitFile;
+  }
+});
+
+/* HELPERS */
+function getTimestamp() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+
+  return d.getFullYear() +
+    pad(d.getMonth() + 1) +
+    pad(d.getDate()) + '-' +
+    pad(d.getHours()) +
+    pad(d.getMinutes()) +
+    pad(d.getSeconds());
+}
+
+function countLines(text) {
+  return (text.match(/[^\n]*\n|[^\n]+$/g) || []).length;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+renderMergeFiles();
+updateMethod();
+</script>
+</body>
+</html>
