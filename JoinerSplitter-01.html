@@ -9,13 +9,11 @@
 body{margin:0;padding:16px;font-family:Arial,sans-serif;background:#eef2f7;color:#172033}
 .container{max-width:760px;margin:18px auto;background:white;padding:20px;border-radius:15px;box-shadow:0 5px 25px #0001}
 h2{text-align:center;margin-top:5px}
-h3{margin-top:0}
 p{line-height:1.5;color:#586579}
 .tabs{display:flex;gap:8px;margin:20px 0}
-.tabs button{flex:1}
 button{border:0;border-radius:8px;padding:12px 15px;background:#1769e0;color:white;font-size:15px;cursor:pointer}
 button:disabled{opacity:.5;cursor:not-allowed}
-.tabbtn{background:#e5eaf2;color:#24344d}
+.tabbtn{flex:1;background:#e5eaf2;color:#24344d}
 .tabbtn.active{background:#1769e0;color:white}
 .section{display:none}
 .section.active{display:block}
@@ -34,7 +32,6 @@ input[type=number]{width:100%;padding:12px;border:1px solid #cbd5e1;border-radiu
 .result span{overflow-wrap:anywhere;min-width:0}
 .result button{flex-shrink:0}
 .note{font-size:13px}
-hr{border:0;border-top:1px solid #e2e8f0;margin:22px 0}
 </style>
 </head>
 <body>
@@ -46,10 +43,9 @@ hr{border:0;border-top:1px solid #e2e8f0;margin:22px 0}
 <button class="tabbtn" data-tab="splitter">File Splitter</button>
 </div>
 
-<!-- MERGER -->
 <section id="merger" class="section active">
-<h3>Merge Multiple Files</h3>
-<p>Upload files one by one. They will be appended in selection order.</p>
+<h3>Merge Multiple HTML Files</h3>
+<p>Select files one by one. Their contents will be appended in selection order without any added comments or separators.</p>
 
 <div id="fileList"></div>
 <input id="fileInput" type="file" accept=".html,.htm,text/html" hidden>
@@ -58,16 +54,15 @@ hr{border:0;border-top:1px solid #e2e8f0;margin:22px 0}
 <div id="status" role="status"></div>
 </section>
 
-<!-- SPLITTER -->
 <section id="splitter" class="section">
-<h3>Split One File into Parts</h3>
-<p>Select a text, HTML, code, or other text-based file. The file will be split at line boundaries.</p>
+<h3>Split File into Parts</h3>
+<p>Upload one text-based file and split it by lines or by the number of parts.</p>
 
 <input id="splitFile" type="file" hidden>
 <button id="chooseSplitFile" class="upload-btn">+ Upload File to Split</button>
 <div id="selectedFile"></div>
 
-<label>Choose splitting method</label>
+<label>Splitting method</label>
 <div class="radio-row">
 <label><input type="radio" name="method" value="lines" checked> Lines per part</label>
 <label><input type="radio" name="method" value="parts"> Number of parts</label>
@@ -179,26 +174,18 @@ $('mergeBtn').addEventListener('click', async () => {
   $('status').textContent = 'Merging files...';
 
   try {
-    const parts = [];
+    const contents = [];
 
-    for (let i = 0; i < mergeFiles.length; i++) {
-      const content = await mergeFiles[i].text();
-      const safeName = mergeFiles[i].name.replace(/--/g, '—');
-
-      parts.push(
-        '\n\n<!-- ===== FILE ' + (i + 1) + ': ' +
-        safeName + ' : START ===== -->\n\n' +
-        content +
-        '\n\n<!-- ===== FILE ' + (i + 1) +
-        ' : END ===== -->\n'
-      );
+    for (const file of mergeFiles) {
+      contents.push(await file.text());
     }
 
-    downloadBlob(
-      new Blob(parts, {type:'text/html;charset=utf-8'}),
-      'Merged.html'
-    );
+    // Append original contents only; add nothing between files.
+    const blob = new Blob(contents, {
+      type: 'text/html;charset=utf-8'
+    });
 
+    downloadBlob(blob, 'Merged.html');
     $('status').textContent =
       'Download started. Files merged: ' + mergeFiles.length;
   } catch (e) {
@@ -211,7 +198,6 @@ $('mergeBtn').addEventListener('click', async () => {
 
 /* SPLITTER */
 let splitFile = null;
-let splitParts = [];
 
 $('chooseSplitFile').addEventListener('click', () => {
   $('splitFile').click();
@@ -222,6 +208,7 @@ $('splitFile').addEventListener('change', () => {
   $('selectedFile').textContent = splitFile
     ? 'Selected: ' + splitFile.name + ' (' + formatSize(splitFile.size) + ')'
     : '';
+
   $('splitBtn').disabled = !splitFile;
   $('splitStatus').textContent = '';
   $('results').replaceChildren();
@@ -238,14 +225,12 @@ function updateMethod() {
 }
 
 $('splitBtn').addEventListener('click', async () => {
-  if (!splitFile) {
-    $('splitStatus').textContent = 'Please select a file first.';
-    return;
-  }
+  if (!splitFile) return;
 
   const method = document.querySelector('input[name="method"]:checked').value;
-  const amount = Number(method === 'lines'
-    ? $('linesCount').value : $('partsCount').value);
+  const amount = Number(
+    method === 'lines' ? $('linesCount').value : $('partsCount').value
+  );
 
   if (!Number.isSafeInteger(amount) || amount < 1) {
     $('splitStatus').textContent = 'Enter a valid positive whole number.';
@@ -264,8 +249,7 @@ $('splitBtn').addEventListener('click', async () => {
   try {
     const content = await splitFile.text();
 
-    // Keep line endings attached to their lines.
-    // A trailing newline does not create an extra empty line.
+    // Preserve original line endings.
     const lines = content.match(/[^\n]*\n|[^\n]+$/g) || [];
 
     if (!lines.length) {
@@ -273,9 +257,11 @@ $('splitBtn').addEventListener('click', async () => {
       return;
     }
 
+    const parts = [];
+
     if (method === 'lines') {
       for (let i = 0; i < lines.length; i += amount) {
-        splitParts.push(lines.slice(i, i + amount).join(''));
+        parts.push(lines.slice(i, i + amount).join(''));
       }
     } else {
       const count = Math.min(amount, lines.length);
@@ -285,34 +271,32 @@ $('splitBtn').addEventListener('click', async () => {
 
       for (let i = 0; i < count; i++) {
         const length = base + (i < remainder ? 1 : 0);
-        splitParts.push(lines.slice(start, start + length).join(''));
+        parts.push(lines.slice(start, start + length).join(''));
         start += length;
       }
     }
 
-    const stamp = getTimestamp();
+    const timestamp = getTimestamp();
     const extensionMatch = splitFile.name.match(/\.([^.]+)$/);
     const extension = extensionMatch
       ? '.' + extensionMatch[1]
       : '.txt';
 
-    const baseName = splitFile.name.replace(/\.[^.]*$/, '');
     const fragment = document.createDocumentFragment();
 
-    splitParts.forEach((part, index) => {
+    parts.forEach((part, index) => {
       const blob = new Blob([part], {
         type: splitFile.type || 'application/octet-stream'
       });
 
       const filename = 'Part-' + (index + 1) +
-        '-' + stamp + extension;
+        '-' + timestamp + extension;
 
       const row = document.createElement('div');
       row.className = 'result';
 
       const label = document.createElement('span');
-      label.textContent = filename + ' — ' +
-        countLines(part) + ' lines';
+      label.textContent = filename + ' — ' + countLines(part) + ' lines';
 
       const download = document.createElement('button');
       download.textContent = 'Download';
@@ -325,17 +309,14 @@ $('splitBtn').addEventListener('click', async () => {
     });
 
     $('results').append(fragment);
-
     $('splitStatus').textContent =
       'Split complete!\n' +
-      'Original file: ' + splitFile.name + '\n' +
       'Total lines: ' + lines.length + '\n' +
-      'Parts created: ' + splitParts.length + '\n\n' +
-      'Use each Download button to save a part.';
+      'Parts created: ' + parts.length + '\n\n' +
+      'Click Download beside each part to save it.';
   } catch (e) {
     $('splitStatus').textContent = 'Error: ' + e.message;
   } finally {
-    splitParts = [];
     $('splitBtn').disabled = !splitFile;
   }
 });
