@@ -1,0 +1,921 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HTML Merger & File Splitter</title>
+<style>
+:root{--bg:#f3f6ff;--card:#fff;--ink:#172033;--muted:#667085;--line:#dce3f0;--line-dark:#98a2b3;--blue:#315efb;--blue2:#2448ce;--green:#16845b;--red:#c43c45;--soft:#eef2ff}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(145deg,#eef3ff,#f8faff 50%,#f4efff);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:10px}
+main{max-width:720px;margin:auto}
+.hero{padding:10px 14px;border-radius:9px;color:#fff;background:linear-gradient(120deg,#2448ce,#7547e8);box-shadow:0 4px 14px #293f9c1a;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.hero h1{font-size:12px;margin:0;line-height:1.2;flex:1}
+.hero .fbst{font-size:8.5px;background:#ffffff22;padding:2px 7px;border-radius:99px;font-weight:700}
+.hero .fbst.ok{background:#16845b}
+.hero .fbst.err{background:#c43c45}
+.tabs{display:flex;gap:5px;margin-bottom:10px}
+.tab{border:1px solid var(--line-dark);background:#fff;color:var(--ink);padding:7px 10px;border-radius:7px;font-weight:700;cursor:pointer;flex:1;font-size:11.5px}
+.tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--card);border:1px solid var(--line-dark);border-radius:9px;padding:7px;margin-bottom:7px;box-shadow:0 2px 6px #23345d07}
+h2{font-size:12px;margin:0 0 5px;color:var(--ink)}
+.card-header{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.card-header h2{font-size:12px;margin:0;flex:1;line-height:1.2}
+.header-actions{display:flex;gap:5px;flex-shrink:0}
+.icon-btn{border:0;border-radius:6px;width:28px;height:28px;padding:0;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;transition:transform .1s,opacity .1s}
+.icon-btn:active{transform:scale(.95)}
+.icon-btn:disabled{opacity:.35;cursor:not-allowed}
+.icon-btn.secondary{background:var(--soft);color:#2948ba}
+.icon-btn.primary{background:var(--blue);color:#fff}
+.icon-btn.primary:hover{background:var(--blue2)}
+.icon-btn.danger{background:#fff0f0;color:var(--red)}
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl td{padding:3px 2px;border-bottom:1px solid #eef2f8;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td.lbl{color:var(--muted);font-size:10.5px;font-weight:600;width:85px;white-space:nowrap}
+.tbl input[type=text],.tbl input[type=number],.tbl select{width:100%;padding:5px 7px;border:1px solid var(--line-dark);border-radius:4px;font-size:11px;background:#fff;color:var(--ink);font-family:inherit}
+.tbl input:disabled,.tbl select:disabled{background:#f2f4f8;color:#98a2b3}
+.tbl input[readonly]{background:#f2f4f8;color:#475467}
+.btnrow{display:flex;gap:5px;flex-wrap:wrap;padding-top:5px}
+button{font:inherit;border:0;border-radius:5px;padding:5px 9px;cursor:pointer;font-weight:700;font-size:11px;transition:transform .1s,opacity .1s}
+button:active{transform:scale(.98)}button:disabled{opacity:.4;cursor:not-allowed}
+.primary{background:var(--blue);color:#fff}.primary:hover{background:var(--blue2)}
+.secondary{background:var(--soft);color:#2948ba}
+.danger{background:#fff0f0;color:var(--red)}
+.sw{display:inline-flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap;font-size:10px;color:var(--muted);font-weight:650}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.sw .track{position:relative;width:28px;height:15px;background:#c9d2e3;border-radius:999px;transition:background .15s;flex-shrink:0}
+.sw .track::after{content:"";position:absolute;top:2px;left:2px;width:11px;height:11px;background:#fff;border-radius:50%;transition:transform .15s;box-shadow:0 1px 2px #0002}
+.sw input:checked + .track{background:var(--blue)}
+.sw input:checked + .track::after{transform:translateX(13px)}
+.sw .stxt{min-width:20px}
+.file-row{display:flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid var(--line-dark);border-radius:5px;margin-bottom:5px;font-size:11px;min-width:0}
+.file-row .fn{flex:1;overflow-wrap:anywhere}
+.file-row .fn .fname{font-weight:700}
+.file-row .fn .fsize{color:var(--muted);font-weight:400;font-size:10px}
+.file-row .row-btn{border:0;border-radius:4px;width:22px;height:22px;padding:0;cursor:pointer;font-size:11px;flex-shrink:0;font-weight:700}
+.row-btn.secondary{background:var(--soft);color:#2948ba}
+.row-btn.danger{background:#fff0f0;color:var(--red)}
+.row-btn:disabled{opacity:.3;cursor:not-allowed}
+.status{margin-top:5px;font-size:10.5px;color:var(--muted);overflow-wrap:anywhere;line-height:1.4}
+.status.error{color:var(--red)}.status.ok{color:var(--green)}
+.parts{margin-top:5px}
+.part{display:flex;align-items:center;gap:6px;border:1px solid var(--line-dark);border-radius:5px;padding:5px 8px;margin-bottom:4px;font-size:10.5px}
+.part .pn{flex:1;min-width:0;overflow-wrap:anywhere}
+.part small{display:block;color:var(--muted);font-size:9.5px}
+.part button{padding:3px 7px;font-size:10.5px}
+.mode-line{display:flex;gap:7px;flex-wrap:nowrap;align-items:center;font-size:11px;margin:3px 0;overflow-x:auto;padding-bottom:2px;scrollbar-width:none;-ms-overflow-style:none}
+.mode-line::-webkit-scrollbar{display:none}
+.mode-line label{display:inline-flex;align-items:center;gap:3px;font-weight:650;cursor:pointer;white-space:nowrap}
+.mode-line input[type=radio]{accent-color:var(--blue);margin:0}
+.mode-line input[type=number]{width:62px;padding:3px 5px;border:1px solid var(--line-dark);border-radius:4px;font-size:10.5px;font-family:inherit}
+.mode-line .sep{color:#cbd5e6}
+.note{font-size:9.5px;color:var(--muted);line-height:1.4;margin-top:5px}
+footer{text-align:center;color:var(--muted);font-size:9.5px;padding:6px 0 8px}
+footer .footrow{display:flex;align-items:center;gap:6px;margin-top:5px;padding:5px 8px;background:#eef2ff;border:1px solid #c8d3f5;border-radius:5px;font-size:10px}
+footer .footrow.live{background:#e9f8f1;border-color:#b7e4cf}
+footer .footrow .ftag{font-size:8px;font-weight:700;padding:2px 6px;border-radius:99px;flex-shrink:0}
+footer .footrow.live .ftag{background:#d3f0e2;color:#16845b}
+footer .footrow.repo .ftag{background:#dbe4ff;color:#2948ba}
+footer .footrow a{color:#2948ba;font-weight:600;text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+footer .footrow.live a{color:#16845b}
+footer .footrow a:hover{text-decoration:underline}
+footer .footrow .copy-btn{background:#fff;border:1px solid #c8d3f5;border-radius:4px;width:22px;height:22px;padding:0;font-size:11px;cursor:pointer;flex-shrink:0}
+footer .footrow .copy-btn:hover{background:#f0f4ff}
+.linkbox{padding:7px 11px;background:#e9f8f1;border:1px solid #b7e4cf;border-radius:5px;font-size:10.5px;overflow-wrap:anywhere;margin-top:5px}
+.linkbox a{color:var(--green);font-weight:700;text-decoration:none}
+.linkbox a:hover{text-decoration:underline}
+.pagecard{border:2px solid var(--line-dark);border-radius:8px;margin-bottom:5px;overflow:hidden;background:#fff}
+.pagecard .head{display:flex;align-items:center;gap:7px;padding:6px 9px;background:#f8faff;cursor:pointer;user-select:none;touch-action:manipulation}
+.pagecard .head .title{flex:1;font-size:11.5px;font-weight:700;overflow-wrap:anywhere}
+.pagecard .head .arrow{font-size:10.5px;color:var(--muted);transition:transform .15s;width:12px;text-align:center}
+.pagecard.open .head .arrow{transform:rotate(90deg)}
+.pagecard .body{display:none;padding:0;border-top:1px solid var(--line-dark)}
+.pagecard.open .body{display:block}
+.pagecard .head .del{padding:2px 6px;font-size:10px}
+
+/* record — 0.5px border, actions sticky on right of header */
+.record{border:0.5px solid var(--line-dark);border-radius:8px;margin-bottom:4px;background:#fcfdff;overflow:hidden}
+.record .line1{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;font-size:11px;padding:5px 9px;border-bottom:1px solid var(--line-dark);position:relative}
+.record .line1 .info{flex:1;min-width:0;overflow-wrap:anywhere;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.record .line1 .rname{font-weight:700}
+.record .line1 .rdate{color:var(--muted);font-size:9.5px}
+.record .line1 .racts{display:flex;gap:4px;flex-shrink:0;position:sticky;right:0;background:#fcfdff;padding-left:4px}
+.record .line1 .racts button{padding:2px 6px;font-size:10px;border:0;border-radius:4px;cursor:pointer;font-weight:700}
+.record .racts .mv{background:var(--soft);color:#2948ba}
+.record .racts .del{background:#fff0f0;color:var(--red)}
+.record .line2{display:flex;flex-direction:column}
+.record .lrow{display:flex;align-items:center;gap:6px;font-size:10px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none;padding:7px 9px}
+.record .line2 .lrow + .lrow{border-top:1px solid var(--line-dark)}
+.record .lrow::-webkit-scrollbar{display:none}
+.record .lrow .tag{font-size:8px;font-weight:700;padding:2px 6px;border-radius:99px;flex-shrink:0}
+.record .lrow .tag.live{background:#e9f8f1;color:var(--green)}
+.record .lrow .tag.repo{background:#eef2ff;color:#2948ba}
+.record .lrow a{color:var(--blue);font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0}
+.record .lrow a:hover{text-decoration:underline}
+
+.empty{color:var(--muted);font-size:10px;text-align:center;padding:7px}
+.history-head{display:flex;align-items:center;gap:7px;padding:6px 9px;background:#f8faff;border:1px solid var(--line-dark);border-radius:7px;cursor:pointer;user-select:none;margin-bottom:5px}
+.history-head .harrow{font-size:10.5px;color:var(--muted);transition:transform .15s;width:12px;text-align:center}
+.history-head .htitle{flex:1;font-size:11.5px;font-weight:700}
+.history-body{display:none}
+.history-body.open{display:block}
+/* Undo toast */
+#undoToast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#172033;color:#fff;padding:10px 14px;border-radius:8px;font-size:11.5px;display:none;align-items:center;gap:10px;box-shadow:0 6px 20px #0006;z-index:9999;font-weight:600}
+#undoToast.show{display:flex}
+#undoToast button{background:#315efb;color:#fff;padding:4px 10px;border-radius:5px;font-size:11px;font-weight:700;border:0;cursor:pointer}
+@media(max-width:480px){.tbl td.lbl{width:72px;font-size:9.5px}.hero h1{font-size:11px}.mode-line{font-size:10.5px}}
+</style>
+</head>
+<body>
+<main>
+<header class="hero">
+  <h1>HTML Merger & File Splitter</h1>
+  <span id="fbStatus" class="fbst">Firebase…</span>
+</header>
+<nav class="tabs" aria-label="Tools">
+  <button class="tab active" data-tab="mergePanel">📎 Merge</button>
+  <button class="tab" data-tab="splitPanel">✂️ Split</button>
+</nav>
+
+<!-- ============ MERGE PANEL ============ -->
+<section id="mergePanel" class="panel active">
+  <div class="card">
+    <h2>1. Base link & file name (auto predict)</h2>
+    <table class="tbl">
+      <tr>
+        <td class="lbl">Base link</td>
+        <td><input id="baseLink" type="text" value="https://shahid786imran.github.io/MiniPages/" placeholder="https://shahid786imran.github.io/MiniPages/"></td>
+        <td style="width:65px"><label class="sw"><input id="baseLinkAuto" type="checkbox" checked><span class="track"></span><span class="stxt">Auto</span></label></td>
+      </tr>
+      <tr>
+        <td class="lbl">Last used name</td>
+        <td><input id="lastUsedName" type="text" value="" placeholder="—" readonly></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td class="lbl">Next file name</td>
+        <td><input id="nextFileName" type="text" value="" placeholder="html-002.html"></td>
+        <td></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>2. Files to merge</h2>
+      <div class="header-actions">
+        <button id="addFileBtn" class="icon-btn secondary" title="Add files">＋</button>
+        <button id="mergeBtn" class="icon-btn primary" title="Merge & Download" disabled>⬇</button>
+        <button id="clearMerge" class="icon-btn danger" title="Remove all" disabled>🗑</button>
+      </div>
+    </div>
+    <div id="mergeFiles"></div>
+    <input id="mergePicker" type="file" accept=".html,.htm,.txt,.js,.css,.xml,.svg,.json,.md,.csv,.log,.php,.py,.java,.c,.cpp,.h,.sql,.sh,.yaml,.yml,.ini,.conf,.xhtml,.asp,.aspx,.jsp,.ts,.tsx,.jsx,.vue,.svelte,.rtf,.text" multiple style="display:none">
+    <div id="mergeStatus" class="status" aria-live="polite"></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="card">
+    <div class="history-head" id="historyHead">
+      <span class="harrow">▶</span>
+      <span class="htitle" id="historyTitle">🗂️ History</span>
+      <button id="refreshCards" class="secondary" style="padding:2px 6px;font-size:10px">↻</button>
+    </div>
+    <div class="history-body" id="historyBody">
+      <div id="cardsList"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SPLIT PANEL ============ -->
+<section id="splitPanel" class="panel">
+  <div class="card">
+    <h2>1. File to split</h2>
+    <table class="tbl">
+      <tr><td class="lbl">Choose file</td><td><input id="splitInput" type="file"></td></tr>
+    </table>
+    <div id="splitFileInfo" class="status">No file selected.</div>
+  </div>
+  <div class="card">
+    <h2>2. Split method</h2>
+    <div class="mode-line">
+      <label><input type="radio" name="splitMode" value="lines" checked> By lines:</label>
+      <input id="linesPerPart" type="number" min="1" value="100">
+      <span class="sep">|</span>
+      <label><input type="radio" name="splitMode" value="parts"> By parts:</label>
+      <input id="numberOfParts" type="number" min="1" value="5" disabled>
+      <button id="splitBtn" class="primary" disabled style="margin-left:auto">Split</button>
+    </div>
+    <div id="splitStatus" class="status" aria-live="polite"></div>
+  </div>
+  <div class="card">
+    <h2>3. Split results</h2>
+    <div class="btnrow">
+      <button id="zipBtn" class="primary" disabled>⬇ Download All as ZIP</button>
+      <button id="clearParts" class="secondary" disabled>Clear</button>
+    </div>
+    <div id="partsList" class="parts"><div class="note">No split parts created yet.</div></div>
+  </div>
+  <div class="card">
+    <h2>4. Output filename</h2>
+    <table class="tbl">
+      <tr><td class="lbl">Prefix</td><td><input id="prefix2" type="text" value="Asgfv" placeholder="Asgfv"></td><td style="width:65px"><label class="sw"><input id="prefixOn2" type="checkbox" checked><span class="track"></span><span class="stxt">On</span></label></td></tr>
+      <tr><td class="lbl">Suffix</td><td><input id="suffix2" type="text" value="002" inputmode="numeric" placeholder="002"></td><td><label class="sw"><input id="suffixOn2" type="checkbox" checked><span class="track"></span><span class="stxt">On</span></label></td></tr>
+      <tr><td class="lbl">Timestamp</td><td><input id="timestamp2" type="text" value="" placeholder="Auto" disabled></td><td><label class="sw"><input id="timestampOn2" type="checkbox" checked><span class="track"></span><span class="stxt">On</span></label></td></tr>
+      <tr><td class="lbl">Extension</td><td><input id="extension2" type="text" value="html" placeholder="html"></td><td><label class="sw"><input id="extensionOn2" type="checkbox" checked><span class="track"></span><span class="stxt">On</span></label></td></tr>
+    </table>
+    <div class="preview" id="namePreview2" style="background:#f8faff;border:1px dashed #9aabcf;padding:5px 9px;border-radius:5px;overflow-wrap:anywhere;font-family:ui-monospace,Consolas,monospace;font-size:10.5px;margin-top:4px">—</div>
+    <div class="linkbox" id="splitLinkBox" style="display:none">🔗 <a id="splitPageLink" href="#" target="_blank" rel="noopener">—</a></div>
+  </div>
+</section>
+
+<footer>
+  <div id="footerLive" class="footrow live" style="display:none">
+    <span class="ftag">LIVE</span>
+    <a id="footLiveLink" href="#" target="_blank" rel="noopener">—</a>
+    <button class="copy-btn" data-copy="footLiveLink" title="Copy">📋</button>
+  </div>
+  <div id="footerRepo" class="footrow repo" style="display:none">
+    <span class="ftag">REPO</span>
+    <a id="footRepoLink" href="#" target="_blank" rel="noopener">—</a>
+    <button class="copy-btn" data-copy="footRepoLink" title="Copy">📋</button>
+  </div>
+</footer>
+</main>
+
+<!-- Undo toast -->
+<div id="undoToast">
+  <span id="undoMsg">Record deleted</span>
+  <button id="undoBtn">Undo</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const COL = 'FileMergerandSplitter';
+const SETTINGS_DOC = '_settings';
+
+/* ================= Firebase ================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",
+  authDomain: "mywebapps-e3b63.firebaseapp.com",
+  projectId: "mywebapps-e3b63",
+  storageBucket: "mywebapps-e3b63.firebasestorage.app",
+  messagingSenderId: "46681415809",
+  appId: "1:46681415809:web:c4528b9da97abc310a2d80"
+};
+let db = null;
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  const s = $('fbStatus'); s.className = 'fbst ok'; s.textContent = 'Firebase ✓';
+} catch (e){
+  const s = $('fbStatus'); s.className = 'fbst err'; s.textContent = 'Firebase ✗';
+}
+
+/* ================= Utils ================= */
+const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
+function safePart(s){
+  let v = String(s ?? '').trim().replace(/[<>:"/\\|?*\x00-\x1F]/g,'_');
+  v = v.replace(/^[. ]+|[. ]+$/g,'');
+  if (!v) return '';
+  if (RESERVED.test(v)) v = '_' + v;
+  return v;
+}
+function safeExt(s){ return safePart(s).replace(/^\.+/,''); }
+function stampNow(d = new Date()){
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}${String(d.getMilliseconds()).padStart(3,'0')}`;
+}
+function incNumericPart(originalDigits, add){
+  try {
+    const n = BigInt(originalDigits) + BigInt(add);
+    const width = Math.max(originalDigits.length, String(n).length);
+    return String(n).padStart(width,'0');
+  } catch { return originalDigits; }
+}
+function predictNext(name){
+  if (!name) return '';
+  const m = name.match(/^(.*?)(\d+)(\.[^.]+)?$/);
+  if (!m) return name;
+  return m[1] + incNumericPart(m[2], 1) + (m[3] || '');
+}
+function groupOf(name){
+  if (!name) return '';
+  const base = name.replace(/\.[^.]+$/,'');
+  const m = base.match(/^(.*?)(\d+)$/);
+  return (m ? m[1] : base).replace(/[-_.\s]+$/,'').toLowerCase() || base.toLowerCase();
+}
+function joinLink(base, name){
+  if (!base || !name) return '';
+  const b = base.endsWith('/') ? base : base + '/';
+  return b + name;
+}
+function repoFromBase(base){
+  if (!base) return '';
+  try {
+    const u = new URL(base);
+    const parts = u.hostname.split('.');
+    if (parts.length >= 3 && parts[parts.length-2] === 'github' && parts[parts.length-1] === 'io'){
+      const user = parts[0];
+      const segs = u.pathname.split('/').filter(Boolean);
+      const repo = segs[0] || '';
+      return repo ? `https://github.com/${user}/${repo}/upload/main` : `https://github.com/${user}`;
+    }
+    return '';
+  } catch { return ''; }
+}
+function fmtSize(b){ if (b<1024) return b+' B'; if (b<1048576) return (b/1024).toFixed(1)+' KB'; return (b/1048576).toFixed(2)+' MB'; }
+function fmtDate(ts){
+  if (!ts) return '';
+  const d = new Date(ts);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mon = months[d.getMonth()];
+  const yyyy = d.getFullYear();
+  let h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2,'0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  return `${dd}-${mon}-${yyyy} ${String(h).padStart(2,'0')}:${m} ${ampm}`;
+}
+function downloadBlob(blob, name){
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; a.style.display='none'; document.body.appendChild(a); a.click();
+  setTimeout(() => { if (a.parentNode) a.parentNode.removeChild(a); URL.revokeObjectURL(url); }, 5000);
+}
+
+function repoForGroup(group){
+  for (const r of cachedRecords){
+    const g = r.group || groupOf(r.fileName) || '';
+    if (g === group && r.repoLink) return r.repoLink;
+  }
+  return '';
+}
+
+/* ================= Merge naming ================= */
+function refreshPredict(){
+  const last = $('lastUsedName').value.trim();
+  if (last) $('nextFileName').value = predictNext(last);
+}
+$('baseLinkAuto').addEventListener('change', () => {
+  $('baseLink').readOnly = $('baseLinkAuto').checked;
+});
+
+/* ================= Tabs ================= */
+document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === btn.dataset.tab));
+}));
+
+/* ================= Split preview ================= */
+function settings(which='merge'){
+  const n = which === 'split' ? '2' : '';
+  return {
+    prefixOn: $('prefixOn'+n).checked,
+    prefix: safePart($('prefix'+n).value),
+    suffixOn: $('suffixOn'+n).checked,
+    suffix: String($('suffix'+n).value || '').trim(),
+    timestampOn: $('timestampOn'+n).checked,
+    extensionOn: $('extensionOn'+n).checked,
+    extension: safeExt($('extension'+n).value)
+  };
+}
+function buildName(s, index=0, timestamp=stampNow()){
+  const chunks = [];
+  if (s.prefixOn && s.prefix) chunks.push(s.prefix);
+  if (s.suffixOn && s.suffix){
+    const m = s.suffix.match(/^(.*?)(\d+)(\D*)$/);
+    if (m) chunks.push(safePart(m[1] + incNumericPart(m[2], index) + m[3]));
+    else if (s.suffix) chunks.push(safePart(index ? s.suffix+'-'+(index+1) : s.suffix));
+  }
+  if (s.timestampOn) chunks.push(timestamp);
+  let base = chunks.filter(Boolean).join('-') || (index===0?'File':'File-'+String(index+1).padStart(3,'0'));
+  if (s.extensionOn && s.extension) base += '.' + s.extension;
+  return base;
+}
+function previewSplit(){
+  const s = settings('split');
+  const ts = stampNow();
+  const n0 = buildName(s, 0, ts);
+  const n1 = buildName(s, 1, ts);
+  $('namePreview2').textContent = n0 + '  →  ' + n1;
+  const b = $('baseLink').value.trim();
+  const lk = joinLink(b, n0);
+  $('splitPageLink').textContent = lk || '—';
+  $('splitPageLink').href = lk || '#';
+  $('splitLinkBox').style.display = lk ? 'block' : 'none';
+  const tf = $('timestamp2');
+  if (tf) tf.value = s.timestampOn ? 'Auto-generated on download' : '';
+}
+function updateSettingsUI(){
+  const n = '2';
+  ['prefix','suffix','extension'].forEach(k => {
+    const el = $(k+n), cb = $(k+'On'+n);
+    if (el && cb) el.disabled = !cb.checked;
+  });
+  ['prefix','suffix','timestamp','extension'].forEach(k => {
+    const cb = $(k+'On'+n); if (!cb) return;
+    const sw = cb.closest('.sw');
+    if (sw){ const t = sw.querySelector('.stxt'); if (t) t.textContent = cb.checked ? 'On' : 'Off'; }
+  });
+  previewSplit();
+}
+['prefix2','suffix2','extension2'].forEach(k => {
+  const el = $(k); if (el) el.addEventListener('input', updateSettingsUI);
+});
+['prefixOn2','suffixOn2','timestampOn2','extensionOn2'].forEach(k => {
+  const el = $(k); if (el) el.addEventListener('change', updateSettingsUI);
+});
+
+/* ================= Split mode toggle ================= */
+document.querySelectorAll('input[name="splitMode"]').forEach(r => r.addEventListener('change', () => {
+  const byLines = document.querySelector('input[name="splitMode"]:checked').value === 'lines';
+  $('linesPerPart').disabled = !byLines;
+  $('numberOfParts').disabled = byLines;
+}));
+
+/* ================= Merge files ================= */
+const mergeFiles = [];
+let mergeBusy = false;
+function renderMergeFiles(){
+  const box = $('mergeFiles'); box.innerHTML = '';
+  mergeFiles.forEach((entry, i) => {
+    const row = document.createElement('div'); row.className = 'file-row';
+    const fn = document.createElement('div'); fn.className = 'fn';
+    const fname = document.createElement('span'); fname.className='fname'; fname.textContent = (i+1)+'. '+entry.file.name;
+    const fsize = document.createElement('span'); fsize.className='fsize'; fsize.textContent = ' ('+fmtSize(entry.file.size)+')';
+    fn.append(fname, fsize);
+    const up = document.createElement('button'); up.className='row-btn secondary'; up.textContent='↑'; up.disabled = i===0;
+    up.addEventListener('click', () => { [mergeFiles[i-1], mergeFiles[i]] = [mergeFiles[i], mergeFiles[i-1]]; renderMergeFiles(); });
+    const dn = document.createElement('button'); dn.className='row-btn secondary'; dn.textContent='↓'; dn.disabled = i===mergeFiles.length-1;
+    dn.addEventListener('click', () => { [mergeFiles[i+1], mergeFiles[i]] = [mergeFiles[i], mergeFiles[i+1]]; renderMergeFiles(); });
+    const rm = document.createElement('button'); rm.className='row-btn danger'; rm.textContent='✕';
+    rm.addEventListener('click', () => { mergeFiles.splice(i,1); renderMergeFiles(); });
+    row.append(fn, up, dn, rm); box.appendChild(row);
+  });
+  $('mergeBtn').disabled = !mergeFiles.length || mergeBusy;
+  $('clearMerge').disabled = !mergeFiles.length;
+}
+$('addFileBtn').addEventListener('click', () => $('mergePicker').click());
+$('mergePicker').addEventListener('change', e => {
+  Array.from(e.target.files||[]).forEach(f => mergeFiles.push({file:f}));
+  e.target.value = ''; renderMergeFiles();
+  $('mergeStatus').className = 'status';
+  $('mergeStatus').textContent = mergeFiles.length + ' file(s) ready.';
+});
+$('clearMerge').addEventListener('click', () => {
+  mergeFiles.length = 0; renderMergeFiles();
+  $('mergeStatus').className='status'; $('mergeStatus').textContent='';
+});
+
+$('mergeBtn').addEventListener('click', async () => {
+  if (!mergeFiles.length || mergeBusy) return;
+  mergeBusy = true; renderMergeFiles();
+  const st = $('mergeStatus'); st.className='status'; st.textContent='Merging…';
+  try {
+    const texts = await Promise.all(mergeFiles.map(x => x.file.text()));
+    const merged = texts.join('\n');
+    const name = ($('nextFileName').value.trim() || buildName({prefixOn:false,prefix:'',suffixOn:false,suffix:'',timestampOn:false,extensionOn:true,extension:'html'},0,stampNow()));
+    downloadBlob(new Blob([merged], {type:'application/octet-stream'}), name);
+    st.className='status ok'; st.textContent = `Done. ${mergeFiles.length} file(s) → ${name}`;
+
+    const base = $('baseLink').value.trim();
+    const live = joinLink(base, name);
+    const grp = groupOf(name);
+
+    let repo = repoForGroup(grp);
+    if (!repo) repo = repoFromBase(base);
+
+    showFooterLinks(live, repo);
+
+    await saveRecord({
+      fileName: name, group: grp, baseLink: base,
+      link: live, repoLink: repo, tab: 'merge', createdAt: Date.now()
+    });
+
+    $('nextFileName').value = predictNext(name);
+    await saveSettings();
+
+    mergeFiles.length = 0; renderMergeFiles();
+    st.textContent = `Done. ${name} saved. Selection cleared.`;
+  } catch(err){
+    st.className='status error'; st.textContent='Merge failed: '+(err.message||err);
+  } finally { mergeBusy=false; renderMergeFiles(); }
+});
+
+/* ================= Footer helpers ================= */
+function showFooterLinks(live, repo){
+  const fl = $('footerLive'), fr = $('footerRepo');
+  if (live){
+    $('footLiveLink').textContent = live; $('footLiveLink').href = live;
+    fl.style.display = 'flex';
+  } else fl.style.display = 'none';
+  if (repo){
+    $('footRepoLink').textContent = repo; $('footRepoLink').href = repo;
+    fr.style.display = 'flex';
+  } else fr.style.display = 'none';
+}
+
+/* Copy buttons */
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const targetId = btn.getAttribute('data-copy');
+    const a = $(targetId);
+    if (!a) return;
+    const text = a.textContent || a.href || '';
+    try {
+      await navigator.clipboard.writeText(text);
+      const orig = btn.textContent;
+      btn.textContent = '✓';
+      setTimeout(() => { btn.textContent = orig; }, 1000);
+    } catch(e){ /* fallback */ }
+  });
+});
+
+/* ================= Split ================= */
+let splitParts = [], splitTimestamp = '';
+$('splitInput').addEventListener('change', () => {
+  const f = $('splitInput').files?.[0];
+  $('splitFileInfo').textContent = f ? `${f.name} • ${fmtSize(f.size)}` : 'No file selected.';
+  $('splitBtn').disabled = !f;
+  $('splitStatus').className='status'; $('splitStatus').textContent='';
+});
+$('splitBtn').addEventListener('click', async () => {
+  const file = $('splitInput').files?.[0]; if (!file) return;
+  $('splitBtn').disabled = true;
+  $('splitStatus').className='status'; $('splitStatus').textContent='Splitting…';
+  try {
+    const text = await file.text();
+    const eol = text.includes('\r\n') ? '\r\n' : text.includes('\r') ? '\r' : '\n';
+    const endedWithEol = /(?:\r\n|\r|\n)$/.test(text);
+    let lines = text.split(/\r\n|\n|\r/);
+    if (endedWithEol && lines[lines.length-1] === '') lines.pop();
+
+    let chunks = [];
+    if (document.querySelector('input[name="splitMode"]:checked').value === 'lines'){
+      const n = Math.floor(Number($('linesPerPart').value));
+      if (!Number.isFinite(n)||n<1) throw new Error('Enter valid lines-per-part.');
+      for (let i=0;i<lines.length;i+=n) chunks.push(lines.slice(i,i+n));
+    } else {
+      const n = Math.floor(Number($('numberOfParts').value));
+      if (!Number.isFinite(n)||n<1) throw new Error('Enter valid number of parts.');
+      const count = Math.min(n, Math.max(lines.length,1));
+      const base = Math.floor(lines.length/count), rem = lines.length%count;
+      let pos = 0;
+      for (let i=0;i<count;i++){ const size = base+(i<rem?1:0); chunks.push(lines.slice(pos,pos+size)); pos+=size; }
+    }
+    splitTimestamp = stampNow();
+    const s = settings('split');
+    splitParts = chunks.map((arr,i) => ({
+      name: buildName(s, i, splitTimestamp),
+      text: arr.join(eol) + (endedWithEol ? eol : ''),
+      lineCount: arr.length
+    }));
+    renderParts();
+    $('splitStatus').className='status ok';
+    $('splitStatus').textContent = `Created ${splitParts.length} part(s) from ${lines.length} line(s).`;
+    if (splitParts[0]){
+      const nm = splitParts[0].name;
+      const b = $('baseLink').value.trim();
+      const grp = groupOf(nm);
+      let repo = repoForGroup(grp);
+      if (!repo) repo = repoFromBase(b);
+
+      $('splitPageLink').textContent = joinLink(b, nm) || '—';
+      $('splitPageLink').href = joinLink(b, nm) || '#';
+      $('splitLinkBox').style.display = 'block';
+      await saveRecord({
+        fileName: nm, group: grp, baseLink: b, link: joinLink(b, nm),
+        repoLink: repo, tab: 'split', parts: splitParts.length, createdAt: Date.now()
+      });
+      showFooterLinks(joinLink(b, nm), repo);
+    }
+  } catch(err){
+    splitParts=[]; renderParts();
+    $('splitStatus').className='status error'; $('splitStatus').textContent = err.message||String(err);
+  } finally { $('splitBtn').disabled = !$('splitInput').files?.[0]; }
+});
+function renderParts(){
+  const box = $('partsList'); box.innerHTML = '';
+  $('zipBtn').disabled = !splitParts.length;
+  $('clearParts').disabled = !splitParts.length;
+  if (!splitParts.length){ box.innerHTML = ''; return; }
+  splitParts.forEach(p => {
+    const row = document.createElement('div'); row.className='part';
+    const info = document.createElement('div'); info.className='pn'; info.textContent = p.name;
+    const sm = document.createElement('small'); sm.textContent = p.lineCount+' line(s)'; info.appendChild(sm);
+    const btn = document.createElement('button'); btn.className='secondary'; btn.textContent='Download';
+    btn.addEventListener('click', () => downloadBlob(new Blob([p.text],{type:'application/octet-stream'}), p.name));
+    row.append(info, btn); box.appendChild(row);
+  });
+}
+$('zipBtn').addEventListener('click', async () => {
+  if (!splitParts.length) return;
+  if (!window.JSZip){ $('splitStatus').className='status error'; $('splitStatus').textContent='ZIP library failed.'; return; }
+  const btn = $('zipBtn'); btn.disabled = true; btn.textContent='Preparing…';
+  try {
+    const zip = new JSZip();
+    const used = new Set();
+    splitParts.forEach(p => {
+      let name = p.name, i = 1;
+      while (used.has(name)){
+        const dot = name.lastIndexOf('.');
+        name = dot===-1 ? p.name+'-'+i : p.name.slice(0,dot)+'-'+i+p.name.slice(dot);
+        i++;
+      }
+      used.add(name); zip.file(name, p.text);
+    });
+    const blob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+    const s = settings('split');
+    const zipName = buildName({...s, extensionOn:true, extension:'zip'}, 0, splitTimestamp||stampNow());
+    downloadBlob(blob, zipName);
+    $('splitStatus').className='status ok'; $('splitStatus').textContent = `ZIP: ${zipName}`;
+  } catch(err){
+    $('splitStatus').className='status error'; $('splitStatus').textContent = 'ZIP failed: '+(err.message||err);
+  } finally { btn.disabled = !splitParts.length; btn.textContent='⬇ Download All as ZIP'; }
+});
+$('clearParts').addEventListener('click', () => { splitParts=[]; renderParts(); $('splitStatus').className='status'; $('splitStatus').textContent=''; });
+
+/* ================= Firebase save ================= */
+async function saveRecord(rec){
+  if (!db) return false;
+  try {
+    await db.collection(COL).add(rec);
+    await loadCards();
+    return true;
+  } catch(e){
+    console.error('Save error:', e);
+    return false;
+  }
+}
+async function saveSettings(){
+  if (!db) return;
+  try {
+    await db.collection(COL).doc(SETTINGS_DOC).set({
+      baseLinkAuto: $('baseLinkAuto').checked,
+      prefixOn2: $('prefixOn2').checked,
+      suffixOn2: $('suffixOn2').checked,
+      timestampOn2: $('timestampOn2').checked,
+      extensionOn2: $('extensionOn2').checked,
+      prefix2: $('prefix2').value,
+      suffix2: $('suffix2').value,
+      extension2: $('extension2').value,
+      baseLink: $('baseLink').value,
+      lastUsedName: $('lastUsedName').value,
+      historyOpen: $('historyBody').classList.contains('open'),
+      updatedAt: Date.now()
+    }, {merge:true});
+  } catch(e){ /* silent */ }
+}
+async function loadSettings(){
+  if (!db) return;
+  try {
+    const snap = await db.collection(COL).doc(SETTINGS_DOC).get();
+    if (!snap.exists) return;
+    const s = snap.data();
+    if (typeof s.baseLinkAuto === 'boolean') $('baseLinkAuto').checked = s.baseLinkAuto;
+    if (typeof s.prefixOn2 === 'boolean') $('prefixOn2').checked = s.prefixOn2;
+    if (typeof s.suffixOn2 === 'boolean') $('suffixOn2').checked = s.suffixOn2;
+    if (typeof s.timestampOn2 === 'boolean') $('timestampOn2').checked = s.timestampOn2;
+    if (typeof s.extensionOn2 === 'boolean') $('extensionOn2').checked = s.extensionOn2;
+    if (typeof s.prefix2 === 'string') $('prefix2').value = s.prefix2;
+    if (typeof s.suffix2 === 'string') $('suffix2').value = s.suffix2;
+    if (typeof s.extension2 === 'string') $('extension2').value = s.extension2;
+    if (typeof s.baseLink === 'string' && s.baseLink) $('baseLink').value = s.baseLink;
+    if (typeof s.lastUsedName === 'string') $('lastUsedName').value = s.lastUsedName;
+    if (typeof s.historyOpen === 'boolean'){
+      $('historyBody').classList.toggle('open', s.historyOpen);
+      $('historyHead').querySelector('.harrow').style.transform = s.historyOpen ? 'rotate(90deg)' : '';
+    }
+    $('baseLink').readOnly = $('baseLinkAuto').checked;
+    updateSettingsUI();
+    refreshPredict();
+  } catch(e){ /* silent */ }
+}
+
+/* ================= Undo toast ================= */
+let undoPayload = null;
+let undoTimer = null;
+function showUndo(msg, onUndo){
+  const t = $('undoToast');
+  $('undoMsg').textContent = msg;
+  undoPayload = onUndo;
+  t.classList.add('show');
+  clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    t.classList.remove('show');
+    undoPayload = null;
+  }, 5000);
+}
+$('undoBtn').addEventListener('click', async () => {
+  if (undoPayload){
+    const fn = undoPayload;
+    undoPayload = null;
+    $('undoToast').classList.remove('show');
+    clearTimeout(undoTimer);
+    await fn();
+  }
+});
+
+/* ================= Cards ================= */
+let cachedRecords = [];
+let openGroups = new Set();
+
+async function loadCards(){
+  const box = $('cardsList');
+  if (!db){ box.innerHTML = ''; return; }
+  try {
+    const snap = await db.collection(COL).orderBy('createdAt','desc').limit(500).get();
+    cachedRecords = [];
+    snap.forEach(d => { if (d.id !== SETTINGS_DOC) cachedRecords.push({ id: d.id, ...d.data() }); });
+    renderCards();
+    $('historyTitle').textContent = '🗂️ History (' + cachedRecords.length + ')';
+  } catch(e){
+    console.error('Load error:', e);
+    box.innerHTML = '';
+    $('historyTitle').textContent = '🗂️ History (0)';
+  }
+}
+
+async function loadLastUsed(){
+  if (!db) return;
+  try {
+    const snap = await db.collection(COL).orderBy('createdAt','desc').limit(5).get();
+    if (snap.empty) return;
+    for (const d of snap.docs){
+      if (d.id === SETTINGS_DOC) continue;
+      const r = d.data();
+      if (r.fileName){
+        $('lastUsedName').value = r.fileName;
+        if (r.baseLink) $('baseLink').value = r.baseLink;
+        $('nextFileName').value = predictNext(r.fileName);
+        break;
+      }
+    }
+  } catch(e){ /* silent */ }
+}
+
+function renderCards(){
+  const box = $('cardsList'); box.innerHTML = '';
+  if (!cachedRecords.length){ return; }
+  const groups = new Map();
+  cachedRecords.forEach(r => {
+    const g = r.group || groupOf(r.fileName) || 'other';
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(r);
+  });
+  for (const [g, recs] of groups){
+    const card = document.createElement('div'); card.className = 'pagecard';
+    if (openGroups.has(g)) card.classList.add('open');
+    const head = document.createElement('div'); head.className = 'head';
+    const arrow = document.createElement('span'); arrow.className='arrow'; arrow.textContent='▶';
+    const title = document.createElement('span'); title.className='title'; title.textContent = g + ' (' + recs.length + ')';
+    const delCard = document.createElement('button'); delCard.className='danger del'; delCard.textContent='🗑';
+    delCard.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      if (!confirm(`Delete card "${g}" and all ${recs.length} record(s)?`)) return;
+      const batch = db.batch();
+      recs.forEach(r => batch.delete(db.collection(COL).doc(r.id)));
+      await batch.commit();
+      loadCards();
+    });
+    head.append(arrow, title, delCard);
+
+    let pressTimer = null;
+    let longPressed = false;
+    const startPress = () => {
+      longPressed = false;
+      pressTimer = setTimeout(() => {
+        longPressed = true;
+        const last = recs[0] && recs[0].fileName ? recs[0].fileName : g;
+        $('nextFileName').value = predictNext(last);
+      }, 500);
+    };
+    const endPress = () => { if (pressTimer){ clearTimeout(pressTimer); pressTimer = null; } };
+    head.addEventListener('mousedown', startPress);
+    head.addEventListener('touchstart', startPress, {passive:true});
+    head.addEventListener('mouseup', endPress);
+    head.addEventListener('mouseleave', endPress);
+    head.addEventListener('touchend', endPress);
+    head.addEventListener('touchcancel', endPress);
+    head.addEventListener('click', (e) => {
+      if (e.target.tagName === 'BUTTON') return;
+      if (longPressed){ longPressed = false; return; }
+      card.classList.toggle('open');
+      if (card.classList.contains('open')) openGroups.add(g);
+      else openGroups.delete(g);
+    });
+    head.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    const body = document.createElement('div'); body.className='body';
+    recs.forEach(r => body.appendChild(renderRecord(r, groups, g)));
+    card.append(head, body);
+    box.appendChild(card);
+  }
+}
+
+function renderRecord(r, groups, groupName){
+  const card = document.createElement('div'); card.className = 'record';
+
+  const l1 = document.createElement('div'); l1.className = 'line1';
+
+  const info = document.createElement('div'); info.className = 'info';
+  const nm = document.createElement('span'); nm.className='rname'; nm.textContent = r.fileName || '(no name)';
+  const dt = document.createElement('span'); dt.className='rdate'; dt.textContent = fmtDate(r.createdAt);
+  info.append(nm, dt);
+
+  const acts = document.createElement('div'); acts.className='racts';
+  const mv = document.createElement('button'); mv.className='mv'; mv.textContent='→'; mv.title = 'Move';
+  mv.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    const current = r.group || '';
+    const others = Array.from(groups.keys()).filter(x => x !== current);
+    const choice = prompt('Move to which card?\nAvailable: ' + others.join(', ') + '\n\nType new or existing:', others[0] || '');
+    if (!choice) return;
+    const newGroup = groupOf(choice) || choice.toLowerCase();
+    await db.collection(COL).doc(r.id).update({ group: newGroup });
+    loadCards();
+  });
+  const del = document.createElement('button'); del.className='del'; del.textContent='✕'; del.title = 'Delete';
+  del.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    // No confirm — delete now, show undo toast
+    const doc = db.collection(COL).doc(r.id);
+    const payload = { id: r.id, data: { ...r } };
+    delete payload.data.id;
+    await doc.delete();
+    // Keep the group open
+    openGroups.add(groupName);
+    await loadCards();
+    // Re-open the group after re-render (loadCards clears)
+    openGroups.add(groupName);
+    renderCards();
+    // Show undo toast
+    showUndo('Record deleted', async () => {
+      try {
+        await db.collection(COL).doc(payload.id).set(payload.data);
+        openGroups.add(groupName);
+        await loadCards();
+        renderCards();
+      } catch(e){ console.error(e); }
+    });
+  });
+  acts.append(mv, del);
+
+  l1.append(info, acts);
+
+  const l2 = document.createElement('div'); l2.className = 'line2';
+
+  const liveRow = document.createElement('div'); liveRow.className = 'lrow';
+  const t1 = document.createElement('span'); t1.className = 'tag live'; t1.textContent = 'Live';
+  const a1 = document.createElement('a');
+  a1.href = r.link || '#'; a1.target = '_blank'; a1.rel = 'noopener';
+  a1.textContent = r.link || '—';
+  liveRow.append(t1, a1);
+
+  const repoRow = document.createElement('div'); repoRow.className = 'lrow';
+  const t2 = document.createElement('span'); t2.className = 'tag repo'; t2.textContent = 'Repo';
+  const a2 = document.createElement('a');
+  const rp = r.repoLink || repoForGroup(r.group || '') || repoFromBase(r.baseLink || '');
+  a2.href = rp || '#'; a2.target = '_blank'; a2.rel = 'noopener';
+  a2.textContent = rp || '—';
+  repoRow.append(t2, a2);
+
+  l2.append(liveRow, repoRow);
+
+  card.append(l1, l2);
+  return card;
+}
+
+/* History expand/collapse */
+$('historyHead').addEventListener('click', async (ev) => {
+  if (ev.target.tagName === 'BUTTON') return;
+  const body = $('historyBody');
+  const open = !body.classList.contains('open');
+  body.classList.toggle('open', open);
+  $('historyHead').querySelector('.harrow').style.transform = open ? 'rotate(90deg)' : '';
+  await saveSettings();
+});
+$('refreshCards').addEventListener('click', async (ev) => {
+  ev.stopPropagation();
+  await loadCards();
+});
+
+/* ================= Init ================= */
+renderMergeFiles();
+updateSettingsUI();
+(async () => {
+  await loadSettings();
+  await loadLastUsed();
+  await loadCards();
+})();
+</script>
+</body>
+</html>
