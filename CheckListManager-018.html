@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#3b4fc4"><title>Nested Checklist Manager</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f6fb;--panel:#fff;--text:#202638;--muted:#778096;--line:#e5e9f2;--accent:#5267d9;--accent2:#e9edff;--danger:#d94343;--green:#21865b;--shadow:0 8px 28px #26345b12}
+*{box-sizing:border-box}
+html,body{margin:0;height:auto}
+body{background:#eef2fb;color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial;min-height:100dvh;overflow-x:hidden;-webkit-user-select:none;user-select:none}
+body.locked{overflow:hidden}
+body.dark{--bg:#141824;--panel:#1d2433;--text:#eef1fa;--muted:#a1abc0;--line:#30394c;--accent:#91a0ff;--accent2:#303958;--shadow:0 8px 28px #0003;background:#141824}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer;border:0;border-radius:10px;padding:8px 12px;background:var(--accent);color:#fff;font-weight:600}
+button.secondary{background:var(--accent2);color:var(--text)}
+button.ghost{background:rgba(255,255,255,.6);color:var(--text);border:1px solid rgba(255,255,255,.8)}
+body.dark button.ghost{background:#232b3c;border-color:#30394c}
+button.danger{background:#ffe8e8;color:#a82020}
+.hidden{display:none!important}
+.app{max-width:1100px;margin:0 auto;padding:14px;min-height:calc(100dvh - 40px);display:flex;flex-direction:column;justify-content:center}
+
+#fbPill{position:fixed;top:10px;left:50%;transform:translateX(-50%) translateY(-40px);background:#21865b;color:#fff;padding:6px 16px;border-radius:999px;font-size:12px;font-weight:700;box-shadow:0 6px 18px #21865b55;z-index:120;opacity:0;transition:.25s;pointer-events:none;white-space:nowrap}
+#fbPill.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#fbPill.sync{background:#c07a1a;box-shadow:0 6px 18px #c07a1a55}
+#fbPill.off{background:#d94343;box-shadow:0 6px 18px #d9434355}
+
+#loader{position:fixed;inset:0;background:#eef2fb;display:flex;align-items:center;justify-content:center;z-index:200;transition:opacity .3s}
+body.dark #loader{background:#141824}
+#loader.hide{opacity:0;pointer-events:none}
+.dots{display:flex;gap:8px}
+.dots span{width:12px;height:12px;background:#5267d9;border-radius:50%;animation:dotBounce .6s ease-in-out infinite alternate}
+.dots span:nth-child(2){animation-delay:.15s;background:#3b4fc4}
+.dots span:nth-child(3){animation-delay:.3s;background:#2fa79b}
+@keyframes dotBounce{from{transform:translateY(0);opacity:.6}to{transform:translateY(-14px);opacity:1}}
+
+.main{background:rgba(255,255,255,.82);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.8);border-radius:14px;box-shadow:var(--shadow);padding:10px;width:100%;max-width:760px;margin:0 auto}
+body.dark .main{background:#1d2433;border-color:#30394c}
+
+.field{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:11px 12px;width:100%;font-size:13px;margin:2px 0;min-width:0}
+
+/* ONE border only */
+.listWrap{background:#fff;border:1px solid #dde3f5;border-radius:12px;padding:6px}
+body.dark .listWrap{background:#1d2433;border-color:#30394c}
+
+.titem{border:1px solid #e5e9f2;border-radius:8px;margin:4px 0;background:#fff;overflow:hidden}
+body.dark .titem{background:#232b3c;border-color:#30394c}
+.titem .line{display:flex;align-items:center;padding:6px 8px;transition:background .25s,box-shadow .25s;min-width:0;gap:6px}
+.titem.task .line{background:#e8edff}
+body.dark .titem.task .line{background:#2a3350}
+.titem.checklist .line{background:#e6f7ee}
+body.dark .titem.checklist .line{background:#1f3a2d}
+.titem .line.flash{background:#fff7d6;animation:flashFade 5s ease forwards;box-shadow:0 0 0 3px #ffe28a55}
+.titem .line.flashBack{background:#fff7d6;animation:flashFadeBack 5s ease forwards;box-shadow:0 0 0 3px #ffe28a55}
+@keyframes flashFade{0%{background:#fff7d6}70%{background:#fff7d6}100%{background:#e3e6ee}}
+@keyframes flashFadeBack{0%{background:#fff7d6}70%{background:#fff7d6}100%{background:#e6f7ee}}
+.titem.done .line{background:#e3e6ee!important}
+body.dark .titem.done .line{background:#2a3142!important}
+.titem .handle{color:var(--muted);font-size:14px;flex:none;cursor:grab;touch-action:none;padding:0 2px;border-radius:4px;margin:0}
+.titem .handle:active{cursor:grabbing;background:var(--accent2)}
+.titem .toggle{background:transparent;border:0;color:var(--muted);font-size:12px;padding:1px 3px;flex:none}
+.titem .check{width:15px;height:15px;accent-color:var(--accent);flex:none;cursor:pointer;margin:0}
+.titem .name{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;font-size:13px;margin-left:6px}
+.titem .name.done{text-decoration:line-through;color:var(--muted)}
+.titem .plus{background:#fff;border:1px solid #c5cdf0;color:#5267d9;border-radius:5px;padding:0 5px;font-weight:700;font-size:12px;line-height:18px;flex:none;margin-left:4px}
+.titem .plus.cl{border-color:#a9d9c2;color:#21865b}
+body.dark .titem .plus{background:#232b3c;border-color:#3a4a6a}
+.titem .delBtn{background:transparent;color:var(--muted);border:0;padding:2px 5px;font-size:12px;border-radius:5px;flex:none;cursor:pointer;margin-left:4px}
+.titem .delBtn:hover{background:#ffe8e8;color:#a82020}
+.titem .children{padding:2px 0 3px 14px;background:#fbfcff}
+body.dark .titem .children{background:#1a2130}
+.titem .children.collapsed{display:none}
+.inlineInput{display:flex;gap:6px;padding:3px 8px 5px 8px}
+.inlineInput input{flex:1;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12px;min-width:0;background:var(--panel);color:var(--text)}
+.floating{position:fixed;pointer-events:none;box-shadow:0 12px 28px #0005;z-index:9999;transform:scale(1.03);border:1px solid #c5cdf0;opacity:.95}
+.placeholder{border:2px dashed var(--accent);border-radius:8px;margin:4px 0;background:var(--accent2)}
+.muted{color:var(--muted);font-size:12px}
+.empty{text-align:center;color:var(--muted);padding:20px}
+.pageFoot{text-align:center;font-size:11px;color:var(--muted);padding:14px 0 6px}
+
+/* modal — Settings-style, bottom 5px, width 60% */
+.modal{position:fixed;inset:0;background:#11182788;display:flex;align-items:flex-end;justify-content:center;padding:0 0 5px 0;z-index:60}
+.modal-card{width:60%;max-width:60%;max-height:80vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 -8px 28px #26345b33}
+.modal-head{background:linear-gradient(135deg,#5267d9,#2fa79b);color:#fff;padding:5px 14px;font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.modal-head button{background:rgba(255,255,255,.25);border:0;color:#fff;border-radius:6px;padding:2px 8px;font-weight:700;font-size:12px;cursor:pointer}
+.modal-body{padding:14px 16px}
+.modal-actions{display:flex;gap:6px;padding:0 16px 14px}
+.modal-actions button{flex:1;padding:9px 10px;border:0;border-radius:9px;font-weight:700;font-size:12px;cursor:pointer}
+.modal-actions .s{background:var(--accent2);color:var(--text)}
+.modal-actions .p{background:var(--accent);color:#fff}
+
+.optList{display:flex;flex-direction:column;gap:10px}
+.optList button{width:100%;background:var(--panel);color:var(--text);border:1px solid #d5dbee;border-radius:10px;padding:14px 16px;text-align:left;font-size:14px;font-weight:600;display:flex;gap:10px;align-items:center;cursor:pointer;transition:background .15s,border-color .15s}
+.optList button:hover{background:#f7f9ff;border-color:#b9c2e0}
+.optList button:active{background:var(--accent2);border-color:var(--accent)}
+
+/* settings modal — same style, header height 5px */
+.settingsModal{background:var(--panel);border-radius:14px;box-shadow:0 -8px 28px #26345b33;width:60%;max-width:60%;max-height:80vh;display:flex;flex-direction:column;border:1px solid var(--line);overflow:hidden}
+.settingsModal .head{background:linear-gradient(135deg,#5267d9,#2fa79b);color:#fff;padding:5px 14px;font-weight:700;font-size:13px;flex:none;display:flex;justify-content:space-between;align-items:center}
+.settingsModal .head button{background:rgba(255,255,255,.25);border:0;color:#fff;border-radius:6px;padding:2px 8px;font-weight:700;font-size:12px;cursor:pointer}
+.settingsModal .body{padding:12px 16px;overflow-y:auto;overflow-x:hidden;flex:1 1 auto;box-sizing:border-box}
+.setItem{border:1px solid #d5dbee;border-radius:10px;padding:6px 10px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;background:var(--panel);min-width:0}
+body.dark .setItem{border-color:#30394c}
+.setItem span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.exportRow{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.miniBtn{background:var(--accent);color:#fff;border:0;border-radius:7px;padding:5px 10px;font-weight:600;font-size:12px;white-space:nowrap}
+.stepper{display:inline-flex;align-items:center;gap:4px;flex:none}
+.stepper button{background:var(--accent2);color:var(--text);border:0;border-radius:6px;width:24px;height:24px;font-weight:700;font-size:14px;padding:0}
+.stepper span{min-width:26px;text-align:center;font-weight:600;font-size:13px}
+.numInput{width:60px;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:13px;background:var(--panel);color:var(--text);text-align:center}
+.switch{position:relative;width:38px;height:20px;flex:none;display:inline-block}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#cfd5e6;border-radius:20px;transition:.2s;cursor:pointer}
+.slider:before{content:"";position:absolute;height:14px;width:14px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked + .slider{background:var(--accent)}
+.switch input:checked + .slider:before{transform:translateX(18px)}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#1b2340;color:#fff;padding:10px 16px 8px;border-radius:10px;box-shadow:0 8px 24px #0005;display:flex;flex-direction:column;gap:6px;font-size:13px;z-index:90;opacity:0;pointer-events:none;transition:.25s;min-width:200px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.toast .row{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.toast button{background:#91a0ff;color:#10152a;border:0;border-radius:7px;padding:5px 10px;font-weight:700;font-size:12px}
+.toast .bar{height:4px;background:rgba(255,255,255,.2);border-radius:3px;overflow:hidden}
+.toast .bar i{display:block;height:100%;background:#91a0ff;width:100%}
+.toast .bar.anim i{animation:shrink var(--dur,5s) linear forwards}
+@keyframes shrink{from{width:100%}to{width:0%}}
+
+.logBox{max-height:360px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;margin-top:10px}
+.logDay{background:var(--accent2);font-weight:700;font-size:12px;color:var(--accent);padding:6px 10px;position:sticky;top:0}
+.logRow{display:flex;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:12px;align-items:flex-start}
+.logRow:last-child{border-bottom:0}
+.logTime{color:var(--muted);flex:none;width:56px;font-size:11px}
+.logAct{flex:none;font-weight:700;font-size:10px;padding:1px 6px;border-radius:5px}
+.logAct.add{background:#e6f7ee;color:#21865b}
+.logAct.edit{background:#fff4e0;color:#a07a1a}
+.logAct.remove{background:#ffe8e8;color:#a82020}
+.logText{flex:1;min-width:0}
+
+@media(max-width:760px){
+  body{font-size:12px}
+  .app{padding:8px;min-height:calc(100dvh - 16px)}
+  .main{max-width:100%}
+  .modal-card,.settingsModal{width:60%;max-width:60%;max-height:85vh}
+  .modal-body{padding:10px 12px}
+  .optList button{padding:10px 12px;font-size:13px}
+  #fbPill{font-size:11px;padding:5px 13px}
+}
+</style></head><body>
+
+<div id="loader"><div class="dots"><span></span><span></span><span></span></div></div>
+<div id="fbPill">Synced</div>
+
+<div id="app" class="app hidden">
+  <main class="main">
+    <div id="content"></div>
+  </main>
+  <div class="pageFoot" id="pageFoot">Page Creation date: 03-Nov-2026</div>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <div class="modal-head"><span id="modalTitle">Title</span><button id="modalClose">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions" id="modalActions"></div>
+  </div>
+</div>
+
+<div id="settingsWrap" class="hidden" style="position:fixed;inset:0;background:#11182788;z-index:60;display:flex;align-items:flex-end;justify-content:center;padding:0 0 5px 0"></div>
+<div class="overlay" id="overlay"></div>
+
+<div class="toast" id="undoToast">
+  <div class="row"><span id="undoMsg">Deleted</span><button id="undoAction">Undo</button></div>
+  <div class="bar" id="undoBar"><i></i></div>
+</div>
+
+<script>
+const firebaseConfig={apiKey:"AIzaSyAFiJNThb3TJsqiPLIcqk20XU9ag59wdOs",authDomain:"mywebapps-e3b63.firebaseapp.com",projectId:"mywebapps-e3b63",storageBucket:"mywebapps-e3b63.firebasestorage.app",messagingSenderId:"46681415809",appId:"1:46681415809:web:c4528b9da97abc310a2d80",measurementId:"G-72NM0QDE46"};
+firebase.initializeApp(firebaseConfig);const auth=firebase.auth(),db=firebase.firestore();
+const DOC=db.collection('Check List Manager').doc('NestedChecklistApp');
+const $=id=>document.getElementById(id);
+const now=()=>new Date().toISOString(),uidGen=()=>crypto.randomUUID?crypto.randomUUID():('id'+Date.now()+Math.random().toString(16).slice(2));
+const BUILD_DATE=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'-');
+
+let uid=null;
+let data={items:[],trash:[],changelog:[],settings:{
+  theme:'light',undoSeconds:5,autoDeleteDays:7,display:{progressbar:true,addbtn:true}
+}};
+let view='home',activeInput=null,activeType='task';
+let undoToastTimer=null,lastUndoSnapshot=null,longPressTimer=null;
+let flashingId=null,flashType=null,timers={};
+
+$('pageFoot').textContent='Page Creation date: '+BUILD_DATE;
+
+function showFbPill(text,type){
+  let p=$('fbPill');p.textContent=text;p.className='show'+(type?' '+type:'');
+  clearTimeout(p._t);p._t=setTimeout(()=>{p.className=''},2000);
+}
+function find(idv){let out=null;walk(data.items,x=>{if(x.id===idv)out=x});return out}
+function walk(list,fn){list.forEach(x=>{fn(x);walk(x.children||[],fn)})}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function locate(list,idv,parent=null){for(let i=0;i<list.length;i++){if(list[i].id===idv)return{list,index:i,item:list[i],parent};let r=locate(list[i].children||[],idv,list[i]);if(r)return r}return null}
+function collect(pred){let out=[];walk(data.items,x=>{if(pred(x))out.push(x)});return out}
+function changed(){scheduleSave();render()}
+function scheduleSave(){try{localStorage.setItem('nestedChecklistCache',JSON.stringify(data))}catch(e){};showFbPill(navigator.onLine?'Syncing…':'Offline',navigator.onLine?'sync':'off');clearTimeout(window._saveTimer);window._saveTimer=setTimeout(saveRemote,650)}
+async function saveRemote(){if(!uid||!navigator.onLine)return;try{await DOC.set({owner:uid,appData:data,updatedAt:now()},{merge:true});showFbPill('Synced')}catch(e){showFbPill('Sync pending','off')}}
+function applyTheme(){document.body.classList.toggle('dark',data.settings.theme==='dark')}
+function logChange(act,text){data.changelog=data.changelog||[];data.changelog.push({at:now(),act,text});if(data.changelog.length>500)data.changelog.shift();}
+function newItem(name,type){let t=now();return{id:uidGen(),type:type||'checklist',name:name,createdAt:t,updatedAt:t,completed:false,completedAt:null,history:[],children:[],collapsed:false,deletedAt:null}}
+
+function showToast(msg,secs,onUndo){
+  let t=$('undoToast');$('undoMsg').textContent=msg;
+  let bar=$('undoBar');bar.style.setProperty('--dur',secs+'s');bar.classList.remove('anim');void bar.offsetWidth;bar.classList.add('anim');
+  $('undoAction').style.display=onUndo?'':'none';
+  $('undoAction').onclick=()=>{if(onUndo)onUndo();t.classList.remove('show');clearTimeout(undoToastTimer)};
+  t.classList.add('show');clearTimeout(undoToastTimer);
+  undoToastTimer=setTimeout(()=>{t.classList.remove('show');lastUndoSnapshot=null},secs*1000);
+}
+function showUndoToast(snapshot){lastUndoSnapshot=snapshot;showToast('Item deleted',data.settings.undoSeconds||5,()=>{if(lastUndoSnapshot){data=JSON.parse(lastUndoSnapshot);lastUndoSnapshot=null;changed()}})}
+
+function autoCleanup(){
+  let days=data.settings.autoDeleteDays||0;
+  if(days<=0)return;
+  let cutoff=Date.now()-days*86400000;
+  function clean(list){
+    for(let i=list.length-1;i>=0;i--){
+      let x=list[i];clean(x.children||[]);
+      if(x.completed&&x.completedAt&&new Date(x.completedAt).getTime()<cutoff){list.splice(i,1)}
+    }
+  }
+  let before=JSON.stringify(data.items);clean(data.items);
+  if(before!==JSON.stringify(data.items)){logChange('remove',`Old checked items removed (${days} days)`);scheduleSave()}
+}
+
+function matchSearch(x){
+  let q=(window._searchQ||'').toLowerCase().trim();if(!q)return true;
+  return (x.name||'').toLowerCase().includes(q)||(x.type||'').toLowerCase().includes(q);
+}
+
+function renderItem(x){
+  let has=x.children&&x.children.length>0;
+  let canHaveChildren=x.type==='task';
+  let chk=x.type==='checklist'?`<input class="check" type="checkbox" data-act="complete" data-id="${x.id}" ${x.completed?'checked':''}>`:'';
+  let toggle=has?`<button class="toggle" data-act="collapse" data-id="${x.id}">${x.collapsed?'▸':'▾'}</button>`:'<span style="width:14px;display:inline-block"></span>';
+  let plusTask=canHaveChildren&&data.settings.display.addbtn?`<button class="plus" data-act="plustask" data-id="${x.id}" title="Add Task">＋</button>`:'';
+  let plusCl=canHaveChildren&&data.settings.display.addbtn?`<button class="plus cl" data-act="pluscl" data-id="${x.id}" title="Add Checklist">＋</button>`:'';
+  let delBtn=x.completed?`<button class="delBtn" data-act="del" data-id="${x.id}">🗑</button>`:'';
+  let flashClass=x.id===flashingId?(flashType==='toDone'?'flash':'flashBack'):'';
+  let kids=x.children||[];
+  let undone=kids.filter(c=>!c.completed);let done=kids.filter(c=>c.completed);
+  let childrenHtml='';
+  if(x.type!=='checklist'&&!x.collapsed){
+    childrenHtml=undone.map(c=>renderItem(c)).join('')+done.map(c=>renderItem(c)).join('');
+  }
+  return `<div class="titem ${x.type} ${x.completed?'done':''}" data-id="${x.id}">
+    <div class="line ${flashClass}">
+      <span class="handle" data-handle="1">⠿</span>
+      ${toggle}${chk}
+      <span class="name ${x.completed?'done':''}">${esc(x.name)}</span>
+      ${plusTask}${plusCl}${delBtn}
+    </div>
+    ${activeInput===x.id?`<div class="inlineInput"><input id="inp_${x.id}" data-parent="${x.id}" placeholder="Type and press Enter…"></div>`:''}
+    <div class="children ${x.collapsed?'collapsed':''}">${childrenHtml}</div>
+  </div>`;
+}
+
+function renderHome(){
+  let activeList=[],doneList=[];
+  data.items.forEach(i=>{
+    if(i.id===flashingId){if(flashType==='toDone')activeList.push(i);else doneList.push(i);}
+    else{(i.completed?doneList:activeList).push(i);}
+  });
+  let activeHtml=activeList.filter(matchSearch).map(i=>renderItem(i)).join('');
+  let doneHtml=doneList.filter(matchSearch).map(i=>renderItem(i)).join('');
+  let html='<div class="listWrap" id="listWrap">';
+  html+=activeHtml;
+  if(!activeHtml&&!doneHtml)html+='<div class="empty">کوئی آئٹم نہیں۔ نیچے سے swipe up کریں نیا بنانے کے لیے۔</div>';
+  if(doneHtml)html+='<div class="doneArea">'+doneHtml+'</div>';
+  html+='</div>';
+  $('content').innerHTML=html;
+  attachHomeHandlers();
+}
+
+function attachHomeHandlers(){
+  document.querySelectorAll('.titem .check').forEach(cb=>{
+    cb.onchange=()=>{
+      let id=cb.dataset.id,it=find(id);if(!it)return;
+      clearTimeout(timers[id]);
+      if(cb.checked){
+        it.completed=true;it.completedAt=now();it.updatedAt=now();it.history=it.history||[];it.history.push({status:'Completed',at:now()});
+        flashingId=id;flashType='toDone';render();
+        timers[id]=setTimeout(()=>{flashingId=null;flashType=null;render()},5000);
+      } else {
+        it.completed=false;it.completedAt=null;it.updatedAt=now();it.history=it.history||[];it.history.push({status:'Uncompleted',at:now()});
+        flashingId=id;flashType='toActive';render();
+        timers[id]=setTimeout(()=>{flashingId=null;flashType=null;render()},5000);
+      }
+    };
+  });
+  document.querySelectorAll('.titem .toggle').forEach(b=>{
+    b.onclick=(e)=>{e.stopPropagation();let x=find(b.dataset.id);if(x){x.collapsed=!x.collapsed;render()}};
+  });
+  document.querySelectorAll('.titem .plus').forEach(b=>{
+    b.onclick=(e)=>{e.stopPropagation();let id=b.dataset.id,x=find(id);if(!x||x.type!=='task')return;let type=b.classList.contains('cl')?'checklist':'task';startInline(id,type)};
+  });
+  document.querySelectorAll('.titem .delBtn').forEach(b=>{
+    b.onclick=(e)=>{e.stopPropagation();let id=b.dataset.id;let snap=JSON.stringify(data);let r=locate(data.items,id);if(r){r.item.deletedAt=now();r.list.splice(r.index,1);data.trash=data.trash||[];data.trash.push(r.item);logChange('remove',`"${r.item.name}" deleted`);changed();showUndoToast(snap)}};
+  });
+  // long press on task header
+  document.querySelectorAll('.titem.task .line').forEach(line=>{
+    let lp;
+    line.addEventListener('touchstart',e=>{
+      if(e.target.closest('.check,.plus,.delBtn,.handle,.toggle'))return;
+      lp=setTimeout(()=>{openTaskMenu(line.closest('.titem').dataset.id);if(navigator.vibrate)navigator.vibrate(30)},500);
+    },{passive:true});
+    line.addEventListener('touchend',()=>clearTimeout(lp));
+    line.addEventListener('touchmove',()=>clearTimeout(lp));
+    line.addEventListener('mousedown',e=>{
+      if(e.target.closest('.check,.plus,.delBtn,.handle,.toggle'))return;
+      lp=setTimeout(()=>openTaskMenu(line.closest('.titem').dataset.id),500);
+    });
+    line.addEventListener('mouseup',()=>clearTimeout(lp));
+    line.onclick=(e)=>{
+      if(e.target.closest('.check,.plus,.delBtn,.handle,.toggle'))return;
+      let id=line.closest('.titem').dataset.id;let x=find(id);if(x&&x.type==='task'){x.collapsed=!x.collapsed;render()}
+    };
+  });
+  document.querySelectorAll('.titem .handle').forEach(h=>{
+    attachDrag(h,h.closest('.titem'));
+  });
+}
+
+function startInline(idv,type){activeInput=idv;activeType=type;render();setTimeout(()=>{let i=$('inp_'+idv);if(i)i.focus()},10)}
+
+$('content').addEventListener('keydown',e=>{
+  if(e.target.dataset.parent&&e.key==='Enter'){
+    let idv=e.target.dataset.parent,val=e.target.value.trim();
+    if(val){
+      let x=find(idv);if(!x||x.type!=='task')return;
+      let ni=newItem(val,activeType);x.children=x.children||[];
+      if(activeType==='task')x.children.unshift(ni);else x.children.push(ni);
+      x.collapsed=false;
+      logChange('add',`${activeType==='checklist'?'Checklist':'Task'} "${val}" added under "${x.name}"`);
+      activeInput=idv;changed();render();setTimeout(()=>{let i=$('inp_'+idv);if(i)i.focus()},10);
+    }
+  }
+});
+document.addEventListener('click',e=>{
+  if(activeInput){
+    let box=e.target.closest('.inlineInput');
+    let isPlus=e.target.closest('[data-act="plustask"],[data-act="pluscl"]');
+    if(!box&&!isPlus){
+      let i=$('inp_'+activeInput);
+      if(i&&i.value.trim()){
+        let x=find(activeInput);
+        if(x&&x.type==='task'){
+          let ni=newItem(i.value.trim(),activeType);x.children=x.children||[];
+          if(activeType==='task')x.children.unshift(ni);else x.children.push(ni);
+          x.collapsed=false;
+          logChange('add',`${activeType==='checklist'?'Checklist':'Task'} "${ni.name}" added under "${x.name}"`);
+          changed();
+        }
+      }
+      activeInput=null;render();
+    }
+  }
+});
+
+/* drag */
+function attachDrag(handle,el){
+  let active=false,floating=null,placeholder=null,offsetY=0;
+  function onDown(e){
+    e.preventDefault();e.stopPropagation();active=true;
+    let rect=el.getBoundingClientRect();let cy=(e.touches?e.touches[0].clientY:e.clientY);offsetY=cy-rect.top;
+    floating=el.cloneNode(true);floating.classList.add('floating');
+    floating.style.width=rect.width+'px';floating.style.left=rect.left+'px';floating.style.top=rect.top+'px';
+    document.body.appendChild(floating);
+    placeholder=document.createElement('div');placeholder.className='placeholder';placeholder.style.height=rect.height+'px';
+    el.style.display='none';el.parentNode.insertBefore(placeholder,el.nextSibling);
+    window.addEventListener('touchmove',onMove,{passive:false});window.addEventListener('touchend',onUp);
+    window.addEventListener('mousemove',onMove);window.addEventListener('mouseup',onUp);
+  }
+  function onMove(e){
+    if(!active)return;if(e.cancelable)e.preventDefault();
+    let cy=(e.touches?e.touches[0].clientY:e.clientY);floating.style.top=(cy-offsetY)+'px';
+    let parent=el.parentNode;let all=[...parent.querySelectorAll(':scope > .titem')].filter(x=>x!==el);let target=null;
+    all.forEach(x=>{let r=x.getBoundingClientRect();if(cy>r.top&&cy<r.bottom)target=x});
+    if(target){let r=target.getBoundingClientRect();let mid=(r.top+r.bottom)/2;if(cy<mid)parent.insertBefore(placeholder,target);else parent.insertBefore(placeholder,target.nextSibling)}
+  }
+  function onUp(){
+    if(!active)return;active=false;
+    let parent=el.parentNode;let siblings=[...parent.children];let pos=siblings.indexOf(placeholder);
+    let before=siblings.slice(0,pos).filter(n=>n.dataset&&n.dataset.id).map(n=>n.dataset.id);
+    let after=siblings.slice(pos).filter(n=>n.dataset&&n.dataset.id).map(n=>n.dataset.id);
+    let id=el.dataset.id;before=before.filter(x=>x!==id);after=after.filter(x=>x!==id);
+    let finalIds=[...before,id,...after];
+    let parentId=parent.closest('.titem')?.dataset.id;
+    let arr=parentId?find(parentId).children:data.items;
+    arr.sort((a,b)=>finalIds.indexOf(a.id)-finalIds.indexOf(b.id));
+    floating.remove();placeholder.remove();
+    window.removeEventListener('touchmove',onMove);window.removeEventListener('touchend',onUp);
+    window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);
+    changed();
+  }
+  handle.addEventListener('touchstart',onDown,{passive:false});
+  handle.addEventListener('mousedown',onDown);
+}
+
+function renderTrash(){if(!data.trash||!data.trash.length)return '<div class="empty">Recycle Bin is empty.</div>';return data.trash.map(x=>`<div class="titem"><div class="line"><span class="name">${esc(x.name)}</span><button data-act="restore" data-id="${x.id}">Restore</button><button class="danger" data-act="purge" data-id="${x.id}">Delete</button></div></div>`).join('')}
+
+function render(){
+  applyTheme();
+  if(view==='trash')$('content').innerHTML='<div class="listWrap">'+renderTrash()+'</div>';
+  else renderHome();
+}
+
+function closeModal(){document.body.classList.remove('locked');$('modal').classList.add('hidden')}
+$('modalClose').onclick=closeModal;
+$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
+
+/* swipe up -> menu (Settings style, width 60%) */
+let swipeStartY=null;
+document.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;swipeStartY=e.touches[0].clientY},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(swipeStartY==null)return;
+  let dy=swipeStartY-e.changedTouches[0].clientY;swipeStartY=null;
+  if(dy>80 && !activeInput && !e.target.closest('.modal') && !e.target.closest('#settingsWrap') && !e.target.closest('.handle')){
+    openMainMenu();
+  }
+},{passive:true});
+
+function openMainMenu(){
+  document.body.classList.add('locked');
+  $('modalTitle').textContent='Menu';
+  $('modalBody').innerHTML=`<div class="optList">
+    <button data-opt="addtask">☑ Add Task</button>
+    <button data-opt="addcl">📁 Add Checklist</button>
+    <button data-opt="editmode">✎ Edit Mode</button>
+    <button data-opt="home">🏠 Home</button>
+    <button data-opt="trash">🗑 Recycle Bin</button>
+    <button data-opt="settings">⚙ Settings</button>
+  </div>`;
+  $('modalActions').style.display='none';$('modalActions').innerHTML='';
+  $('modal').classList.remove('hidden');
+  $('modalBody').querySelectorAll('[data-opt]').forEach(btn=>{
+    btn.onclick=()=>{
+      let opt=btn.dataset.opt;
+      if(opt==='addtask')openNameModal('task');
+      else if(opt==='addcl')openNameModal('checklist');
+      else if(opt==='editmode'){data.settings.editMode=!data.settings.editMode;closeModal();changed()}
+      else if(opt==='home'){view='home';closeModal();render()}
+      else if(opt==='trash'){view='trash';closeModal();render()}
+      else if(opt==='settings'){closeModal();openSettings()}
+    };
+  });
+}
+
+/* Task long-press menu */
+function openTaskMenu(idv){
+  let task=find(idv);if(!task)return;
+  document.body.classList.add('locked');
+  $('modalTitle').textContent='Task Options';
+  $('modalBody').innerHTML=`<div class="optList">
+    <button data-opt="parent">⬆ Add parent task</button>
+    <button data-opt="child">⬇ Add child task</button>
+    <button data-opt="checklist">📁 Add checklist</button>
+    <button data-opt="rename">✎ Rename</button>
+  </div>`;
+  $('modalActions').style.display='none';$('modalActions').innerHTML='';
+  $('modal').classList.remove('hidden');
+  $('modalBody').querySelectorAll('[data-opt]').forEach(btn=>{
+    btn.onclick=()=>{
+      let opt=btn.dataset.opt;
+      if(opt==='parent')openNameModalFor('parent',idv);
+      else if(opt==='child'){closeModal();startInline(idv,'task')}
+      else if(opt==='checklist'){closeModal();startInline(idv,'checklist')}
+      else if(opt==='rename')openRenameModal(idv);
+    };
+  });
+}
+
+function openNameModalFor(mode,targetId){
+  document.body.classList.add('locked');
+  $('modalTitle').textContent='New Parent Task';
+  $('modalBody').innerHTML=`<input id="newItemName" class="field" placeholder="Parent task name…" style="width:100%">`;
+  $('modalActions').style.display='flex';
+  $('modalActions').innerHTML=`<button class="s" id="nameCancel">Cancel</button><button class="p" id="nameSave">Save</button>`;
+  $('modal').classList.remove('hidden');
+  setTimeout(()=>$('newItemName')?.focus(),50);
+  $('nameCancel').onclick=closeModal;
+  $('nameSave').onclick=()=>{
+    let v=$('newItemName').value.trim();
+    if(v){
+      let target=find(targetId);
+      let parentLoc=locate(data.items,targetId);
+      if(parentLoc){
+        let ni=newItem(v,'task');
+        // naya parent banayen: target ko naye parent ka child bana dein
+        parentLoc.list.splice(parentLoc.index,1,target);
+        // pehle target ko list se hata dein
+        let targetItem=parentLoc.list[parentLoc.index];
+        parentLoc.list.splice(parentLoc.index,1);
+        ni.children.push(targetItem);
+        // naya parent usi jagah daal dein
+        parentLoc.list.splice(parentLoc.index,0,ni);
+        logChange('add',`Parent task "${v}" added above "${target.name}"`);
+      }
+    }
+    closeModal();changed();
+  };
+}
+
+function openRenameModal(idv){
+  let task=find(idv);if(!task)return;
+  document.body.classList.add('locked');
+  $('modalTitle').textContent='Rename';
+  $('modalBody').innerHTML=`<input id="renameVal" class="field" value="${esc(task.name)}" style="width:100%">`;
+  $('modalActions').style.display='flex';
+  $('modalActions').innerHTML=`<button class="s" id="renameCancel">Cancel</button><button class="p" id="renameSave">Save</button>`;
+  $('modal').classList.remove('hidden');
+  setTimeout(()=>$('renameVal')?.focus(),50);
+  $('renameCancel').onclick=closeModal;
+  $('renameSave').onclick=()=>{
+    let v=$('renameVal').value.trim();
+    if(v&&v!==task.name){let old=task.name;task.name=v;task.updatedAt=now();logChange('edit',`"${old}" renamed to "${v}"`)}
+    closeModal();changed();
+  };
+}
+
+/* name input modal (Sample 2 style) */
+function openNameModal(type){
+  document.body.classList.add('locked');
+  $('modalTitle').textContent=type==='task'?'New Task':'New Checklist';
+  $('modalBody').innerHTML=`<input id="newItemName" class="field" placeholder="${type==='task'?'Task':'Checklist'} name…" style="width:100%">`;
+  $('modalActions').style.display='flex';
+  $('modalActions').innerHTML=`<button class="s" id="nameCancel">Cancel</button><button class="p" id="nameSave">Save</button>`;
+  $('modal').classList.remove('hidden');
+  setTimeout(()=>$('newItemName')?.focus(),50);
+  $('nameCancel').onclick=closeModal;
+  $('nameSave').onclick=()=>{
+    let v=$('newItemName').value.trim();
+    if(v){
+      let ni=newItem(v,type);
+      if(type==='task')data.items.unshift(ni);else data.items.push(ni);
+      logChange('add',`${type==='task'?'Task':'Checklist'} "${v}" added`);
+    }
+    closeModal();changed();
+  };
+}
+
+/* settings */
+function openSettings(){
+  document.body.classList.add('locked');
+  $('settingsWrap').classList.remove('hidden');
+  $('settingsWrap').innerHTML=`<div class="settingsModal">
+    <div class="head"><span>⚙ Settings</span><button id="closeSettingsTop">✕</button></div>
+    <div class="body">
+      <div class="setItem"><span>Theme (Dark)</span><label class="switch"><input type="checkbox" data-disp="theme" ${data.settings.theme==='dark'?'checked':''}><span class="slider"></span></label></div>
+      <div class="setItem"><span>Progress bar</span><label class="switch"><input type="checkbox" data-disp="progressbar" ${data.settings.display.progressbar?'checked':''}><span class="slider"></span></label></div>
+      <div class="setItem"><span>＋ Add buttons</span><label class="switch"><input type="checkbox" data-disp="addbtn" ${data.settings.display.addbtn?'checked':''}><span class="slider"></span></label></div>
+      <div class="setItem"><span>Undo toast seconds (1–10)</span><div class="stepper"><button id="undoMinus">−</button><span id="undoVal">${data.settings.undoSeconds||5}</span><button id="undoPlus">+</button></div></div>
+      <div class="setItem"><span>Auto-delete checked items (days, 0=off)</span><input id="autoDel" class="numInput" type="number" min="0" max="365" value="${data.settings.autoDeleteDays||0}"></div>
+      <div class="setItem"><span>Change Log</span><button class="miniBtn" id="viewLog">View</button></div>
+      <div class="setItem"><span>Export</span><div class="exportRow"><button class="miniBtn" id="exportJson">JSON</button><button class="miniBtn" id="exportExcel">Excel</button><button class="miniBtn" id="exportPdf">PDF</button></div></div>
+      <div id="logBoxWrap"></div>
+    </div>
+  </div>`;
+  let m=$('settingsWrap').querySelector('.settingsModal');
+  $('closeSettingsTop').onclick=closeSettings;
+  m.querySelectorAll('[data-disp]').forEach(inp=>{
+    inp.onchange=()=>{let key=inp.dataset.disp;if(key==='theme'){data.settings.theme=inp.checked?'dark':'light';applyTheme()}else{data.settings.display[key]=inp.checked}changed()};
+  });
+  m.querySelector('#undoMinus').onclick=()=>{data.settings.undoSeconds=Math.max(1,(data.settings.undoSeconds||5)-1);m.querySelector('#undoVal').textContent=data.settings.undoSeconds;changed()};
+  m.querySelector('#undoPlus').onclick=()=>{data.settings.undoSeconds=Math.min(10,(data.settings.undoSeconds||5)+1);m.querySelector('#undoVal').textContent=data.settings.undoSeconds;changed()};
+  m.querySelector('#autoDel').onchange=(e)=>{data.settings.autoDeleteDays=Math.max(0,Number(e.target.value)||0);changed()};
+  m.querySelector('#viewLog').onclick=()=>renderLogBox(m.querySelector('#logBoxWrap'));
+  m.querySelector('#exportJson').onclick=()=>download('backup.json',JSON.stringify(data,null,2),'application/json');
+  m.querySelector('#exportExcel').onclick=()=>{let rows=[];walk(data.items,x=>rows.push({ID:x.id,Name:x.name,Type:x.type,Completed:x.completed,CompletedAt:x.completedAt}));let ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Items');XLSX.writeFile(wb,'Checklist.xlsx')};
+  m.querySelector('#exportPdf').onclick=()=>window.print();
+}
+function closeSettings(){document.body.classList.remove('locked');$('settingsWrap').classList.add('hidden');$('settingsWrap').innerHTML='';view='home';render()}
+$('settingsWrap').addEventListener('click',e=>{if(e.target===$('settingsWrap'))closeSettings()});
+
+function renderLogBox(wrap){
+  let logs=(data.changelog||[]).slice().sort((a,b)=>new Date(b.at)-new Date(a.at));
+  if(!logs.length){wrap.innerHTML='<div class="logBox"><div class="empty">No changes yet.</div></div>';return}
+  let groups={};logs.forEach(c=>{let k=new Date(c.at).toDateString();(groups[k]=groups[k]||[]).push(c)});
+  let html='<div class="logBox">';
+  Object.keys(groups).forEach(day=>{html+=`<div class="logDay">${day}</div>`;groups[day].forEach(c=>{let t=new Date(c.at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});html+=`<div class="logRow"><span class="logTime">${t}</span><span class="logAct ${c.act}">${c.act.toUpperCase()}</span><span class="logText">${esc(c.text)}</span></div>`})});
+  html+='</div>';wrap.innerHTML=html;
+}
+
+$('content').addEventListener('click',e=>{
+  let b=e.target.closest('[data-act]');if(!b)return;
+  let a=b.dataset.act,idv=b.dataset.id;
+  if(a==='restore')restoreItem(idv);
+  if(a==='purge'){let snap=JSON.stringify(data);let x=data.trash.find(t=>t.id===idv);data.trash=data.trash.filter(t=>t.id!==idv);logChange('remove',`"${x?x.name:'item'}" permanently deleted`);changed();showUndoToast(snap)}
+});
+function restoreItem(idv){let i=(data.trash||[]).findIndex(x=>x.id===idv);if(i<0)return;let x=data.trash.splice(i,1)[0];x.deletedAt=null;data.items.push(x);logChange('add',`"${x.name}" restored`);changed()}
+
+function startAnon(){auth.signInAnonymously().catch(e=>{$('app').classList.remove('hidden');$('loader').classList.add('hide');showFbPill('Offline','off');render()})}
+auth.onAuthStateChanged(async user=>{
+  if(!user){uid=null;startAnon();return}
+  uid=user.uid;
+  try{let doc=await DOC.get();if(doc.exists&&doc.data().owner===uid&&doc.data().appData){data=doc.data().appData}else{let c=localStorage.getItem('nestedChecklistCache');if(c)data=JSON.parse(c);await saveRemote()}
+    if(!data.settings.display)data.settings.display={progressbar:true,addbtn:true};
+    if(!data.settings.undoSeconds)data.settings.undoSeconds=5;
+    if(!data.settings.autoDeleteDays)data.settings.autoDeleteDays=7;
+    if(!data.changelog)data.changelog=[];
+    showFbPill('Synced');
+  }catch(e){let c=localStorage.getItem('nestedChecklistCache');if(c)data=JSON.parse(c);showFbPill('Offline','off')}
+  autoCleanup();
+  $('app').classList.remove('hidden');
+  $('loader').classList.add('hide');
+  render();
+});
+window.addEventListener('online',saveRemote);
+window.addEventListener('offline',()=>showFbPill('Offline','off'));
+
+function download(name,content,type){let a=document.createElement('a'),u=URL.createObjectURL(new Blob([content],{type}));a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
+
+startAnon();
+</script></body></html>
